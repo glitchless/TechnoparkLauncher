@@ -1,13 +1,9 @@
 package ru.lionzxy.tplauncher.downloader
 
-import sk.tomsik68.mclauncher.api.common.ILaunchSettings
 import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
-import sk.tomsik68.mclauncher.api.login.ESessionType
-import sk.tomsik68.mclauncher.api.login.ISession
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 import sk.tomsik68.mclauncher.impl.versions.mcdownload.MCDownloadVersionList
 import java.io.File
-import java.util.*
 
 
 fun main(args: Array<String>) {
@@ -60,46 +56,4 @@ class DefaultMonitor : IProgressMonitor {
         maxVal = len
     }
 
-}
-
-class OfflineSession(val usernameOffline: String) : ISession {
-    override fun getUsername() = usernameOffline
-
-    override fun getType() = ESessionType.MOJANG
-
-    override fun getUUID() = UUID.randomUUID().toString()
-
-    override fun getSessionID() = "sessionid"
-
-    override fun getProperties() = mutableListOf<ISession.Prop>()
-}
-
-class DefaultLaunchSettings : ILaunchSettings {
-    override fun getInitHeap(): String {
-        return "256M"
-    }
-
-    override fun getHeap(): String {
-        return "1G"
-    }
-
-    override fun getCustomParameters(): Map<String, String>? {
-        return null
-    }
-
-    override fun getJavaArguments(): List<String>? {
-        return null
-    }
-
-    override fun getCommandPrefix(): List<String>? {
-        return null
-    }
-
-    override fun getJavaLocation(): File? {
-        return null
-    }
-
-    override fun isModifyAppletOptions(): Boolean {
-        return false
-    }
 }

@@ -59,7 +59,7 @@ class MainController(val mainWindow: MainWindow) {
     private fun startDownloadZip() {
         val dist = File(ConfigHelper.getTemporaryDirectory(), "minecraft.zip")
         mainWindow.setStatus(LocalizationHelper.getString("download_mods"))
-        FileUtils.downloadFileWithProgress("http://download.glitchless.ru/0.0.1_minecraft.zip", dist, mainWindow)
+        FileUtils.downloadFileWithProgress("http://download.glitchless.ru/0.0.2_minecraft.zip", dist, mainWindow)
         val zipFile = ZipFile(dist)
         mainWindow.setStatus(LocalizationHelper.getString("unzip_mods"))
         mainWindow.setProgress(-1)

@@ -23,7 +23,6 @@ class DefaultLaunchSettings : ILaunchSettings {
         return asList(
             "-XX:+UseG1GC",
             "-XX:ConcGCThreads=" + cores / 4,
-            "-XX:+AggressiveOpts",
             "-XX:ParallelGCThreads=$cores"
         )
     }

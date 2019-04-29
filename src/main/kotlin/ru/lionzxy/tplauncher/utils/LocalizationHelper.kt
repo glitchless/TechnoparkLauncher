@@ -3,7 +3,14 @@ package ru.lionzxy.tplauncher.utils
 import java.util.*
 
 object LocalizationHelper {
-    val rb = ResourceBundle.getBundle("strings", Locale.getDefault())
+    val rb by lazy {
+        try {
+            ResourceBundle.getBundle("strings", Locale.getDefault())
+        } catch (e: Exception) {
+            println(e)
+            ResourceBundle.getBundle("strings", Locale("en_US"))
+        }
+    }
 
     fun getString(key: String, default: String): String {
         return try {

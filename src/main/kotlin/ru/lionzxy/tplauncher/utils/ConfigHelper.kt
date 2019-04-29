@@ -19,7 +19,7 @@ object ConfigHelper {
     }
 
     init {
-        getTemporaryDirectory().deleteOnExit()
+        getTemporaryDirectory().deleteDirectoryRecursionJava6()
     }
 
     fun writeToConfig(op: (Config.() -> Unit)) {

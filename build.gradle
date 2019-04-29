@@ -20,6 +20,8 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation 'com.github.LionZXY:mclauncher-api:cf44fb59f4'
     implementation "no.tornado:tornadofx:1.7.17"
+    implementation 'com.github.LionZXY:oslib:master-SNAPSHOT'
+    implementation "org.rauschig:jarchivelib:1.0.0"
     runtimeOnly "org.openjfx:javafx-graphics:$javafx.version:win"
     runtimeOnly "org.openjfx:javafx-graphics:$javafx.version:linux"
     runtimeOnly "org.openjfx:javafx-graphics:$javafx.version:mac"

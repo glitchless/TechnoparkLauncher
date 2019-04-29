@@ -10,10 +10,10 @@ import java.io.File
 object MinecraftLauncher {
     private var cacheVersion: IVersion? = null
 
-    fun launch(minecraft: MinecraftInstance, session: ISession) {
+    fun launch(minecraft: MinecraftInstance, session: ISession, java: File? = null) {
         val version = getVersion(minecraft)
         val launchCommands =
-            version.launcher.getLaunchCommand(session, minecraft, null, version, DefaultLaunchSettings(), null)
+            version.launcher.getLaunchCommand(session, minecraft, null, version, DefaultLaunchSettings(java), null)
         launchCommands.forEach { println(it) }
 
         val pb = ProcessBuilder(launchCommands)

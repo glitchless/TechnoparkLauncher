@@ -38,4 +38,10 @@ object ConfigHelper {
         dir.mkdirs()
         return dir
     }
+
+    fun getJavaDirectory(): File {
+        val dir = File(getDefaultDirectory(), "jre")
+        dir.mkdirs()
+        return dir
+    }
 }

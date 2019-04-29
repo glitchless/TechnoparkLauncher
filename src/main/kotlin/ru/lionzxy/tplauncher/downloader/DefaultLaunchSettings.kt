@@ -1,16 +1,21 @@
 package ru.lionzxy.tplauncher.downloader
 
+import nu.redpois0n.oslib.Arch
+import nu.redpois0n.oslib.OperatingSystem
 import sk.tomsik68.mclauncher.api.common.ILaunchSettings
 import java.io.File
 import java.util.Arrays.asList
 
 
-class DefaultLaunchSettings : ILaunchSettings {
+class DefaultLaunchSettings(val jreFile: File? = null) : ILaunchSettings {
     override fun getInitHeap(): String {
         return "256M"
     }
 
     override fun getHeap(): String {
+        if (OperatingSystem.getOperatingSystem().arch == Arch.x86) {
+            return "1G"
+        }
         return "3G"
     }
 
@@ -32,7 +37,7 @@ class DefaultLaunchSettings : ILaunchSettings {
     }
 
     override fun getJavaLocation(): File? {
-        return null
+        return jreFile
     }
 
     override fun isModifyAppletOptions(): Boolean {

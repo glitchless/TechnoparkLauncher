@@ -51,7 +51,6 @@ class MainWindow : View(), IProgressMonitor {
             }
         }
         downloadButton = button(LocalizationHelper.getString("login_download_button", "Download or/and launch")) {
-            hide()
             action { controller.downloadAndLaunch() }
             alignment = Pos.CENTER
             vboxConstraints {
@@ -63,11 +62,9 @@ class MainWindow : View(), IProgressMonitor {
                 margin = Insets(0.0, 5.0, 0.0, 5.0)
             }
             useMaxWidth = true
-            hide()
         }
         status = label(LocalizationHelper.getString("login_status", "Waiting...")) {
             alignment = Pos.CENTER
-            hide()
         }
     }
 

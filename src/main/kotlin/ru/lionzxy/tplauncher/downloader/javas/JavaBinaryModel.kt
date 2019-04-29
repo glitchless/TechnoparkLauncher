@@ -10,5 +10,7 @@ class JavaBinaryModel(
     @SerializedName("downloadUrl")
     val downloadUrl: String,
     @SerializedName("javaRelativePath")
-    var javaRelativePath: String
+    var javaRelativePath: String,
+    @SerializedName("extension")
+    var extension: String
 )

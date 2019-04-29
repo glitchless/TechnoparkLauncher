@@ -35,13 +35,15 @@ class JavaDownloader {
         if (javaBinary == null) {
             return null
         }
-        val jreFile = File(ConfigHelper.getTemporaryDirectory(), "jre.tar.gz")
+        val jreFile = File(ConfigHelper.getTemporaryDirectory(), "jre.${javaBinary!!.extension}")
         monitor.setStatus(LocalizationHelper.getString("download_java", "Downloading jre..."))
         FileUtils.downloadFileWithProgress(javaBinary!!.downloadUrl, jreFile, monitor)
 
         monitor.setStatus(LocalizationHelper.getString("unzip_java", "Unzipping jre..."))
         monitor.setProgress(-1)
-        val archiver = ArchiverFactory.createArchiver(ArchiveFormat.TAR, CompressionType.GZIP);
+        val archiver = if (javaBinary!!.extension.equals("zip", true)) {
+            ArchiverFactory.createArchiver(ArchiveFormat.ZIP)
+        } else ArchiverFactory.createArchiver(ArchiveFormat.TAR, CompressionType.GZIP)
         archiver.extract(jreFile, ConfigHelper.getJavaDirectory())
         return File(ConfigHelper.getJavaDirectory(), javaBinary!!.javaRelativePath)
     }

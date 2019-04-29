@@ -1,11 +1,13 @@
-
 plugins {
     id "org.jetbrains.kotlin.jvm" version "1.3.31"
 }
 apply plugin: 'java'
+apply plugin: 'application'
 group 'glicthless'
 version '1.0-SNAPSHOT'
 
+
+mainClassName = "io.ktor.server.netty.DevelopmentEngine"
 sourceCompatibility = 1.8
 
 repositories {
@@ -22,6 +24,20 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'rpi-sense-hat-lib',
+                'Implementation-Version': version,
+                'Main-Class': 'ru.lionzxy.tplauncher.MainKt'
+    }
+    baseName = project.name
+    from {
+        configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    with jar
+}
 compileKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }

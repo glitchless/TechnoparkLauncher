@@ -2,29 +2,22 @@
   {
     "type": "Linux",
     "arch": "x86_64",
-    "extension": "tar.gz",
-    "downloadUrl": "https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u212-b03/OpenJDK8U-jre_x64_linux_hotspot_8u212b03.tar.gz",
-    "javaRelativePath": "jdk8u212-b03-jre/bin/java"
-  },
-  {
-    "type": "Windows",
-    "arch": "x86",
     "extension": "zip",
-    "downloadUrl": "https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u212-b03/OpenJDK8U-jre_x86-32_windows_hotspot_8u212b03.zip",
-    "javaRelativePath": "jdk8u212-b03-jre/bin/java.exe"
+    "downloadUrl": "http://download.glitchless.ru/jres/jre_1.8_linux_x64.zip",
+    "javaRelativePath": "jre_1.8_linux_x64/bin/java"
   },
   {
     "type": "Windows",
     "arch": "x86_64",
     "extension": "zip",
-    "downloadUrl": "https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u212-b03/OpenJDK8U-jre_x64_windows_hotspot_8u212b03.zip",
-    "javaRelativePath": "jdk8u212-b03-jre/bin/java.exe"
+    "downloadUrl": "http://download.glitchless.ru/jres/jre_1.8_windows_x64.zip",
+    "javaRelativePath": "jre_1.8_windows_x64/bin/java.exe"
   },
   {
     "type": "macOS",
     "arch": "x86_64",
-    "extension": "tar.gz",
-    "downloadUrl": "https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u212-b03/OpenJDK8U-jre_x64_mac_hotspot_8u212b03.tar.gz",
-    "javaRelativePath": "jdk8u212-b03-jre/Contents/Home/bin/java"
+    "extension": "zip",
+    "downloadUrl": "http://download.glitchless.ru/jres/jre_1.8_mac_x64.zip",
+    "javaRelativePath": "jre_1.8_mac_x64.zip/bin/java"
   }
 ]

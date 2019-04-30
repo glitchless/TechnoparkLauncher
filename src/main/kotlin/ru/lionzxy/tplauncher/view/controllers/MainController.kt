@@ -3,7 +3,6 @@ package ru.lionzxy.tplauncher.view.controllers
 import net.lingala.zip4j.core.ZipFile
 import ru.lionzxy.tplauncher.config.Profile
 import ru.lionzxy.tplauncher.downloader.OfflineSession
-import ru.lionzxy.tplauncher.downloader.javas.JavaDownloader
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.LocalizationHelper
 import ru.lionzxy.tplauncher.utils.MinecraftLauncher
@@ -50,10 +49,8 @@ class MainController(val mainWindow: MainWindow) {
             mainWindow.showDownloadAndPlayButton(false)
             startDownloadZip()
             startDownloadMinecraft()
-            jrePathLocal = startDownloadJre()?.absolutePath
             ConfigHelper.writeToConfig {
                 lastUpdate = System.currentTimeMillis()
-                jrePath = jrePathLocal
             }
             mainWindow.showProgress(false)
         }
@@ -61,16 +58,10 @@ class MainController(val mainWindow: MainWindow) {
             mainWindow.close()
         }
         if (jrePathLocal != null) {
-            MinecraftLauncher.launch(minecraftInstance, session!!, File(jrePathLocal))
+            MinecraftLauncher.launch(minecraftInstance, session!!, File(ConfigHelper.getJREPathFile().readText()))
         } else {
             MinecraftLauncher.launch(minecraftInstance, session!!)
         }
-    }
-
-    private fun startDownloadJre(): File? {
-        val jreDownloader = JavaDownloader()
-        jreDownloader.initDownloader()
-        return jreDownloader.downloadJava(mainWindow)
     }
 
     private fun startDownloadZip() {

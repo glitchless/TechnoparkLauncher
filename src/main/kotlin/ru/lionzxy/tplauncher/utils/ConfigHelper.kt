@@ -28,7 +28,7 @@ object ConfigHelper {
     }
 
     fun getDefaultDirectory(): File {
-        val dir = File(Platform.getCurrentPlatform().workingDirectory, "technomain")
+        val dir = File(Platform.getCurrentPlatform().workingDirectory, "technomine")
         dir.mkdirs()
         return dir
     }
@@ -43,5 +43,14 @@ object ConfigHelper {
         val dir = File(getDefaultDirectory(), "jre")
         dir.mkdirs()
         return dir
+    }
+
+    fun getJREPathFile(): File {
+        return File(getDefaultDirectory(), "jrepath.txt")
+    }
+
+    fun writeJREConfig(path: String) {
+        val jreFile = File(getDefaultDirectory(), "jrepath.txt")
+        jreFile.createWithMkDirs(path)
     }
 }

@@ -3,6 +3,7 @@ package ru.lionzxy.tplauncher.view.controllers
 import net.lingala.zip4j.core.ZipFile
 import ru.lionzxy.tplauncher.config.Profile
 import ru.lionzxy.tplauncher.downloader.OfflineSession
+import ru.lionzxy.tplauncher.downloader.Updater
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.LocalizationHelper
 import ru.lionzxy.tplauncher.utils.MinecraftLauncher
@@ -43,7 +44,6 @@ class MainController(val mainWindow: MainWindow) {
     }
 
     fun downloadAndLaunch() = runAsync {
-        var jrePathLocal = ConfigHelper.config.jrePath
         if (ConfigHelper.config.lastUpdate == null) {
             mainWindow.showProgress(true)
             mainWindow.showDownloadAndPlayButton(false)
@@ -54,20 +54,29 @@ class MainController(val mainWindow: MainWindow) {
             }
             mainWindow.showProgress(false)
         }
+
+        checkAndDownloadUpdate()
+
         runOnUi {
             mainWindow.close()
         }
-        if (jrePathLocal != null) {
+        if (ConfigHelper.getJREPathFile().exists()) {
             MinecraftLauncher.launch(minecraftInstance, session!!, File(ConfigHelper.getJREPathFile().readText()))
         } else {
             MinecraftLauncher.launch(minecraftInstance, session!!)
         }
     }
 
+    private fun checkAndDownloadUpdate() {
+        val updater = Updater()
+        updater.initUpdater()
+        updater.update(mainWindow)
+    }
+
     private fun startDownloadZip() {
         val dist = File(ConfigHelper.getTemporaryDirectory(), "minecraft.zip")
         mainWindow.setStatus(LocalizationHelper.getString("download_mods"))
-        FileUtils.downloadFileWithProgress("http://download.glitchless.ru/0.0.1_minecraft.zip", dist, mainWindow)
+        FileUtils.downloadFileWithProgress("http://download.glitchless.ru/0.0.3_minecraft.zip", dist, mainWindow)
         val zipFile = ZipFile(dist)
         mainWindow.setStatus(LocalizationHelper.getString("unzip_mods"))
         mainWindow.setProgress(-1)

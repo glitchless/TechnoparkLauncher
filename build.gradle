@@ -40,6 +40,8 @@ task fatJar(type: Jar) {
     with jar
 }
 
+mainClassName = "ru.lionzxy.tplauncher.MainKt"
+
 compileKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }

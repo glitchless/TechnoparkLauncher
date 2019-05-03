@@ -90,9 +90,13 @@ class MainWindow : View(), IProgressMonitor {
         }
     }
 
-    fun hideLoginPassword() {
+    fun showLoginPassword(visible: Boolean) {
         runOnUi {
-            loginPasswordBox.hide()
+            if (visible) {
+                loginPasswordBox.show()
+            } else {
+                loginPasswordBox.hide()
+            }
         }
     }
 
@@ -113,6 +117,7 @@ class MainWindow : View(), IProgressMonitor {
 
     override fun setStatus(status: String?) {
         runOnUi {
+            this.status.show()
             this.status.text = status
         }
     }

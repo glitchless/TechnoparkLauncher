@@ -2,7 +2,6 @@ package ru.lionzxy.tplauncher.view.controllers
 
 import net.lingala.zip4j.core.ZipFile
 import ru.lionzxy.tplauncher.config.Profile
-import ru.lionzxy.tplauncher.downloader.OfflineSession
 import ru.lionzxy.tplauncher.downloader.Updater
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.LocalizationHelper
@@ -11,6 +10,9 @@ import ru.lionzxy.tplauncher.utils.runOnUi
 import ru.lionzxy.tplauncher.view.MainWindow
 import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
 import sk.tomsik68.mclauncher.api.login.ISession
+import sk.tomsik68.mclauncher.impl.login.legacy.LegacyProfile
+import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDLoginService
+import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
 import sk.tomsik68.mclauncher.util.FileUtils
 import tornadofx.runAsync
 import java.io.File
@@ -23,23 +25,34 @@ class MainController(val mainWindow: MainWindow) {
         mainWindow.showProgress(false)
         mainWindow.showDownloadAndPlayButton(false)
         if (ConfigHelper.config.profile != null) {
-            mainWindow.hideLoginPassword()
+            mainWindow.showLoginPassword(false)
             mainWindow.showDownloadAndPlayButton(true)
-            session = OfflineSession(ConfigHelper.config.profile!!.login)
+            session = ConfigHelper.config.profile
         }
     }
 
-    fun onLogin(login: String, password: String) {
+    fun onLogin(login: String, password: String) = runAsync {
+        mainWindow.showProgress(true)
+        mainWindow.setProgress(-1)
+        mainWindow.showLoginPassword(false)
         if (login.isEmpty()) {
             mainWindow.setStatus(LocalizationHelper.getString("login_error_loginempty", "Login can't be empty!"))
-            return
+            return@runAsync
         }
 
-        ConfigHelper.writeToConfig {
-            profile = Profile(login, "Now empty")
+        try {
+            session = YDLoginService().login(LegacyProfile(login, password))
+        } catch (ex: YDServiceAuthenticationException) {
+            ex.printStackTrace()
+            mainWindow.showLoginPassword(true)
+            mainWindow.showProgress(false)
+            mainWindow.setStatus(LocalizationHelper.getString("login_invalid", "Login or password invalid"))
+            return@runAsync
         }
-        session = OfflineSession(login)
-        mainWindow.hideLoginPassword()
+        ConfigHelper.writeToConfig {
+            profile = Profile(session!!.username, session!!.sessionID, session!!.uuid)
+        }
+
         downloadAndLaunch()
     }
 
@@ -76,7 +89,11 @@ class MainController(val mainWindow: MainWindow) {
     private fun startDownloadZip() {
         val dist = File(ConfigHelper.getTemporaryDirectory(), "minecraft.zip")
         mainWindow.setStatus(LocalizationHelper.getString("download_mods"))
-        FileUtils.downloadFileWithProgress("http://download.glitchless.ru/0.0.3_minecraft.zip", dist, mainWindow)
+        FileUtils.downloadFileWithProgress(
+            "https://minecraft.glitchless.ru/minecraft_dist/first_server/initial.zip",
+            dist,
+            mainWindow
+        )
         val zipFile = ZipFile(dist)
         mainWindow.setStatus(LocalizationHelper.getString("unzip_mods"))
         mainWindow.setProgress(-1)

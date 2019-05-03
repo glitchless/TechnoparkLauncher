@@ -17,7 +17,7 @@ object MinecraftLauncher {
             version.launcher.getLaunchCommand(
                 session,
                 minecraft,
-                ServerInfo("glitchless.ru", "Glitchless Server", null, 25565),
+                ServerInfo("minecraft.glitchless.ru", "Glitchless Server", null, 25565),
                 version,
                 DefaultLaunchSettings(java),
                 null
@@ -29,11 +29,11 @@ object MinecraftLauncher {
         pb.redirectOutput(File("mcout.log"))
         pb.directory(minecraft.location)
         val proc = pb.start()
-        proc.inputStream.bufferedReader().use { br ->
+        /*proc.inputStream.bufferedReader().use { br ->
             while (proc.isAlive) {
                 br.readLine()?.let { println(it) }
             }
-        }
+        }*/
     }
 
     fun getVersion(minecraftInstance: MinecraftInstance): IVersion {

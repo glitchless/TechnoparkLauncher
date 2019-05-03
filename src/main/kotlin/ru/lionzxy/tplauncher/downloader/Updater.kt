@@ -9,8 +9,8 @@ import sk.tomsik68.mclauncher.util.FileUtils
 import sk.tomsik68.mclauncher.util.HttpUtils
 import java.io.File
 
-const val UPDATER_JSON_URL = "http://download.glitchless.ru/minecraft_dist/first_server/changelog.json"
-const val HOST_URL = "http://download.glitchless.ru/minecraft_dist/first_server/"
+const val UPDATER_JSON_URL = "https://minecraft.glitchless.ru/minecraft_dist/first_server/changelog.json"
+const val HOST_URL = "https://minecraft.glitchless.ru/minecraft_dist/first_server/"
 
 class Updater {
     val changes = HashMap<String, Action>()

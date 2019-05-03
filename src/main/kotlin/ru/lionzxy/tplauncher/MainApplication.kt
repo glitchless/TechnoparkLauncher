@@ -5,8 +5,4 @@ import tornadofx.App
 
 class MainApplication : App() {
     override val primaryView = MainWindow::class
-
-    fun launchApp() {
-        launch()
-    }
 }

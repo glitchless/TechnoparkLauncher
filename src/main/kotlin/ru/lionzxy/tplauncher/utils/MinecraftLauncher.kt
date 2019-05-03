@@ -1,5 +1,6 @@
 package ru.lionzxy.tplauncher.utils
 
+import nu.redpois0n.oslib.OperatingSystem
 import ru.lionzxy.tplauncher.downloader.DefaultLaunchSettings
 import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
 import sk.tomsik68.mclauncher.api.login.ISession
@@ -11,8 +12,12 @@ import java.io.File
 object MinecraftLauncher {
     private var cacheVersion: IVersion? = null
 
-    fun launch(minecraft: MinecraftInstance, session: ISession, java: File? = null) {
+    /**
+     * @return runDetached if true run process on system support detach process
+     */
+    fun launch(minecraft: MinecraftInstance, session: ISession, java: File? = null): Boolean {
         val version = getVersion(minecraft)
+        var runDetached = false
         val launchCommands =
             version.launcher.getLaunchCommand(
                 session,
@@ -22,6 +27,15 @@ object MinecraftLauncher {
                 DefaultLaunchSettings(java),
                 null
             )
+
+        val os = OperatingSystem.getOperatingSystem()
+        if (os.isUnix) {
+            runDetached = true
+            launchCommands.add(0, "nohup")
+        } else if (os.type == OperatingSystem.WINDOWS) {
+            runDetached = true
+            launchCommands.add(0, "start")
+        }
         launchCommands.forEach { println(it) }
 
         val pb = ProcessBuilder(launchCommands)
@@ -29,11 +43,8 @@ object MinecraftLauncher {
         pb.redirectOutput(File("mcout.log"))
         pb.directory(minecraft.location)
         val proc = pb.start()
-        /*proc.inputStream.bufferedReader().use { br ->
-            while (proc.isAlive) {
-                br.readLine()?.let { println(it) }
-            }
-        }*/
+        //println("ProcId: ${proc.pid()}")
+        return runDetached
     }
 
     fun getVersion(minecraftInstance: MinecraftInstance): IVersion {

@@ -30,6 +30,9 @@ class Updater {
 
     fun update(monitor: IProgressMonitor) {
         val base = ConfigHelper.getDefaultDirectory()
+        if (changes.isEmpty()) {
+            return
+        }
         changes.forEach {
             val file = File(base, it.key)
             if (it.value == Action.REMOVE) {
@@ -39,6 +42,9 @@ class Updater {
                 monitor.setStatus("Downloading ${it.key}")
                 FileUtils.downloadFileWithProgress(HOST_URL + it.key, file, monitor)
             }
+        }
+        if (lastChangeTimestamp <= 0) {
+            return
         }
         ConfigHelper.writeToConfig {
             lastUpdateFromChangeLog = lastChangeTimestamp

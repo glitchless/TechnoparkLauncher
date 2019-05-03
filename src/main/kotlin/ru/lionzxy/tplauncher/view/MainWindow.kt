@@ -1,5 +1,6 @@
 package ru.lionzxy.tplauncher.view
 
+import javafx.application.Platform
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.control.Button
@@ -65,6 +66,12 @@ class MainWindow : View(), IProgressMonitor {
         }
         status = label(LocalizationHelper.getString("login_status", "Waiting...")) {
             alignment = Pos.CENTER
+        }
+    }
+
+    fun closeApplication() {
+        runOnUi {
+            Platform.exit()
         }
     }
 

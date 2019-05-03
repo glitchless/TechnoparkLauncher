@@ -73,11 +73,16 @@ class MainController(val mainWindow: MainWindow) {
         runOnUi {
             mainWindow.close()
         }
+        launch()
+    }
+
+    private fun launch() {
         if (ConfigHelper.getJREPathFile().exists()) {
             MinecraftLauncher.launch(minecraftInstance, session!!, File(ConfigHelper.getJREPathFile().readText()))
         } else {
             MinecraftLauncher.launch(minecraftInstance, session!!)
         }
+        mainWindow.closeApplication()
     }
 
     private fun checkAndDownloadUpdate() {

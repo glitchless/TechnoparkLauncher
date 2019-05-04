@@ -39,6 +39,9 @@ class Updater {
                 file.delete()
             } else if (it.value == Action.ADD) {
                 file.delete()
+                if (file.parentFile.exists()) {
+                    file.parentFile.mkdirs()
+                }
                 monitor.setStatus("Downloading ${it.key}")
                 FileUtils.downloadFileWithProgress(HOST_URL + it.key, file, monitor)
             }

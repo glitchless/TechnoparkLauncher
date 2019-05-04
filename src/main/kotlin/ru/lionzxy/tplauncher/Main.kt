@@ -1,7 +1,8 @@
 package ru.lionzxy.tplauncher
 
-import javafx.application.Application
+import java.io.File
 
 fun main(vararg args: String) {
-    Application.launch(MainApplication::class.java, *args)
+    println(File("").path)
+    //Application.launch(MainApplication::class.java, *args)
 }

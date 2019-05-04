@@ -1,7 +1,7 @@
-package ru.lionzxy.tplauncher.utils
+package ru.lionzxy.tplauncher.minecraft
 
 import nu.redpois0n.oslib.OperatingSystem
-import ru.lionzxy.tplauncher.downloader.DefaultLaunchSettings
+import ru.lionzxy.tplauncher.utils.ConfigHelper
 import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
 import sk.tomsik68.mclauncher.api.login.ISession
 import sk.tomsik68.mclauncher.api.servers.ServerInfo
@@ -15,36 +15,46 @@ object MinecraftLauncher {
     /**
      * @return runDetached if true run process on system support detach process
      */
-    fun launch(minecraft: MinecraftInstance, session: ISession, java: File? = null): Boolean {
+    fun launch(minecraft: MinecraftInstance, session: ISession, java: File? = null) {
         val version = getVersion(minecraft)
-        var runDetached = false
+        val currentPath = File("").absolutePath
+        println("Minecraft Location: ${minecraft.location}")
         val launchCommands =
             version.launcher.getLaunchCommand(
                 session,
                 minecraft,
                 ServerInfo("minecraft.glitchless.ru", "Glitchless Server", null, 25565),
                 version,
-                DefaultLaunchSettings(java),
+                LauncherSettings(ConfigHelper.config.settings),
                 null
-            )
+            ).map {
+                replaceAbsolutePathInString(it)
+            }
 
-        val os = OperatingSystem.getOperatingSystem()
-        if (os.isUnix) {
-            runDetached = true
-            launchCommands.add(0, "nohup")
-        } else if (os.type == OperatingSystem.WINDOWS) {
-            runDetached = true
-            launchCommands.add(0, "start")
-        }
-        launchCommands.forEach { println(it) }
+        launchCommands.forEach { print("$it ") }
 
         val pb = ProcessBuilder(launchCommands)
         pb.redirectError(File("mcerr.log"))
         pb.redirectOutput(File("mcout.log"))
         pb.directory(minecraft.location)
-        val proc = pb.start()
-        //println("ProcId: ${proc.pid()}")
-        return runDetached
+        pb.start()
+    }
+
+    private val currentPathRelative =
+        if (OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS) ".\\" else "./"
+    private val currentPathAbsolute = File("").absolutePath
+
+    private fun replaceAbsolutePathInString(input: String): String {
+        val postFix = if (OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS) {
+            '\\'
+        } else {
+            '/'
+        }
+        var pathForReplace = currentPathAbsolute
+        if (pathForReplace.last() != postFix) {
+            pathForReplace += postFix
+        }
+        return input.replace(pathForReplace, currentPathRelative)
     }
 
     fun getVersion(minecraftInstance: MinecraftInstance): IVersion {

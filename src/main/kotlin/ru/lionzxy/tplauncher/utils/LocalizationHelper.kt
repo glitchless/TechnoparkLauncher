@@ -3,28 +3,20 @@ package ru.lionzxy.tplauncher.utils
 import java.util.*
 
 object LocalizationHelper {
+    val supportedLocales = setOf(Locale("en", "US"))
     val rb by lazy {
-        try {
-            ResourceBundle.getBundle("strings", Locale.getDefault())
-        } catch (e: Exception) {
-            println(e)
-            ResourceBundle.getBundle("strings", Locale("en_US"))
+        setDefaultLocale()
+        ResourceBundle.getBundle("strings", Locale.getDefault())
+    }
+
+    fun getString(key: String, vararg args: Any): String {
+        return rb.getString(key).format(*args)
+    }
+
+    private fun setDefaultLocale() {
+        if (!supportedLocales.contains(Locale.getDefault())) {
+            Locale.setDefault(supportedLocales.first())
         }
     }
 
-    fun getString(key: String, default: String): String {
-        return try {
-            rb.getString(key)
-        } catch (e: Exception) {
-            default
-        }
-    }
-
-    fun getString(key: String): String? {
-        return try {
-            rb.getString(key)
-        } catch (e: Exception) {
-            null
-        }
-    }
 }

@@ -40,18 +40,18 @@ class MainWindow : View(), IProgressMonitor {
                 margin = Insets(0.0, 5.0, 0.0, 5.0)
             }
             val login = textfield {
-                promptText = LocalizationHelper.getString("login_enter_login", "Enter login")
+                promptText = LocalizationHelper.getString("login_enter_login")
             }
             val password = textfield {
-                promptText = LocalizationHelper.getString("login_enter_password", "Enter password")
+                promptText = LocalizationHelper.getString("login_enter_password")
             }
-            button(LocalizationHelper.getString("login_btn", "Login")) {
+            button(LocalizationHelper.getString("login_btn")) {
                 action {
                     controller.onLogin(login.text, password.text)
                 }
             }
         }
-        downloadButton = button(LocalizationHelper.getString("login_download_button", "Download or/and launch")) {
+        downloadButton = button(LocalizationHelper.getString("login_download_button")) {
             action { controller.downloadAndLaunch() }
             alignment = Pos.CENTER
             vboxConstraints {
@@ -64,7 +64,7 @@ class MainWindow : View(), IProgressMonitor {
             }
             useMaxWidth = true
         }
-        status = label(LocalizationHelper.getString("login_status", "Waiting...")) {
+        status = label(LocalizationHelper.getString("login_status")) {
             alignment = Pos.CENTER
         }
     }

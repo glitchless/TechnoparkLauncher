@@ -3,10 +3,8 @@ package ru.lionzxy.tplauncher.view.controllers
 import net.lingala.zip4j.core.ZipFile
 import ru.lionzxy.tplauncher.config.Profile
 import ru.lionzxy.tplauncher.downloader.Updater
-import ru.lionzxy.tplauncher.utils.ConfigHelper
-import ru.lionzxy.tplauncher.utils.LocalizationHelper
-import ru.lionzxy.tplauncher.utils.MinecraftLauncher
-import ru.lionzxy.tplauncher.utils.runOnUi
+import ru.lionzxy.tplauncher.minecraft.MinecraftLauncher
+import ru.lionzxy.tplauncher.utils.*
 import ru.lionzxy.tplauncher.view.MainWindow
 import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
 import sk.tomsik68.mclauncher.api.login.ISession
@@ -14,7 +12,6 @@ import sk.tomsik68.mclauncher.impl.login.legacy.LegacyProfile
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDLoginService
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
 import sk.tomsik68.mclauncher.util.FileUtils
-import tornadofx.runAsync
 import java.io.File
 
 class MainController(val mainWindow: MainWindow) {
@@ -36,7 +33,7 @@ class MainController(val mainWindow: MainWindow) {
         mainWindow.setProgress(-1)
         mainWindow.showLoginPassword(false)
         if (login.isEmpty()) {
-            mainWindow.setStatus(LocalizationHelper.getString("login_error_loginempty", "Login can't be empty!"))
+            mainWindow.setStatus(LocalizationHelper.getString("login_error_loginempty"))
             return@runAsync
         }
 
@@ -46,7 +43,7 @@ class MainController(val mainWindow: MainWindow) {
             ex.printStackTrace()
             mainWindow.showLoginPassword(true)
             mainWindow.showProgress(false)
-            mainWindow.setStatus(LocalizationHelper.getString("login_invalid", "Login or password invalid"))
+            mainWindow.setStatus(LocalizationHelper.getString("login_invalid"))
             return@runAsync
         }
         ConfigHelper.writeToConfig {
@@ -73,15 +70,16 @@ class MainController(val mainWindow: MainWindow) {
         runOnUi {
             mainWindow.close()
         }
-        launch()
+        try {
+            launch()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun launch() {
-        if (ConfigHelper.getJREPathFile().exists()) {
-            MinecraftLauncher.launch(minecraftInstance, session!!, File(ConfigHelper.getJREPathFile().readText()))
-        } else {
-            MinecraftLauncher.launch(minecraftInstance, session!!)
-        }
+        ConfigHelper.getDefaultDirectory().setWritableToFolder()
+        MinecraftLauncher.launch(minecraftInstance, session!!)
         mainWindow.closeApplication()
     }
 

@@ -17,7 +17,6 @@ object MinecraftLauncher {
      */
     fun launch(minecraft: MinecraftInstance, session: ISession, java: File? = null) {
         val version = getVersion(minecraft)
-        val currentPath = File("").absolutePath
         println("Minecraft Location: ${minecraft.location}")
         val launchCommands =
             version.launcher.getLaunchCommand(
@@ -32,6 +31,9 @@ object MinecraftLauncher {
             }
 
         launchCommands.forEach { print("$it ") }
+        if (OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS && ConfigHelper.config.settings.isDebug) {
+            launchCommands.plus("&").plus("PAUSE")
+        }
 
         val pb = ProcessBuilder(launchCommands)
         pb.redirectError(File("mcerr.log"))

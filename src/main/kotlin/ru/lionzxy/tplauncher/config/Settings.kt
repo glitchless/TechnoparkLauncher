@@ -16,6 +16,7 @@ class Settings() {
     var customJavaParameter = getDefaultJavaArguments()
     var commandPrefix = getDefaultCommandPrefix()
     var javaLocation = getDefaultJavaLocation()
+    var isDebug = false
 
     private fun getDefaultJavaArguments(): String {
         val cores = Runtime.getRuntime().availableProcessors()

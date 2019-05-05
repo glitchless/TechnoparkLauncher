@@ -35,21 +35,24 @@ class MainWindow : View(), IProgressMonitor {
             }
             alignment = Pos.CENTER
         }
-        loginPasswordBox = hbox {
-            vboxConstraints {
-                margin = Insets(0.0, 5.0, 0.0, 5.0)
-            }
-            val login = textfield {
-                promptText = LocalizationHelper.getString("login_enter_login")
-            }
-            val password = textfield {
-                promptText = LocalizationHelper.getString("login_enter_password")
-            }
-            button(LocalizationHelper.getString("login_btn")) {
-                action {
-                    controller.onLogin(login.text, password.text)
+        hbox {
+            loginPasswordBox = hbox {
+                vboxConstraints {
+                    margin = Insets(0.0, 5.0, 0.0, 5.0)
+                }
+                val login = textfield {
+                    promptText = LocalizationHelper.getString("login_enter_login")
+                }
+                val password = passwordfield {
+                    promptText = LocalizationHelper.getString("login_enter_password")
+                }
+                button(LocalizationHelper.getString("login_btn")) {
+                    action {
+                        controller.onLogin(login.text, password.text)
+                    }
                 }
             }
+            imageview(Image(ResourceHelper.getResource("settings.png").toExternalForm()))
         }
         downloadButton = button(LocalizationHelper.getString("login_download_button")) {
             action { controller.downloadAndLaunch() }

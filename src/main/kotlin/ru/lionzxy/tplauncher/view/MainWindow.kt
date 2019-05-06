@@ -52,7 +52,7 @@ class MainWindow : View(), IProgressMonitor {
                     }
                 }
             }
-            imageview(Image(ResourceHelper.getResource("settings.png").toExternalForm()))
+            //imageview(Image(ResourceHelper.getResource("settings.png").toExternalForm()))
         }
         downloadButton = button(LocalizationHelper.getString("login_download_button")) {
             action { controller.downloadAndLaunch() }

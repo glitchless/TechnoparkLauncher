@@ -54,18 +54,18 @@ class MainController(val mainWindow: MainWindow) {
     }
 
     fun downloadAndLaunch() = runAsync {
+        mainWindow.showProgress(true)
         if (ConfigHelper.config.lastUpdate == null) {
-            mainWindow.showProgress(true)
             mainWindow.showDownloadAndPlayButton(false)
             startDownloadZip()
-            startDownloadMinecraft()
             ConfigHelper.writeToConfig {
                 lastUpdate = System.currentTimeMillis()
             }
-            mainWindow.showProgress(false)
         }
 
         checkAndDownloadUpdate()
+        startDownloadMinecraft()
+        mainWindow.showProgress(false)
 
         runOnUi {
             mainWindow.close()

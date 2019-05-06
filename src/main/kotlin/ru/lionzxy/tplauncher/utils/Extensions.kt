@@ -1,7 +1,13 @@
 package ru.lionzxy.tplauncher.utils
 
 import javafx.application.Platform
+import javafx.event.EventTarget
+import javafx.scene.image.Image
+import javafx.scene.image.ImageView
+import tornadofx.imageview
+import java.awt.Desktop
 import java.io.File
+import java.net.URI
 
 inline fun runOnUi(crossinline invoke: () -> Unit) {
     Platform.runLater { invoke.invoke() }
@@ -53,4 +59,15 @@ fun File.deleteDirectoryRecursionJava6() {
         }
     }
     delete()
+}
+
+fun String.openInBrowser() {
+    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+        Desktop.getDesktop().browse(URI(this))
+    }
+}
+
+
+fun EventTarget.svgview(path: String, op: ImageView.() -> Unit = {}): ImageView {
+    return imageview(Image(ResourceHelper.getResource("icon/$path.svg").openStream()), op)
 }

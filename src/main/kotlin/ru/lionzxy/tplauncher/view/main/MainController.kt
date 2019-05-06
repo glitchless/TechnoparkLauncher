@@ -1,11 +1,10 @@
-package ru.lionzxy.tplauncher.view.controllers
+package ru.lionzxy.tplauncher.view.main
 
 import net.lingala.zip4j.core.ZipFile
 import ru.lionzxy.tplauncher.config.Profile
 import ru.lionzxy.tplauncher.downloader.Updater
 import ru.lionzxy.tplauncher.minecraft.MinecraftLauncher
 import ru.lionzxy.tplauncher.utils.*
-import ru.lionzxy.tplauncher.view.MainWindow
 import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
 import sk.tomsik68.mclauncher.api.login.ISession
 import sk.tomsik68.mclauncher.impl.login.legacy.LegacyProfile

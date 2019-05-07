@@ -4,26 +4,28 @@ import javafx.application.Platform
 import javafx.collections.FXCollections
 import javafx.geometry.Insets
 import javafx.geometry.Pos
+import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import ru.lionzxy.tplauncher.utils.*
 import ru.lionzxy.tplauncher.utils.Constants.DEFAULT_MARGIN
+import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.activated
+import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.progressbox
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 import tornadofx.*
+import tornadofx.Stylesheet.Companion.disabled
 
 class MainWindow : View(), IProgressMonitor {
-    //private lateinit var status: Label
-    //private lateinit var progressBar: ProgressBar
-    //private lateinit var loginPasswordBox: HBox
-    //private lateinit var downloadButton: Button
+    private var loginCompleteArea: HBox by singleAssign()
+    private var loginField: Field by singleAssign()
+    private var passwordField: Field by singleAssign()
     private var maxProgressBar = 1
     private var currentProgress = 1
     private val controller = MainController(this)
 
     override val root = vbox {
-        padding = Insets(0.0, DEFAULT_MARGIN, 0.0, DEFAULT_MARGIN)
         label("games.glitchless.ru") {
             onMouseClicked = OpenSiteListener("https://games.glitchless.ru")
-            padding = Insets(11.5, -DEFAULT_MARGIN, 0.0, 23.0 - DEFAULT_MARGIN)
+            padding = Insets(11.5, 0.0, 0.0, 23.0)
             style {
                 font = ResourceHelper.getFont("Gugi-Regular.ttf", 30.0)
                 textFill = Constants.accentColor
@@ -31,11 +33,21 @@ class MainWindow : View(), IProgressMonitor {
         }
 
         form {
+            padding = Insets(DEFAULT_MARGIN, DEFAULT_MARGIN, 0.0, 23.0)
             fieldset() {
                 alignment = Pos.CENTER
                 gridpane {
+                    loginCompleteArea = hbox {
+                        hide()
+                        minWidth = 302.0
+                        gridpaneConstraints {
+                            rowSpan = 2
+                        }
+                    }
                     row {
-                        field("Логин") { textfield() }
+                        loginField = field("Логин") {
+                            textfield()
+                        }
                         field("Сервер") {
                             gridpaneConstraints {
                                 marginLeft = DEFAULT_MARGIN * 2
@@ -47,11 +59,13 @@ class MainWindow : View(), IProgressMonitor {
                                 selectionModel.select(0)
                                 isDisable = true
                             }
-                            recursiveApplyToChild { addPseudoClass("disabled") }
+                            recursiveApplyToChild { addClass(disabled) }
                         }
                     }
                     row {
-                        field("Пароль") { passwordfield() }
+                        passwordField = field("Пароль") {
+                            passwordfield()
+                        }
 
                         hbox {
                             gridpaneConstraints {
@@ -64,7 +78,6 @@ class MainWindow : View(), IProgressMonitor {
                             }
                             label("Настройки запуска") {
                                 padding = Insets(0.0, 0.0, 0.0, DEFAULT_MARGIN)
-
                             }
                         }
                     }
@@ -73,16 +86,38 @@ class MainWindow : View(), IProgressMonitor {
         }
         label("Регистрация на сайте") {
             onMouseClicked = OpenSiteListener("https://games.glitchless.ru/register/")
-            padding = Insets(-DEFAULT_MARGIN, 0.0, DEFAULT_MARGIN, 23.0 - DEFAULT_MARGIN)
-            addPseudoClass("activated")
+            padding = Insets(0.0, DEFAULT_MARGIN, DEFAULT_MARGIN, 23.0)
+            addClass(activated)
         }
+
         button("Войти в игру") {
             useMaxWidth = true
             minHeight = 36.0
+            vboxConstraints {
+                marginLeft = DEFAULT_MARGIN
+                marginBottom = DEFAULT_MARGIN
+                marginRight = DEFAULT_MARGIN
+            }
+            action {
+                loginField.hide()
+                passwordField.hide()
+                loginCompleteArea.show()
+            }
         }
 
-        hbox {
-            padding = Insets(DEFAULT_MARGIN, 0.0, 0.0, 0.0)
+        vbox(DEFAULT_MARGIN) {
+            padding = Insets(DEFAULT_MARGIN)
+            alignment = Pos.CENTER
+            addClass(progressbox)
+            label("Введите почту и пароль")
+            progressbar {
+                progress = 0.0
+                useMaxWidth = true
+                style {
+                    accentColor = Constants.accentColor
+                }
+            }
+            recursiveApplyToChild { addClass(disabled) }
         }
     }
 

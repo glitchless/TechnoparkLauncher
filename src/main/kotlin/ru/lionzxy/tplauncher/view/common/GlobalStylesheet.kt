@@ -2,15 +2,13 @@ package ru.lionzxy.tplauncher.view.common
 
 import ru.lionzxy.tplauncher.utils.Constants
 import ru.lionzxy.tplauncher.utils.ResourceHelper
-import tornadofx.Stylesheet
-import tornadofx.csspseudoclass
-import tornadofx.multi
-import tornadofx.px
+import tornadofx.*
 
 class GlobalStylesheet : Stylesheet() {
     companion object {
         val textFont = ResourceHelper.getFont("Roboto-Regular.ttf", 14.0)
         val activated by csspseudoclass()
+        val progressbox by cssclass()
     }
 
     init {
@@ -62,6 +60,29 @@ class GlobalStylesheet : Stylesheet() {
             font = textFont
             fontSize = 16.px
             textFill = Constants.textColor
+        }
+        progressbox {
+            backgroundColor = multi(Constants.backgroundDarkColor)
+            label {
+                textFill = Constants.backgroundProgressBarColor
+            }
+            and(disabled) {
+                label {
+                    textFill = Constants.disableProgressBarColor
+                }
+            }
+        }
+        progressBar {
+            backgroundRadius = multi(box(5.px))
+            track {
+                backgroundColor = multi(Constants.backgroundProgressBarColor)
+            }
+            and(disabled) {
+                track {
+                    backgroundColor = multi(Constants.disableProgressBarColor)
+                }
+            }
+            accentColor = Constants.accentColor
         }
     }
 }

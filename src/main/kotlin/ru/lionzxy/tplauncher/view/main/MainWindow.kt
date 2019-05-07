@@ -4,10 +4,9 @@ import javafx.application.Platform
 import javafx.collections.FXCollections
 import javafx.geometry.Insets
 import javafx.geometry.Pos
-import ru.lionzxy.tplauncher.utils.Constants
-import ru.lionzxy.tplauncher.utils.ResourceHelper
-import ru.lionzxy.tplauncher.utils.runOnUi
-import ru.lionzxy.tplauncher.utils.svgview
+import javafx.scene.layout.Priority
+import ru.lionzxy.tplauncher.utils.*
+import ru.lionzxy.tplauncher.utils.Constants.DEFAULT_MARGIN
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 import tornadofx.*
 
@@ -21,44 +20,69 @@ class MainWindow : View(), IProgressMonitor {
     private val controller = MainController(this)
 
     override val root = vbox {
+        padding = Insets(0.0, DEFAULT_MARGIN, 0.0, DEFAULT_MARGIN)
         label("games.glitchless.ru") {
             onMouseClicked = OpenSiteListener("https://games.glitchless.ru")
-            padding = Insets(11.5, 0.0, 0.0, 23.0)
+            padding = Insets(11.5, -DEFAULT_MARGIN, 0.0, 23.0 - DEFAULT_MARGIN)
             style {
                 font = ResourceHelper.getFont("Gugi-Regular.ttf", 30.0)
                 textFill = Constants.accentColor
             }
         }
 
-        hbox {
-            padding = Insets(0.0, 0.0, 0.0, 16.0)
-            form {
-                fieldset() {
-                    field("Логин") { textfield() }
-                    field("Пароль") { passwordfield() }
-                }
-            }
-            form {
-                fieldset() {
-                    field("Сервер") {
-                        combobox<String>() {
-                            minWidth = 129.0
-                            items = FXCollections.observableArrayList("Test")
-                            selectionModel.select(0)
+        form {
+            fieldset() {
+                alignment = Pos.CENTER
+                gridpane {
+                    row {
+                        field("Логин") { textfield() }
+                        field("Сервер") {
+                            gridpaneConstraints {
+                                marginLeft = DEFAULT_MARGIN * 2
+                            }
+                            combobox<String> {
+                                hgrow = Priority.ALWAYS
+                                maxWidth = Double.MAX_VALUE
+                                items = FXCollections.observableArrayList("Test")
+                                selectionModel.select(0)
+                                isDisable = true
+                            }
+                            recursiveApplyToChild { addPseudoClass("disabled") }
                         }
                     }
+                    row {
+                        field("Пароль") { passwordfield() }
 
-                    hbox {
-                        svgview("cogs-solid") {
-                            fitWidth = 38.0
-                            fitHeight = 38.0
-                        }
-                        label("Настройки запуска") {
+                        hbox {
+                            gridpaneConstraints {
+                                marginLeft = DEFAULT_MARGIN * 2
+                            }
                             alignment = Pos.CENTER
+                            svgview("cogs-solid") {
+                                fitWidth = 34.0
+                                fitHeight = 34.0
+                            }
+                            label("Настройки запуска") {
+                                padding = Insets(0.0, 0.0, 0.0, DEFAULT_MARGIN)
+
+                            }
                         }
                     }
                 }
             }
+        }
+        label("Регистрация на сайте") {
+            onMouseClicked = OpenSiteListener("https://games.glitchless.ru/register/")
+            padding = Insets(-DEFAULT_MARGIN, 0.0, DEFAULT_MARGIN, 23.0 - DEFAULT_MARGIN)
+            addPseudoClass("activated")
+        }
+        button("Войти в игру") {
+            useMaxWidth = true
+            minHeight = 36.0
+        }
+
+        hbox {
+            padding = Insets(DEFAULT_MARGIN, 0.0, 0.0, 0.0)
         }
     }
 

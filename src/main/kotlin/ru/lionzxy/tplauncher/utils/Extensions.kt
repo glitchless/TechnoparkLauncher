@@ -2,8 +2,10 @@ package ru.lionzxy.tplauncher.utils
 
 import javafx.application.Platform
 import javafx.event.EventTarget
+import javafx.scene.Node
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
+import tornadofx.getChildList
 import tornadofx.imageview
 import java.awt.Desktop
 import java.io.File
@@ -67,7 +69,11 @@ fun String.openInBrowser() {
     }
 }
 
-
 fun EventTarget.svgview(path: String, op: ImageView.() -> Unit = {}): ImageView {
     return imageview(Image(ResourceHelper.getResource("icon/$path.svg").openStream()), op)
+}
+
+fun Node.recursiveApplyToChild(op: Node.() -> Unit) {
+    op()
+    getChildList()?.forEach { it.recursiveApplyToChild(op) }
 }

@@ -1,23 +1,37 @@
 [
   {
     "type": "Linux",
+    "arch": "x86",
+    "extension": "tar.gz",
+    "downloadUrl": "https://minecraft.glitchless.ru/jres/jre-8u202-linux-i586.tar.gz",
+    "javaRelativePath": "jre1.8.0_202/bin/java"
+  },
+  {
+    "type": "Linux",
     "arch": "x86_64",
-    "extension": "zip",
-    "downloadUrl": "http://download.glitchless.ru/jres/jre_1.8_linux_x64.zip",
-    "javaRelativePath": "jre_1.8_linux_x64/bin/java"
+    "extension": "tar.gz",
+    "downloadUrl": "https://minecraft.glitchless.ru/jres/jre-8u202-linux-x64.tar.gz",
+    "javaRelativePath": "jre1.8.0_202/bin/java"
+  },
+  {
+    "type": "Windows",
+    "arch": "x86",
+    "extension": "tar.gz",
+    "downloadUrl": "https://minecraft.glitchless.ru/jres/jre-8u202-windows-i586.tar.gz",
+    "javaRelativePath": "jre1.8.0_202/bin/java.exe"
   },
   {
     "type": "Windows",
     "arch": "x86_64",
-    "extension": "zip",
-    "downloadUrl": "http://download.glitchless.ru/jres/jre_1.8_windows_x64.zip",
-    "javaRelativePath": "jre_1.8_windows_x64/bin/java.exe"
+    "extension": "tar.gz",
+    "downloadUrl": "https://minecraft.glitchless.ru/jres/jre-8u202-windows-x64.tar.gz",
+    "javaRelativePath": "jre1.8.0_202/bin/java.exe"
   },
   {
     "type": "macOS",
     "arch": "x86_64",
-    "extension": "zip",
-    "downloadUrl": "http://download.glitchless.ru/jres/jre_1.8_mac_x64.zip",
-    "javaRelativePath": "jre_1.8_mac_x64.zip/bin/java"
+    "extension": "tar.gz",
+    "downloadUrl": "https://minecraft.glitchless.ru/jres/jre-8u202-macosx-x64.tar.gz",
+    "javaRelativePath": "jre1.8.0_202.jre/Contents/Home/bin/java"
   }
 ]

@@ -5,8 +5,12 @@ import tornadofx.c
 
 object Constants {
     val accentColor = c("#00DB9D")
-    val textColor = Color.WHITE
+    val secondColor = Color.WHITE
+    val textColor = secondColor
+    val disableColor = c("#7F8185")
     val backgroundColor = c("#2F3136")
-    val textDisableColor = c("#7F8185")
+    val textDisableColor = disableColor
     val inputBackgroundColor = c("#484C51")
+
+    val DEFAULT_MARGIN = 16.0
 }

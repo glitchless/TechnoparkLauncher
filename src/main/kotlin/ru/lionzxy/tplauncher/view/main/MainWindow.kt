@@ -7,6 +7,7 @@ import javafx.geometry.Pos
 import javafx.scene.control.Button
 import javafx.scene.control.Label
 import javafx.scene.control.ProgressBar
+import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import ru.lionzxy.tplauncher.utils.Constants
@@ -19,12 +20,12 @@ import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.progressbox
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.successLogin
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.titleStyle
 import ru.lionzxy.tplauncher.view.main.states.BaseState
-import ru.lionzxy.tplauncher.view.main.states.InitialState
-import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
+import ru.lionzxy.tplauncher.view.main.states.IImplementState
 import tornadofx.*
 import tornadofx.Stylesheet.Companion.disabled
 
-class MainWindow : View(), IProgressMonitor {
+class MainWindow : View(), IImplementState {
+    //View for state
     private var loginCompleteArea: HBox by singleAssign()
     private var loginField: Field by singleAssign()
     private var passwordField: Field by singleAssign()
@@ -36,122 +37,134 @@ class MainWindow : View(), IProgressMonitor {
     private var registerLabel: Label by singleAssign()
     private var currentBaseState: BaseState = BaseState()
 
-    override val root = vbox {
-        println(isResizable)
-        titleLabel = label("games.glitchless.ru") {
-            onMouseClicked = OpenSiteListener("https://games.glitchless.ru")
-            padding = Insets(11.5, 0.0, 0.0, 23.0)
-            addClass(titleStyle)
-        }
+    //View for controller
+    private var loginInput: TextField by singleAssign()
+    private var passwordInput: TextField by singleAssign()
 
-        form {
-            padding = Insets(DEFAULT_MARGIN, DEFAULT_MARGIN, 0.0, 23.0)
-            fieldset() {
-                alignment = Pos.CENTER
-                gridpane {
-                    loginCompleteArea = hbox {
-                        alignment = Pos.CENTER_LEFT
-                        minWidth = 302.0
-                        minHeight = 96.0
-                        gridpaneConstraints {
-                            rowSpan = 2
-                        }
-                        stackpane {
-                            circle {
-                                radius = 42.0
-                                fill = Constants.backgroundCircleColor
-                            }
-                            svgview("check-solid") {
-                                fitWidth = 42.0
-                                fitHeight = 42.0
-                            }
-                        }
-                        vbox {
-                            hboxConstraints {
-                                marginLeft = DEFAULT_MARGIN
-                            }
-                            alignment = Pos.CENTER
-                            successLoginText = label("st3althtech@mail.ru")
-                            label("Вход осуществлен") {
-                                addClass(successLogin)
-                            }
-                        }
-                    }
-                    row {
-                        loginField = field("Логин") {
-                            hide()
-                            textfield()
-                        }
-                        field("Сервер") {
-                            gridpaneConstraints {
-                                marginLeft = DEFAULT_MARGIN * 2
-                            }
-                            combobox<String> {
-                                hgrow = Priority.ALWAYS
-                                maxWidth = Double.MAX_VALUE
-                                items = FXCollections.observableArrayList("Test")
-                                selectionModel.select(0)
-                                isDisable = true
-                            }
-                            recursiveApplyToChild { addClass(disabled) }
-                        }
-                    }
-                    row {
-                        passwordField = field("Пароль") {
-                            hide()
-                            passwordfield()
-                        }
 
-                        hbox {
+    private var controller: MainController = MainController(this)
+
+    init {
+        controller.onInitView()
+    }
+
+    override val root = stackpane {
+        vbox {
+            println(isResizable)
+            titleLabel = label("games.glitchless.ru") {
+                onMouseClicked = OpenSiteListener("https://games.glitchless.ru")
+                padding = Insets(11.5, 0.0, 0.0, 23.0)
+                addClass(titleStyle)
+            }
+
+            form {
+                padding = Insets(DEFAULT_MARGIN, DEFAULT_MARGIN, 0.0, 23.0)
+                fieldset() {
+                    alignment = Pos.CENTER
+                    gridpane {
+                        loginCompleteArea = hbox {
+                            hide()
+                            alignment = Pos.CENTER_LEFT
+                            minWidth = 302.0
+                            minHeight = 96.0
                             gridpaneConstraints {
-                                marginLeft = DEFAULT_MARGIN * 2
+                                rowSpan = 2
                             }
-                            alignment = Pos.CENTER
-                            svgview("cogs-solid") {
-                                fitWidth = 34.0
-                                fitHeight = 34.0
+                            stackpane {
+                                circle {
+                                    radius = 42.0
+                                    fill = Constants.backgroundCircleColor
+                                }
+                                svgview("check-solid") {
+                                    fitWidth = 42.0
+                                    fitHeight = 42.0
+                                }
                             }
-                            label("Настройки запуска") {
-                                padding = Insets(0.0, 0.0, 0.0, DEFAULT_MARGIN)
+                            vbox {
+                                hboxConstraints {
+                                    marginLeft = DEFAULT_MARGIN
+                                }
+                                alignment = Pos.CENTER
+                                successLoginText = label("st3althtech@mail.ru")
+                                label("Вход осуществлен") {
+                                    addClass(successLogin)
+                                }
+                            }
+                        }
+                        row {
+                            loginField = field("Логин") {
+                                loginInput = textfield()
+                            }
+                            field("Сервер") {
+                                gridpaneConstraints {
+                                    marginLeft = DEFAULT_MARGIN * 2
+                                }
+                                combobox<String> {
+                                    hgrow = Priority.ALWAYS
+                                    maxWidth = Double.MAX_VALUE
+                                    items = FXCollections.observableArrayList("Test")
+                                    selectionModel.select(0)
+                                    isDisable = true
+                                }
+                                recursiveApplyToChild { addClass(disabled) }
+                            }
+                        }
+                        row {
+                            passwordField = field("Пароль") {
+                                passwordInput = passwordfield()
+                            }
+
+                            hbox {
+                                gridpaneConstraints {
+                                    marginLeft = DEFAULT_MARGIN * 2
+                                }
+                                alignment = Pos.CENTER
+                                svgview("cogs-solid") {
+                                    fitWidth = 34.0
+                                    fitHeight = 34.0
+                                }
+                                label("Настройки запуска") {
+                                    padding = Insets(0.0, 0.0, 0.0, DEFAULT_MARGIN)
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        registerLabel = label("Регистрация на сайте") {
-            onMouseClicked = OpenSiteListener("https://games.glitchless.ru/register/")
-            padding = Insets(0.0, DEFAULT_MARGIN, DEFAULT_MARGIN, 23.0)
-            addClass(activated)
-        }
-
-        loginButton = button("Войти в игру") {
-            useMaxWidth = true
-            minHeight = 36.0
-            vboxConstraints {
-                marginLeft = DEFAULT_MARGIN
-                marginBottom = DEFAULT_MARGIN
-                marginRight = DEFAULT_MARGIN
+            registerLabel = label("Регистрация на сайте") {
+                onMouseClicked = OpenSiteListener("https://games.glitchless.ru/register/")
+                padding = Insets(0.0, DEFAULT_MARGIN, DEFAULT_MARGIN, 23.0)
+                addClass(activated)
             }
-            action {
-                setState(InitialState())
-            }
-        }
 
-        vbox(DEFAULT_MARGIN) {
-            padding = Insets(DEFAULT_MARGIN)
-            alignment = Pos.CENTER
-            addClass(progressbox)
-            progressText = label("Введите почту и пароль")
-            progressBar = progressbar {
-                progress = 0.0
+            loginButton = button("Войти в игру") {
                 useMaxWidth = true
+                minHeight = 36.0
+                vboxConstraints {
+                    marginLeft = DEFAULT_MARGIN
+                    marginBottom = DEFAULT_MARGIN
+                    marginRight = DEFAULT_MARGIN
+                }
+                action {
+                    controller.onLogin(loginInput.text, passwordInput.text)
+                }
             }
-            recursiveApplyToChild { addClass(disabled) }
+
+            vbox(DEFAULT_MARGIN) {
+                padding = Insets(DEFAULT_MARGIN)
+                alignment = Pos.CENTER
+                addClass(progressbox)
+                progressText = label("Введите почту и пароль")
+                progressBar = progressbar {
+                    progress = 0.0
+                    useMaxWidth = true
+                }
+                recursiveApplyToChild { addClass(disabled) }
+            }
         }
     }
 
-    fun setState(state: BaseState) {
+    override fun setState(state: BaseState) {
         runOnUi {
             setStateInternal(state)
         }
@@ -205,69 +218,9 @@ class MainWindow : View(), IProgressMonitor {
             registerLabel.hide()
         }
 
-        currentStage?.width = root.width
-        currentStage?.height = root.height
-    }
-
-    fun closeApplication() {
-        runOnUi {
-            Platform.exit()
+        if (root.width > 0 && root.height > 0) {
+            currentStage?.width = root.width
+            currentStage?.height = root.height
         }
-    }
-
-    fun showDownloadAndPlayButton(visible: Boolean) {
-        /* runOnUi {
-             if (visible) {
-                 downloadButton.show()
-             } else {
-                 downloadButton.hide()
-             }
-         }*/
-    }
-
-    fun showProgress(visible: Boolean) {
-        /* runOnUi {
-             if (visible) {
-                 progressBar.show()
-                 status.show()
-             } else {
-                 progressBar.hide()
-                 status.hide()
-             }
-         }*/
-    }
-
-    fun showLoginPassword(visible: Boolean) {
-        /*runOnUi {
-            if (visible) {
-                loginPasswordBox.show()
-            } else {
-                loginPasswordBox.hide()
-            }
-        }*/
-    }
-
-    override fun setMax(len: Int) {
-    }
-
-    override fun setProgress(progress: Int) {
-        /*runOnUi {
-            if (progress == -1) {
-                progressBar.progress = INDETERMINATE_PROGRESS
-                return@runOnUi
-            }
-            currentProgress = progress
-            progressBar.progress = progress.toDouble() / maxProgressBar.toDouble()
-        }*/
-    }
-
-    override fun setStatus(status: String?) {
-        /*runOnUi {
-            this.status.show()
-            this.status.text = status
-        }*/
-    }
-
-    override fun incrementProgress(amount: Int) {
     }
 }

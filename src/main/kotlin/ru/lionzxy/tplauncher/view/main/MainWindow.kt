@@ -20,6 +20,7 @@ import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.progressbox
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.successLogin
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.titleStyle
 import ru.lionzxy.tplauncher.view.main.listener.CloseListener
+import ru.lionzxy.tplauncher.view.main.listener.MoveWindowHandler
 import ru.lionzxy.tplauncher.view.main.listener.OpenSiteListener
 import ru.lionzxy.tplauncher.view.main.states.BaseState
 import ru.lionzxy.tplauncher.view.main.states.IImplementState
@@ -51,15 +52,6 @@ class MainWindow : View(), IImplementState {
     }
 
     override val root = stackpane {
-        svgview("times-solid") {
-            stackpaneConstraints {
-                margin = Insets(DEFAULT_MARGIN)
-            }
-            fitHeight = 20.0
-            fitWidth = 20.0
-            alignment = Pos.TOP_RIGHT
-            onMouseClicked = CloseListener()
-        }
         vbox {
             maxHeightProperty().bind(heightProperty())
             println(isResizable)
@@ -176,6 +168,18 @@ class MainWindow : View(), IImplementState {
                 recursiveApplyToChild { addClass(disabled) }
             }
         }
+        svgview("times-solid") {
+            fitHeight = 20.0
+            fitWidth = 20.0
+            stackpaneConstraints {
+                margin = Insets(DEFAULT_MARGIN)
+            }
+            alignment = Pos.TOP_RIGHT
+            onMouseClicked = CloseListener()
+        }
+        val moveWindowHandler = MoveWindowHandler(primaryStage)
+        onMouseDragged = moveWindowHandler
+        onMousePressed = moveWindowHandler
     }
 
     override fun setState(state: BaseState) {

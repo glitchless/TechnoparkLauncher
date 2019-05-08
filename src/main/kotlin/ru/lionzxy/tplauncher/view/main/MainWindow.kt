@@ -97,8 +97,10 @@ class MainWindow : View(), IImplementState {
                             }
                         }
                         row {
-                            loginField = field("Логин") {
-                                loginInput = textfield()
+                            loginField = field("Email") {
+                                loginInput = textfield() {
+                                    textProperty().addListener { _, _, _ -> controller.onPasswordOrLoginChange() }
+                                }
                             }
                             field("Сервер") {
                                 gridpaneConstraints {
@@ -116,7 +118,10 @@ class MainWindow : View(), IImplementState {
                         }
                         row {
                             passwordField = field("Пароль") {
-                                passwordInput = passwordfield()
+                                passwordInput = passwordfield() {
+                                    textProperty().addListener { _, _, _ -> controller.onPasswordOrLoginChange() }
+
+                                }
                             }
 
                             hbox {
@@ -183,11 +188,12 @@ class MainWindow : View(), IImplementState {
     }
 
     override fun setState(state: BaseState) {
-
         runOnUi {
             setStateInternal(state)
         }
     }
+
+    override fun currentState() = currentBaseState
 
     private fun setStateInternal(state: BaseState) {
         currentBaseState = state
@@ -215,7 +221,9 @@ class MainWindow : View(), IImplementState {
             progressBar.recursiveApplyToChild { removeClass(disabled) }
         }
 
-        progressText.style { textFill = state.progressTextColor }
+        progressText.style {
+            textFill = state.progressTextColor
+        }
 
         if (state.buttonDisable) {
             loginButton.recursiveApplyToChild { addClass(disabled) }

@@ -59,6 +59,9 @@ class GlobalStylesheet : Stylesheet() {
             font = textFont
             textFill = Constants.textColor
         }
+        disabled {
+            opacity = 1.0
+        }
         s(comboBox, listCell) {
             backgroundColor = multi(Constants.inputBackgroundColor)
             font = textFont
@@ -86,7 +89,7 @@ class GlobalStylesheet : Stylesheet() {
             }
             and(disabled) {
                 label {
-                    textFill = Constants.disableProgressBarColor
+                    textFill = Constants.textDisableColor
                 }
             }
         }

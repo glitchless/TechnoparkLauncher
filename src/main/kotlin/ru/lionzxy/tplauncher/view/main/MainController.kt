@@ -1,6 +1,7 @@
 package ru.lionzxy.tplauncher.view.main
 
 import ru.lionzxy.tplauncher.utils.ConfigHelper
+import ru.lionzxy.tplauncher.view.main.states.ErrorInitialState
 import ru.lionzxy.tplauncher.view.main.states.IImplementState
 import ru.lionzxy.tplauncher.view.main.states.InitialState
 import ru.lionzxy.tplauncher.view.main.states.LoggedState
@@ -11,7 +12,11 @@ class MainController(val stateMachine: IImplementState) {
     }
 
     fun onLogin(email: String, password: String) {
-        //TODO add error example
+        if (!email.contains("@")) {
+            stateMachine.setState(ErrorInitialState("Введите валидную почту"))
+            return
+        }
+
         if (!email.isEmpty()) {
             stateMachine.setState(LoggedState(email))
             return
@@ -24,5 +29,11 @@ class MainController(val stateMachine: IImplementState) {
         }
 
         stateMachine.setState(LoggedState("example@example.com"))
+    }
+
+    fun onPasswordOrLoginChange() {
+        if (stateMachine.currentState() is ErrorInitialState) {
+            stateMachine.setState(InitialState())
+        }
     }
 }

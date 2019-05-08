@@ -1,5 +1,5 @@
 package ru.lionzxy.tplauncher.view.main.states
 
-class InitialState : BaseState() {
+open class InitialState : BaseState() {
     override var registerFieldIsVisible = true
 }

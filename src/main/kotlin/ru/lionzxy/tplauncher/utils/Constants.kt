@@ -16,6 +16,7 @@ object Constants {
     val textDisableColor = c("#aaabad")
     val textNotImportantInformationColor = c("#AAABAD")
     val inputBackgroundColor = c("#484C51")
+    val errorColor = c("#D75379")
 
     val DEFAULT_MARGIN = 16.0
 }

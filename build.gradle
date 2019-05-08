@@ -5,10 +5,12 @@ buildscript {
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlin_version"
     }
 }
 apply plugin: 'kotlin'
 apply plugin: 'java'
+apply plugin: "kotlin-allopen"
 apply from: "http://dl.bintray.com/content/shemnon/javafx-gradle/8.1.1/javafx.plugin"
 //apply plugin: 'application'
 group 'glicthless'
@@ -19,7 +21,7 @@ sourceCompatibility = 1.8
 repositories {
     mavenCentral()
     maven { url 'https://jitpack.io' }
-    maven { url 'https://jcenter.bintray.com/'}
+    maven { url 'https://jcenter.bintray.com/' }
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {

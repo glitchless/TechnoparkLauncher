@@ -4,12 +4,22 @@ import javafx.application.Platform
 import javafx.collections.FXCollections
 import javafx.geometry.Insets
 import javafx.geometry.Pos
+import javafx.scene.control.Button
+import javafx.scene.control.Label
+import javafx.scene.control.ProgressBar
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
-import ru.lionzxy.tplauncher.utils.*
+import ru.lionzxy.tplauncher.utils.Constants
 import ru.lionzxy.tplauncher.utils.Constants.DEFAULT_MARGIN
+import ru.lionzxy.tplauncher.utils.recursiveApplyToChild
+import ru.lionzxy.tplauncher.utils.runOnUi
+import ru.lionzxy.tplauncher.utils.svgview
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.activated
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.progressbox
+import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.successLogin
+import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.titleStyle
+import ru.lionzxy.tplauncher.view.main.states.BaseState
+import ru.lionzxy.tplauncher.view.main.states.InitialState
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 import tornadofx.*
 import tornadofx.Stylesheet.Companion.disabled
@@ -18,18 +28,20 @@ class MainWindow : View(), IProgressMonitor {
     private var loginCompleteArea: HBox by singleAssign()
     private var loginField: Field by singleAssign()
     private var passwordField: Field by singleAssign()
-    private var maxProgressBar = 1
-    private var currentProgress = 1
-    private val controller = MainController(this)
+    private var titleLabel: Label by singleAssign()
+    private var loginButton: Button by singleAssign()
+    private var progressText: Label by singleAssign()
+    private var progressBar: ProgressBar by singleAssign()
+    private var successLoginText: Label by singleAssign()
+    private var registerLabel: Label by singleAssign()
+    private var currentBaseState: BaseState = BaseState()
 
     override val root = vbox {
-        label("games.glitchless.ru") {
+        println(isResizable)
+        titleLabel = label("games.glitchless.ru") {
             onMouseClicked = OpenSiteListener("https://games.glitchless.ru")
             padding = Insets(11.5, 0.0, 0.0, 23.0)
-            style {
-                font = ResourceHelper.getFont("Gugi-Regular.ttf", 30.0)
-                textFill = Constants.accentColor
-            }
+            addClass(titleStyle)
         }
 
         form {
@@ -38,14 +50,36 @@ class MainWindow : View(), IProgressMonitor {
                 alignment = Pos.CENTER
                 gridpane {
                     loginCompleteArea = hbox {
-                        hide()
+                        alignment = Pos.CENTER_LEFT
                         minWidth = 302.0
+                        minHeight = 96.0
                         gridpaneConstraints {
                             rowSpan = 2
+                        }
+                        stackpane {
+                            circle {
+                                radius = 42.0
+                                fill = Constants.backgroundCircleColor
+                            }
+                            svgview("check-solid") {
+                                fitWidth = 42.0
+                                fitHeight = 42.0
+                            }
+                        }
+                        vbox {
+                            hboxConstraints {
+                                marginLeft = DEFAULT_MARGIN
+                            }
+                            alignment = Pos.CENTER
+                            successLoginText = label("st3althtech@mail.ru")
+                            label("Вход осуществлен") {
+                                addClass(successLogin)
+                            }
                         }
                     }
                     row {
                         loginField = field("Логин") {
+                            hide()
                             textfield()
                         }
                         field("Сервер") {
@@ -64,6 +98,7 @@ class MainWindow : View(), IProgressMonitor {
                     }
                     row {
                         passwordField = field("Пароль") {
+                            hide()
                             passwordfield()
                         }
 
@@ -84,13 +119,13 @@ class MainWindow : View(), IProgressMonitor {
                 }
             }
         }
-        label("Регистрация на сайте") {
+        registerLabel = label("Регистрация на сайте") {
             onMouseClicked = OpenSiteListener("https://games.glitchless.ru/register/")
             padding = Insets(0.0, DEFAULT_MARGIN, DEFAULT_MARGIN, 23.0)
             addClass(activated)
         }
 
-        button("Войти в игру") {
+        loginButton = button("Войти в игру") {
             useMaxWidth = true
             minHeight = 36.0
             vboxConstraints {
@@ -99,9 +134,7 @@ class MainWindow : View(), IProgressMonitor {
                 marginRight = DEFAULT_MARGIN
             }
             action {
-                loginField.hide()
-                passwordField.hide()
-                loginCompleteArea.show()
+                setState(InitialState())
             }
         }
 
@@ -109,16 +142,71 @@ class MainWindow : View(), IProgressMonitor {
             padding = Insets(DEFAULT_MARGIN)
             alignment = Pos.CENTER
             addClass(progressbox)
-            label("Введите почту и пароль")
-            progressbar {
+            progressText = label("Введите почту и пароль")
+            progressBar = progressbar {
                 progress = 0.0
                 useMaxWidth = true
-                style {
-                    accentColor = Constants.accentColor
-                }
             }
             recursiveApplyToChild { addClass(disabled) }
         }
+    }
+
+    fun setState(state: BaseState) {
+        runOnUi {
+            setStateInternal(state)
+        }
+    }
+
+    private fun setStateInternal(state: BaseState) {
+        currentBaseState = state
+        titleLabel.style {
+            textFill = state.titleColor
+        }
+
+        if (state.loginPasswordVisible) {
+            loginField.show()
+            passwordField.show()
+        } else {
+            loginField.hide()
+            passwordField.hide()
+        }
+
+        if (state.successLoginVisible) {
+            loginCompleteArea.show()
+        } else {
+            loginCompleteArea.hide()
+        }
+
+        if (state.disableProgressBar) {
+            progressBar.recursiveApplyToChild { addClass(disabled) }
+        } else {
+            progressBar.recursiveApplyToChild { removeClass(disabled) }
+        }
+
+        progressText.style { textFill = state.progressTextColor }
+
+        if (state.buttonDisable) {
+            loginButton.recursiveApplyToChild { addClass(disabled) }
+        } else {
+            loginButton.recursiveApplyToChild { removeClass(disabled) }
+        }
+        loginButton.text = state.buttonText
+
+        progressText.text = state.progressTextContent
+        successLoginText.text = state.successLoginText
+
+        if (!state.isOpen) {
+            Platform.exit()
+        }
+
+        if (state.registerFieldIsVisible) {
+            registerLabel.show()
+        } else {
+            registerLabel.hide()
+        }
+
+        currentStage?.width = root.width
+        currentStage?.height = root.height
     }
 
     fun closeApplication() {
@@ -160,7 +248,6 @@ class MainWindow : View(), IProgressMonitor {
     }
 
     override fun setMax(len: Int) {
-        maxProgressBar = len
     }
 
     override fun setProgress(progress: Int) {
@@ -182,6 +269,5 @@ class MainWindow : View(), IProgressMonitor {
     }
 
     override fun incrementProgress(amount: Int) {
-        setProgress(currentProgress + amount)
     }
 }

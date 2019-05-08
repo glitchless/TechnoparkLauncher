@@ -6,9 +6,12 @@ import tornadofx.*
 
 class GlobalStylesheet : Stylesheet() {
     companion object {
+        val titleFont = ResourceHelper.getFont("Gugi-Regular.ttf", 30.0)
         val textFont = ResourceHelper.getFont("Roboto-Regular.ttf", 14.0)
         val activated by csspseudoclass()
         val progressbox by cssclass()
+        val successLogin by cssclass()
+        val titleStyle by cssclass()
     }
 
     init {
@@ -25,6 +28,10 @@ class GlobalStylesheet : Stylesheet() {
                 textFill = Constants.accentColor
                 underline = true
             }
+        }
+        successLogin {
+            fontSize = 9.pt
+            textFill = Constants.textNotImportantInformationColor
         }
         arrow {
             backgroundColor = multi(Constants.secondColor)
@@ -61,6 +68,11 @@ class GlobalStylesheet : Stylesheet() {
             fontSize = 16.px
             textFill = Constants.textColor
         }
+        titleStyle {
+            font = titleFont
+            textFill = Constants.accentColor
+        }
+
         progressbox {
             backgroundColor = multi(Constants.backgroundDarkColor)
             label {

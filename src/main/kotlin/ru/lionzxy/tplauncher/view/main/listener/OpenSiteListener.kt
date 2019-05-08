@@ -1,4 +1,4 @@
-package ru.lionzxy.tplauncher.view.main
+package ru.lionzxy.tplauncher.view.main.listener
 
 import javafx.event.EventHandler
 import javafx.scene.input.MouseEvent

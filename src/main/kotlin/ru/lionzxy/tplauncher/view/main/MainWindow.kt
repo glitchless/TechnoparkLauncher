@@ -19,6 +19,8 @@ import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.activated
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.progressbox
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.successLogin
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.titleStyle
+import ru.lionzxy.tplauncher.view.main.listener.CloseListener
+import ru.lionzxy.tplauncher.view.main.listener.OpenSiteListener
 import ru.lionzxy.tplauncher.view.main.states.BaseState
 import ru.lionzxy.tplauncher.view.main.states.IImplementState
 import tornadofx.*
@@ -49,10 +51,21 @@ class MainWindow : View(), IImplementState {
     }
 
     override val root = stackpane {
+        svgview("times-solid") {
+            stackpaneConstraints {
+                margin = Insets(DEFAULT_MARGIN)
+            }
+            fitHeight = 20.0
+            fitWidth = 20.0
+            alignment = Pos.TOP_RIGHT
+            onMouseClicked = CloseListener()
+        }
         vbox {
+            maxHeightProperty().bind(heightProperty())
             println(isResizable)
             titleLabel = label("games.glitchless.ru") {
-                onMouseClicked = OpenSiteListener("https://games.glitchless.ru")
+                onMouseClicked =
+                    OpenSiteListener("https://games.glitchless.ru")
                 padding = Insets(11.5, 0.0, 0.0, 23.0)
                 addClass(titleStyle)
             }
@@ -132,7 +145,8 @@ class MainWindow : View(), IImplementState {
                 }
             }
             registerLabel = label("Регистрация на сайте") {
-                onMouseClicked = OpenSiteListener("https://games.glitchless.ru/register/")
+                onMouseClicked =
+                    OpenSiteListener("https://games.glitchless.ru/register/")
                 padding = Insets(0.0, DEFAULT_MARGIN, DEFAULT_MARGIN, 23.0)
                 addClass(activated)
             }
@@ -165,6 +179,7 @@ class MainWindow : View(), IImplementState {
     }
 
     override fun setState(state: BaseState) {
+
         runOnUi {
             setStateInternal(state)
         }
@@ -217,10 +232,6 @@ class MainWindow : View(), IImplementState {
         } else {
             registerLabel.hide()
         }
-
-        if (root.width > 0 && root.height > 0) {
-            currentStage?.width = root.width
-            currentStage?.height = root.height
-        }
+        primaryStage.sizeToScene()
     }
 }

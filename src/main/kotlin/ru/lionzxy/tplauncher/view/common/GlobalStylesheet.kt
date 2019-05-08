@@ -1,5 +1,10 @@
 package ru.lionzxy.tplauncher.view.common
 
+import javafx.scene.layout.BorderStrokeStyle
+import javafx.scene.paint.Color
+import javafx.scene.shape.StrokeLineCap
+import javafx.scene.shape.StrokeLineJoin
+import javafx.scene.shape.StrokeType
 import ru.lionzxy.tplauncher.utils.Constants
 import ru.lionzxy.tplauncher.utils.ResourceHelper
 import tornadofx.*
@@ -12,6 +17,7 @@ class GlobalStylesheet : Stylesheet() {
         val progressbox by cssclass()
         val successLogin by cssclass()
         val titleStyle by cssclass()
+        val withBorder by cssclass()
     }
 
     init {
@@ -95,6 +101,20 @@ class GlobalStylesheet : Stylesheet() {
                 }
             }
             accentColor = Constants.accentColor
+        }
+        withBorder {
+            borderColor = multi(box(Color.RED))
+            borderStyle = multi(
+                BorderStrokeStyle(
+                    StrokeType.INSIDE,
+                    StrokeLineJoin.MITER,
+                    StrokeLineCap.BUTT,
+                    10.0,
+                    0.0,
+                    listOf(25.0, 5.0)
+                )
+            )
+            borderWidth = multi(box(5.px))
         }
     }
 }

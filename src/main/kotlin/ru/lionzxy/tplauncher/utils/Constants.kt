@@ -13,7 +13,7 @@ object Constants {
     val backgroundCircleColor = c("#2B2C31")
     val backgroundProgressBarColor = c("#DDDDDE")
     val disableProgressBarColor = c("#484C51")
-    val textDisableColor = disableColor
+    val textDisableColor = c("#aaabad")
     val textNotImportantInformationColor = c("#AAABAD")
     val inputBackgroundColor = c("#484C51")
 

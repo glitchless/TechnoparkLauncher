@@ -5,8 +5,7 @@ import javafx.event.EventTarget
 import javafx.scene.Node
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
-import tornadofx.getChildList
-import tornadofx.imageview
+import tornadofx.*
 import java.awt.Desktop
 import java.io.File
 import java.net.URI
@@ -76,4 +75,12 @@ fun EventTarget.svgview(path: String, op: ImageView.() -> Unit = {}): ImageView 
 fun Node.recursiveApplyToChild(op: Node.() -> Unit) {
     op()
     getChildList()?.forEach { it.recursiveApplyToChild(op) }
+}
+
+fun Node.recursiveDisable() {
+    recursiveApplyToChild { addClass(Stylesheet.disabled) }
+}
+
+fun Node.recursiveEnable() {
+    recursiveApplyToChild { removeClass(Stylesheet.disabled) }
 }

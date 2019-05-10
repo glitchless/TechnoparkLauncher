@@ -1,14 +1,32 @@
 package ru.lionzxy.tplauncher.view.main
 
-import ru.lionzxy.tplauncher.utils.ConfigHelper
-import ru.lionzxy.tplauncher.view.main.states.ErrorInitialState
-import ru.lionzxy.tplauncher.view.main.states.IImplementState
-import ru.lionzxy.tplauncher.view.main.states.InitialState
-import ru.lionzxy.tplauncher.view.main.states.LoggedState
+import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
+import ru.lionzxy.tplauncher.view.main.states.*
+import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
+import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
+import tornadofx.runAsync
 
-class MainController(val stateMachine: IImplementState) {
+class MainController(val stateMachine: IImplementState, val progressMonitor: IProgressMonitor) {
+    val minecraftAccountManager = MinecraftAccountManager()
+
     fun onInitView() {
+        if (minecraftAccountManager.isLogged) {
+            stateMachine.setState(LoggedState(minecraftAccountManager.getEmail()))
+            return
+        }
         stateMachine.setState(InitialState())
+    }
+
+    fun onButtonClick(email: String, password: String) = runAsync {
+        if (stateMachine.currentState() is InitialState) {
+            onLogin(email, password)
+            return@runAsync
+        }
+
+        if (stateMachine.currentState() is LoggedState) {
+            onGameStart()
+            return@runAsync
+        }
     }
 
     fun onLogin(email: String, password: String) {
@@ -17,18 +35,29 @@ class MainController(val stateMachine: IImplementState) {
             return
         }
 
-        if (!email.isEmpty()) {
+        if (password.isNullOrEmpty()) {
+            stateMachine.setState(ErrorInitialState("Пароль не может быть пустым"))
+            return
+        }
+
+        stateMachine.setState(LoginProgressState())
+        progressMonitor.setStatus("Авторизация по email $email...")
+        progressMonitor.setProgress(-1)
+
+        try {
+            minecraftAccountManager.login(email, password)
             stateMachine.setState(LoggedState(email))
-            return
+            onGameStart()
+        } catch (exp: YDServiceAuthenticationException) {
+            stateMachine.setState(ErrorInitialState(exp.reason))
+            exp.printStackTrace()
         }
+    }
 
-        val login = ConfigHelper.config.profile?.login
-        if (!login.isNullOrEmpty()) {
-            stateMachine.setState(LoggedState(login!!))
-            return
-        }
-
-        stateMachine.setState(LoggedState("example@example.com"))
+    fun onGameStart() {
+        val currentState = stateMachine.currentState() as? LoggedState ?: return
+        stateMachine.setState(GameLoadingState(currentState))
+        progressMonitor.setProgress(-1)
     }
 
     fun onPasswordOrLoginChange() {

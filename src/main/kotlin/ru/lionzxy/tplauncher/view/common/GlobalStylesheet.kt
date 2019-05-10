@@ -58,6 +58,9 @@ class GlobalStylesheet : Stylesheet() {
             backgroundColor = multi(Constants.inputBackgroundColor)
             font = textFont
             textFill = Constants.textColor
+            and(disabled) {
+                textFill = Constants.textDisableColor
+            }
         }
         disabled {
             opacity = 1.0
@@ -76,6 +79,10 @@ class GlobalStylesheet : Stylesheet() {
             font = textFont
             fontSize = 16.px
             textFill = Constants.textColor
+            and(disabled) {
+                backgroundColor = multi(Constants.disableProgressBarColor)
+                textFill = Constants.disableColor
+            }
         }
         titleStyle {
             font = titleFont
@@ -89,7 +96,7 @@ class GlobalStylesheet : Stylesheet() {
             }
             and(disabled) {
                 label {
-                    textFill = Constants.textDisableColor
+                    textFill = Constants.disableProgressBarColor
                 }
             }
         }

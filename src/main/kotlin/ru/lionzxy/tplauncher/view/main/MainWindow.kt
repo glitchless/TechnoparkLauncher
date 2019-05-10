@@ -10,11 +10,8 @@ import javafx.scene.control.ProgressBar
 import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
-import ru.lionzxy.tplauncher.utils.Constants
+import ru.lionzxy.tplauncher.utils.*
 import ru.lionzxy.tplauncher.utils.Constants.DEFAULT_MARGIN
-import ru.lionzxy.tplauncher.utils.recursiveApplyToChild
-import ru.lionzxy.tplauncher.utils.runOnUi
-import ru.lionzxy.tplauncher.utils.svgview
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.activated
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.progressbox
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.successLogin
@@ -25,27 +22,37 @@ import ru.lionzxy.tplauncher.view.main.listener.OpenSiteListener
 import ru.lionzxy.tplauncher.view.main.states.BaseState
 import ru.lionzxy.tplauncher.view.main.states.IImplementState
 import tornadofx.*
-import tornadofx.Stylesheet.Companion.disabled
 
 class MainWindow : View(), IImplementState {
+    //Delegates
+    public var progressDelegate = ProgressDelegate()
+
     //View for state
     private var loginCompleteArea: HBox by singleAssign()
     private var loginField: Field by singleAssign()
     private var passwordField: Field by singleAssign()
     private var titleLabel: Label by singleAssign()
     private var loginButton: Button by singleAssign()
-    private var progressText: Label by singleAssign()
-    private var progressBar: ProgressBar by singleAssign()
     private var successLoginText: Label by singleAssign()
     private var registerLabel: Label by singleAssign()
     private var currentBaseState: BaseState = BaseState()
+    private var progressBar = ProgressBar()
+        set(value) {
+            field = value
+            progressDelegate.progressBar = value
+        }
+    private var progressText = Label()
+        set(value) {
+            field = value
+            progressDelegate.progressText = value
+        }
 
     //View for controller
     private var loginInput: TextField by singleAssign()
     private var passwordInput: TextField by singleAssign()
 
 
-    private var controller: MainController = MainController(this)
+    private var controller: MainController = MainController(this, progressDelegate)
 
     init {
         controller.onInitView()
@@ -54,7 +61,6 @@ class MainWindow : View(), IImplementState {
     override val root = stackpane {
         vbox {
             maxHeightProperty().bind(heightProperty())
-            println(isResizable)
             titleLabel = label("games.glitchless.ru") {
                 onMouseClicked =
                     OpenSiteListener("https://games.glitchless.ru")
@@ -113,14 +119,13 @@ class MainWindow : View(), IImplementState {
                                     selectionModel.select(0)
                                     isDisable = true
                                 }
-                                recursiveApplyToChild { addClass(disabled) }
+                                recursiveDisable()
                             }
                         }
                         row {
                             passwordField = field("Пароль") {
                                 passwordInput = passwordfield() {
                                     textProperty().addListener { _, _, _ -> controller.onPasswordOrLoginChange() }
-
                                 }
                             }
 
@@ -157,7 +162,7 @@ class MainWindow : View(), IImplementState {
                     marginRight = DEFAULT_MARGIN
                 }
                 action {
-                    controller.onLogin(loginInput.text, passwordInput.text)
+                    controller.onButtonClick(loginInput.text, passwordInput.text)
                 }
             }
 
@@ -170,7 +175,7 @@ class MainWindow : View(), IImplementState {
                     progress = 0.0
                     useMaxWidth = true
                 }
-                recursiveApplyToChild { addClass(disabled) }
+                recursiveDisable()
             }
         }
         svgview("times-solid") {
@@ -201,6 +206,18 @@ class MainWindow : View(), IImplementState {
             textFill = state.titleColor
         }
 
+        if (state.disableInputField) {
+            loginField.recursiveDisable()
+            passwordField.recursiveDisable()
+            passwordInput.isEditable = false
+            loginInput.isEditable = false
+        } else {
+            loginField.recursiveEnable()
+            passwordField.recursiveEnable()
+            passwordInput.isEditable = true
+            loginInput.isEditable = true
+        }
+
         if (state.loginPasswordVisible) {
             loginField.show()
             passwordField.show()
@@ -216,9 +233,10 @@ class MainWindow : View(), IImplementState {
         }
 
         if (state.disableProgressBar) {
-            progressBar.recursiveApplyToChild { addClass(disabled) }
+            progressBar.recursiveDisable()
+            progressBar.progress = 0.0
         } else {
-            progressBar.recursiveApplyToChild { removeClass(disabled) }
+            progressBar.recursiveEnable()
         }
 
         progressText.style {
@@ -226,13 +244,13 @@ class MainWindow : View(), IImplementState {
         }
 
         if (state.buttonDisable) {
-            loginButton.recursiveApplyToChild { addClass(disabled) }
+            loginButton.recursiveDisable()
         } else {
-            loginButton.recursiveApplyToChild { removeClass(disabled) }
+            loginButton.recursiveEnable()
         }
         loginButton.text = state.buttonText
 
-        progressText.text = state.progressTextContent
+        state.progressTextContent?.let { progressText.text = it }
         successLoginText.text = state.successLoginText
 
         if (!state.isOpen) {

@@ -15,7 +15,7 @@ object MinecraftLauncher {
     /**
      * @return runDetached if true run process on system support detach process
      */
-    fun launch(minecraft: MinecraftInstance, session: ISession, java: File? = null) {
+    fun launch(minecraft: MinecraftInstance, session: ISession) {
         val version = getVersion(minecraft)
         println("Minecraft Location: ${minecraft.location}")
         val launchCommands =

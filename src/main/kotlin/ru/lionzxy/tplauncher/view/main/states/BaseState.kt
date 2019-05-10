@@ -7,8 +7,9 @@ open class BaseState {
     open var loginPasswordVisible = true
     open var successLoginVisible = false
     open var disableProgressBar = true
+    open var disableInputField = false
     open var progressTextColor = Constants.backgroundProgressBarColor
-    open var progressTextContent = "Введите логин и пароль"
+    open var progressTextContent: String? = null
     open var buttonDisable = false
     open val buttonText = "Войти в игру"
     open var successLoginText = "example@example.com"

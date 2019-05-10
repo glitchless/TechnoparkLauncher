@@ -12,12 +12,13 @@ import java.io.File
 const val UPDATER_JSON_URL = "https://minecraft.glitchless.ru/minecraft_dist/first_server/changelog.json"
 const val HOST_URL = "https://minecraft.glitchless.ru/minecraft_dist/first_server/"
 
-class Updater {
+class UpdateDownloader : IDownloader {
     val changes = HashMap<String, Action>()
     val gson = Gson()
     var lastChangeTimestamp = 0L
 
-    fun initUpdater() {
+    override fun init(progressMonitor: IProgressMonitor) {
+        progressMonitor.setStatus("Получение списка обновлений с сервера...")
         val lastUpdateTimestamp = ConfigHelper.config.lastUpdateFromChangeLog ?: 0
         val json = HttpUtils.httpGet(UPDATER_JSON_URL)
         val type = object : TypeToken<Map<String, Map<String, Action>>>() {}.type
@@ -28,7 +29,8 @@ class Updater {
         changeLog.forEach { changes.putAll(it.second) }
     }
 
-    fun update(monitor: IProgressMonitor) {
+    override fun download(progressMonitor: IProgressMonitor) {
+        progressMonitor.setStatus("Начинаем загружать обновления...")
         val base = ConfigHelper.getDefaultDirectory()
         if (changes.isEmpty()) {
             return
@@ -42,8 +44,8 @@ class Updater {
                 if (file.parentFile.exists()) {
                     file.parentFile.mkdirs()
                 }
-                monitor.setStatus("Downloading ${it.key}")
-                FileUtils.downloadFileWithProgress(HOST_URL + it.key, file, monitor)
+                progressMonitor.setStatus("Загрузка ${it.key}")
+                FileUtils.downloadFileWithProgress(HOST_URL + it.key, file, progressMonitor)
             }
         }
         if (lastChangeTimestamp <= 0) {
@@ -53,6 +55,8 @@ class Updater {
             lastUpdateFromChangeLog = lastChangeTimestamp
         }
     }
+
+    override fun shouldDownload() = true
 }
 
 enum class Action(code: Int) {

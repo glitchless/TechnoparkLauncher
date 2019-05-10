@@ -2,6 +2,7 @@ package ru.lionzxy.tplauncher.minecraft
 
 import ru.lionzxy.tplauncher.config.Profile
 import ru.lionzxy.tplauncher.utils.ConfigHelper
+import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
 import sk.tomsik68.mclauncher.api.login.ISession
 import sk.tomsik68.mclauncher.impl.login.legacy.LegacyProfile
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDLoginService
@@ -10,6 +11,7 @@ import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationExcept
 class MinecraftAccountManager() {
     public val isLogged = isLoggedInternal()
     private var session: ISession? = ConfigHelper.config.profile
+    val minecraftInstance = MinecraftInstance(ConfigHelper.getDefaultDirectory())
 
     fun getEmail(): String {
         if (!isLogged) {

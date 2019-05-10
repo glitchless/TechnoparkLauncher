@@ -1,5 +1,6 @@
 package ru.lionzxy.tplauncher.view.main
 
+import ru.lionzxy.tplauncher.downloader.ComposerDownloader
 import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
 import ru.lionzxy.tplauncher.view.main.states.*
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
@@ -58,6 +59,19 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
         val currentState = stateMachine.currentState() as? LoggedState ?: return
         stateMachine.setState(GameLoadingState(currentState))
         progressMonitor.setProgress(-1)
+
+        val downloader = ComposerDownloader(minecraftAccountManager)
+        try {
+            downloader.downloadAll(progressMonitor)
+        } catch (e: Exception) {
+            stateMachine.setState(
+                ErrorLaunchGameState(
+                    currentState,
+                    "Внутреняя ошибка, сообщите разработчикам: ${e.localizedMessage}"
+                )
+            )
+            e.printStackTrace()
+        }
     }
 
     fun onPasswordOrLoginChange() {

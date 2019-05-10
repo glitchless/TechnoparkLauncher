@@ -6,6 +6,8 @@ import ru.lionzxy.tplauncher.utils.runAsync
 import ru.lionzxy.tplauncher.view.main.states.*
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
+import java.lang.Thread.sleep
+import java.util.concurrent.TimeUnit
 
 class MainController(val stateMachine: IImplementState, val progressMonitor: IProgressMonitor) {
     val minecraftAccountManager = MinecraftAccountManager()
@@ -47,16 +49,15 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
 
         try {
             minecraftAccountManager.login(email, password)
-            stateMachine.setState(LoggedState(email))
-            onGameStart()
+            onGameStart(LoggedState(email))
         } catch (exp: YDServiceAuthenticationException) {
-            stateMachine.setState(ErrorInitialState(exp.reason))
             exp.printStackTrace()
+            stateMachine.setState(ErrorInitialState(exp.reason ?: exp.localizedMessage))
         }
     }
 
-    fun onGameStart() {
-        val currentState = stateMachine.currentState() as? LoggedState ?: return
+    fun onGameStart(baseState: BaseState = stateMachine.currentState()) {
+        val currentState = baseState as? LoggedState ?: return
         stateMachine.setState(GameLoadingState(currentState))
         progressMonitor.setProgress(-1)
 
@@ -72,6 +73,13 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
             )
             e.printStackTrace()
         }
+
+        minecraftAccountManager.launch()
+
+        progressMonitor.setStatus("Запускаем Minecraft...")
+        progressMonitor.setProgress(-1)
+        sleep(TimeUnit.MINUTES.toMillis(1))
+        stateMachine.setState(MinecraftLaunchedState(currentState))
     }
 
     fun onPasswordOrLoginChange() {

@@ -28,6 +28,10 @@ class MinecraftAccountManager() {
         }
     }
 
+    fun launch() {
+        MinecraftLauncher.launch(minecraftInstance, session!!)
+    }
+
     private fun isLoggedInternal(): Boolean {
         val profile = ConfigHelper.config.profile ?: return false
         return !profile.email.isNullOrEmpty()

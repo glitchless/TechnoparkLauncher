@@ -1,6 +1,8 @@
 package ru.lionzxy.tplauncher.downloader
 
 import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
+import ru.lionzxy.tplauncher.utils.ConfigHelper
+import ru.lionzxy.tplauncher.utils.setWritableToFolder
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 
 class ComposerDownloader(minecraftAccountManager: MinecraftAccountManager) {
@@ -13,6 +15,7 @@ class ComposerDownloader(minecraftAccountManager: MinecraftAccountManager) {
                 download(it, progressMonitor)
             }
         }
+        ConfigHelper.getDefaultDirectory().setWritableToFolder()
     }
 
     private fun download(downloader: IDownloader, progressMonitor: IProgressMonitor) {

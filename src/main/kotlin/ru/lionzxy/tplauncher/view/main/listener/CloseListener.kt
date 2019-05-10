@@ -1,12 +1,12 @@
 package ru.lionzxy.tplauncher.view.main.listener
 
-import javafx.application.Platform
 import javafx.event.EventHandler
 import javafx.scene.input.MouseEvent
+import tornadofx.View
 
-class CloseListener : EventHandler<MouseEvent> {
+class CloseListener(val view: View) : EventHandler<MouseEvent> {
     override fun handle(p0: MouseEvent?) {
-        Platform.exit()
+        view.close()
     }
 
 }

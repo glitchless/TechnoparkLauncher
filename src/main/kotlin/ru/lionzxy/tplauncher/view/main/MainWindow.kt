@@ -59,6 +59,7 @@ class MainWindow : View(), IImplementState {
     }
 
     override val root = stackpane {
+        maxWidth = 592.0
         vbox {
             titleLabel = label("games.glitchless.ru") {
                 onMouseClicked =
@@ -185,7 +186,7 @@ class MainWindow : View(), IImplementState {
                 margin = Insets(DEFAULT_MARGIN)
             }
             alignment = Pos.TOP_RIGHT
-            onMouseClicked = CloseListener()
+            onMouseClicked = CloseListener(this@MainWindow)
         }
         val moveWindowHandler = MoveWindowHandler(this@MainWindow)
         onMouseDragged = moveWindowHandler
@@ -263,6 +264,5 @@ class MainWindow : View(), IImplementState {
             registerLabel.hide()
         }
         primaryStage.sizeToScene()
-        println(root.width)
     }
 }

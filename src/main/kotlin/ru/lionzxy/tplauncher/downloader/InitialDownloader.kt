@@ -33,6 +33,6 @@ class InitialDownloader : IDownloader {
     }
 
     override fun shouldDownload(): Boolean {
-        return ConfigHelper.config.downloadFirstPack ?: false
+        return !(ConfigHelper.config.downloadFirstPack ?: false)
     }
 }

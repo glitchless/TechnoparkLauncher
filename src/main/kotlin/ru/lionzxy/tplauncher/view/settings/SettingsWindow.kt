@@ -118,7 +118,7 @@ class SettingsWindow : View() {
                 margin = Insets(Constants.DEFAULT_MARGIN)
             }
             alignment = Pos.TOP_RIGHT
-            onMouseClicked = CloseListener()
+            onMouseClicked = CloseListener(this@SettingsWindow)
         }
         val moveWindowHandler = MoveWindowHandler(this@SettingsWindow)
         onMouseDragged = moveWindowHandler

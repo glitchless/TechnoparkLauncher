@@ -1,6 +1,6 @@
 package ru.lionzxy.tplauncher.view.main.states
 
-class GameLoadingState(email: String) : LoggedState(email) {
+open class GameLoadingState(email: String) : LoggedState(email) {
     constructor(loggedState: LoggedState) : this(loggedState.email)
 
     override var disableProgressBar = false

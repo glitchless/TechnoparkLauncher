@@ -18,6 +18,14 @@ class Settings() {
     var javaLocation = getDefaultJavaLocation()
     var isDebug = false
 
+    constructor(settings: Settings) : this() {
+        heapSize = settings.heapSize
+        customJavaParameter = settings.customJavaParameter
+        commandPrefix = settings.commandPrefix
+        javaLocation = settings.javaLocation
+        isDebug = settings.isDebug
+    }
+
     private fun getDefaultJavaArguments(): String {
         val cores = Runtime.getRuntime().availableProcessors()
         return "-XX:+UseG1GC -XX:ConcGCThreads=${cores / 4} -XX:ParallelGCThreads=$cores"

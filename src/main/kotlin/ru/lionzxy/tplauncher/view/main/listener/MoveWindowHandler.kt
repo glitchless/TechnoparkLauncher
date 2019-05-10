@@ -2,9 +2,9 @@ package ru.lionzxy.tplauncher.view.main.listener
 
 import javafx.event.EventHandler
 import javafx.scene.input.MouseEvent
-import javafx.stage.Stage
+import tornadofx.View
 
-class MoveWindowHandler(private val stage: Stage) : EventHandler<MouseEvent> {
+class MoveWindowHandler(private val view: View) : EventHandler<MouseEvent> {
     //define your offsets here
     private var xOffset = 0.0
     private var yOffset = 0.0
@@ -17,8 +17,8 @@ class MoveWindowHandler(private val stage: Stage) : EventHandler<MouseEvent> {
         }
 
         if (event.eventType == MouseEvent.MOUSE_DRAGGED) {
-            stage.x = event.screenX - xOffset;
-            stage.y = event.screenY - yOffset;
+            view.modalStage?.x = event.screenX - xOffset;
+            view.modalStage?.y = event.screenY - yOffset;
         }
     }
 

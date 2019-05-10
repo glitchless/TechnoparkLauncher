@@ -2,6 +2,7 @@ package ru.lionzxy.tplauncher.view.common
 
 import javafx.scene.layout.BorderStrokeStyle
 import javafx.scene.paint.Color
+import javafx.scene.paint.Color.TRANSPARENT
 import javafx.scene.shape.StrokeLineCap
 import javafx.scene.shape.StrokeLineJoin
 import javafx.scene.shape.StrokeType
@@ -14,10 +15,13 @@ class GlobalStylesheet : Stylesheet() {
         val titleFont = ResourceHelper.getFont("Gugi-Regular.ttf", 30.0)
         val textFont = ResourceHelper.getFont("Roboto-Regular.ttf", 14.0)
         val activated by csspseudoclass()
+        val nonFocused by csspseudoclass()
+        val backButton by cssclass()
         val progressbox by cssclass()
         val successLogin by cssclass()
         val titleStyle by cssclass()
         val withBorder by cssclass()
+        val myCheckBox by cssclass()
     }
 
     init {
@@ -32,6 +36,10 @@ class GlobalStylesheet : Stylesheet() {
             }
             and(activated) {
                 textFill = Constants.accentColor
+                underline = true
+            }
+            and(nonFocused) {
+                textFill = Constants.textDisableColor
                 underline = true
             }
         }
@@ -125,6 +133,17 @@ class GlobalStylesheet : Stylesheet() {
                 )
             )
             borderWidth = multi(box(5.px))
+        }
+        backButton {
+            backgroundColor = multi(TRANSPARENT)
+            borderColor = multi(box(Constants.accentColor))
+            textFill = Constants.accentColor
+            borderWidth = multi(box(1.px))
+            borderRadius = multi(box(3.5.px))
+        }
+        myCheckBox {
+            backgroundColor = multi(Constants.inputBackgroundColor)
+            backgroundRadius = multi(box(2.5.px))
         }
     }
 }

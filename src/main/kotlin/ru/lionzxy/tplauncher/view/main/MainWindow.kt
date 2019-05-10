@@ -18,6 +18,7 @@ import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.successLogin
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.titleStyle
 import ru.lionzxy.tplauncher.view.main.listener.CloseListener
 import ru.lionzxy.tplauncher.view.main.listener.MoveWindowHandler
+import ru.lionzxy.tplauncher.view.main.listener.OpenSettingsListener
 import ru.lionzxy.tplauncher.view.main.listener.OpenSiteListener
 import ru.lionzxy.tplauncher.view.main.states.BaseState
 import ru.lionzxy.tplauncher.view.main.states.IImplementState
@@ -51,7 +52,6 @@ class MainWindow : View(), IImplementState {
     private var loginInput: TextField by singleAssign()
     private var passwordInput: TextField by singleAssign()
 
-
     private var controller: MainController = MainController(this, progressDelegate)
 
     init {
@@ -60,7 +60,6 @@ class MainWindow : View(), IImplementState {
 
     override val root = stackpane {
         vbox {
-            maxHeightProperty().bind(heightProperty())
             titleLabel = label("games.glitchless.ru") {
                 onMouseClicked =
                     OpenSiteListener("https://games.glitchless.ru")
@@ -115,7 +114,7 @@ class MainWindow : View(), IImplementState {
                                 combobox<String> {
                                     hgrow = Priority.ALWAYS
                                     maxWidth = Double.MAX_VALUE
-                                    items = FXCollections.observableArrayList("Test")
+                                    items = FXCollections.observableArrayList("Medium")
                                     selectionModel.select(0)
                                     isDisable = true
                                 }
@@ -130,6 +129,7 @@ class MainWindow : View(), IImplementState {
                             }
 
                             hbox {
+                                onMouseClicked = OpenSettingsListener()
                                 gridpaneConstraints {
                                     marginLeft = DEFAULT_MARGIN * 2
                                 }
@@ -187,7 +187,7 @@ class MainWindow : View(), IImplementState {
             alignment = Pos.TOP_RIGHT
             onMouseClicked = CloseListener()
         }
-        val moveWindowHandler = MoveWindowHandler(primaryStage)
+        val moveWindowHandler = MoveWindowHandler(this@MainWindow)
         onMouseDragged = moveWindowHandler
         onMousePressed = moveWindowHandler
     }
@@ -263,5 +263,6 @@ class MainWindow : View(), IImplementState {
             registerLabel.hide()
         }
         primaryStage.sizeToScene()
+        println(root.width)
     }
 }

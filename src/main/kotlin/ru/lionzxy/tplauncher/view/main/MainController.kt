@@ -2,10 +2,10 @@ package ru.lionzxy.tplauncher.view.main
 
 import ru.lionzxy.tplauncher.downloader.ComposerDownloader
 import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
+import ru.lionzxy.tplauncher.utils.runAsync
 import ru.lionzxy.tplauncher.view.main.states.*
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
-import tornadofx.runAsync
 
 class MainController(val stateMachine: IImplementState, val progressMonitor: IProgressMonitor) {
     val minecraftAccountManager = MinecraftAccountManager()

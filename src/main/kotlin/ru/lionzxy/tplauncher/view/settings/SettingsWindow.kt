@@ -112,6 +112,7 @@ class SettingsWindow : View() {
             }
         }
         svgview("times-solid") {
+            addClass(GlobalStylesheet.link)
             fitHeight = 20.0
             fitWidth = 20.0
             stackpaneConstraints {

@@ -1,5 +1,6 @@
 package ru.lionzxy.tplauncher.view.common
 
+import javafx.scene.Cursor
 import javafx.scene.layout.BorderStrokeStyle
 import javafx.scene.paint.Color
 import javafx.scene.paint.Color.TRANSPARENT
@@ -22,6 +23,7 @@ class GlobalStylesheet : Stylesheet() {
         val titleStyle by cssclass()
         val withBorder by cssclass()
         val myCheckBox by cssclass()
+        val link by cssclass()
     }
 
     init {
@@ -37,10 +39,16 @@ class GlobalStylesheet : Stylesheet() {
             and(activated) {
                 textFill = Constants.accentColor
                 underline = true
+                and(hover) {
+                    cursor = Cursor.HAND
+                }
             }
             and(nonFocused) {
                 textFill = Constants.textDisableColor
                 underline = true
+                and(hover) {
+                    cursor = Cursor.HAND
+                }
             }
         }
         successLogin {
@@ -90,6 +98,14 @@ class GlobalStylesheet : Stylesheet() {
             and(disabled) {
                 backgroundColor = multi(Constants.disableProgressBarColor)
                 textFill = Constants.disableColor
+            }
+            and(hover) {
+                cursor = Cursor.HAND
+            }
+        }
+        link {
+            and(hover) {
+                cursor = Cursor.HAND
             }
         }
         titleStyle {

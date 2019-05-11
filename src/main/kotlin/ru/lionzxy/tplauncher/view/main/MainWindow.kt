@@ -17,6 +17,7 @@ import ru.lionzxy.tplauncher.utils.runOnUi
 import ru.lionzxy.tplauncher.utils.svgview
 import ru.lionzxy.tplauncher.view.common.Avatar
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.activated
+import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.link
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.progressbox
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.successLogin
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.titleStyle
@@ -68,8 +69,6 @@ class MainWindow : View(), IImplementState {
         maxWidth = 592.0
         vbox {
             titleLabel = label("games.glitchless.ru") {
-                onMouseClicked =
-                    OpenSiteListener("https://games.glitchless.ru")
                 padding = Insets(11.5, 0.0, 0.0, 23.0)
                 addClass(titleStyle)
             }
@@ -127,6 +126,7 @@ class MainWindow : View(), IImplementState {
                             }
 
                             hbox {
+                                addClass(link)
                                 onMouseClicked = OpenSettingsListener()
                                 gridpaneConstraints {
                                     marginLeft = DEFAULT_MARGIN * 2
@@ -177,6 +177,7 @@ class MainWindow : View(), IImplementState {
             }
         }
         svgview("times-solid") {
+            addClass(link)
             fitHeight = 20.0
             fitWidth = 20.0
             stackpaneConstraints {

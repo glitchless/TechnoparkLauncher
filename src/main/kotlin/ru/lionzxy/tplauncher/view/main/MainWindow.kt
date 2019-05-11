@@ -10,12 +10,17 @@ import javafx.scene.control.ProgressBar
 import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
-import ru.lionzxy.tplauncher.utils.*
 import ru.lionzxy.tplauncher.utils.Constants.DEFAULT_MARGIN
+import ru.lionzxy.tplauncher.utils.recursiveDisable
+import ru.lionzxy.tplauncher.utils.recursiveEnable
+import ru.lionzxy.tplauncher.utils.runOnUi
+import ru.lionzxy.tplauncher.utils.svgview
+import ru.lionzxy.tplauncher.view.common.Avatar
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.activated
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.progressbox
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.successLogin
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.titleStyle
+import ru.lionzxy.tplauncher.view.common.avatarimage
 import ru.lionzxy.tplauncher.view.main.listener.CloseListener
 import ru.lionzxy.tplauncher.view.main.listener.MoveWindowHandler
 import ru.lionzxy.tplauncher.view.main.listener.OpenSettingsListener
@@ -30,6 +35,7 @@ class MainWindow : View(), IImplementState {
 
     //View for state
     private var loginCompleteArea: HBox by singleAssign()
+    private var avatar: Avatar by singleAssign()
     private var loginField: Field by singleAssign()
     private var passwordField: Field by singleAssign()
     private var titleLabel: Label by singleAssign()
@@ -81,16 +87,7 @@ class MainWindow : View(), IImplementState {
                             gridpaneConstraints {
                                 rowSpan = 2
                             }
-                            stackpane {
-                                circle {
-                                    radius = 42.0
-                                    fill = Constants.backgroundCircleColor
-                                }
-                                svgview("check-solid") {
-                                    fitWidth = 42.0
-                                    fitHeight = 42.0
-                                }
-                            }
+                            avatar = avatarimage()
                             vbox {
                                 hboxConstraints {
                                     marginLeft = DEFAULT_MARGIN
@@ -228,8 +225,10 @@ class MainWindow : View(), IImplementState {
         }
 
         if (state.successLoginVisible) {
+            avatar.show()
             loginCompleteArea.show()
         } else {
+            avatar.hide()
             loginCompleteArea.hide()
         }
 

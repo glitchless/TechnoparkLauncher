@@ -17,8 +17,9 @@ class MoveWindowHandler(private val view: View) : EventHandler<MouseEvent> {
         }
 
         if (event.eventType == MouseEvent.MOUSE_DRAGGED) {
-            view.modalStage?.x = event.screenX - xOffset;
-            view.modalStage?.y = event.screenY - yOffset;
+            val stage = view.modalStage ?: view.primaryStage
+            stage.x = event.screenX - xOffset;
+            stage.y = event.screenY - yOffset;
         }
     }
 

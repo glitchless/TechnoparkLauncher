@@ -53,6 +53,8 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
         } catch (exp: YDServiceAuthenticationException) {
             exp.printStackTrace()
             stateMachine.setState(ErrorInitialState(exp.reason ?: exp.localizedMessage))
+        } catch (ioExp: IOException) {
+            stateMachine.setState(ErrorInitialState("Проверьте подключение к интернету"));
         }
     }
 

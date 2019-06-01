@@ -155,6 +155,10 @@ class SettingsWindow : View() {
         settings.javaLocation = javaPath.text
         settings.isDebug = debugMod.checked
 
+        ConfigHelper.writeToConfig {
+            this.settings = SettingsWindow@ this.settings
+        }
+
         modalStage?.sizeToScene()
     }
 

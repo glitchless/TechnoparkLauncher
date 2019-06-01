@@ -31,7 +31,7 @@ object MinecraftLauncher {
                 LauncherSettings(ConfigHelper.config.settings),
                 null
             ).map {
-                replaceAbsolutePathInString(it)
+                replaceAbsolutePathInString(it, minecraft.location.absolutePath)
             }
 
         launchCommands.forEach { print("$it ") }
@@ -48,15 +48,14 @@ object MinecraftLauncher {
 
     private val currentPathRelative =
         if (OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS) ".\\" else "./"
-    private val currentPathAbsolute = File("").absolutePath
 
-    private fun replaceAbsolutePathInString(input: String): String {
+    private fun replaceAbsolutePathInString(input: String, currentPath: String): String {
         val postFix = if (OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS) {
             '\\'
         } else {
             '/'
         }
-        var pathForReplace = currentPathAbsolute
+        var pathForReplace = currentPath
         if (pathForReplace.last() != postFix) {
             pathForReplace += postFix
         }

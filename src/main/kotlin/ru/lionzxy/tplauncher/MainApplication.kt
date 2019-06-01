@@ -3,6 +3,7 @@ package ru.lionzxy.tplauncher
 import de.codecentric.centerdevice.javafxsvg.SvgImageLoaderFactory
 import javafx.stage.Stage
 import javafx.stage.StageStyle
+import ru.lionzxy.tplauncher.utils.LogoUtils
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet
 import ru.lionzxy.tplauncher.view.main.MainWindow
 import tornadofx.App
@@ -16,6 +17,7 @@ class MainApplication : App(MainWindow::class, GlobalStylesheet::class) {
 
     override fun start(stage: Stage) {
         stage.initStyle(StageStyle.UNDECORATED)
+        LogoUtils.setLogo(stage)
         super.start(stage)
     }
 

@@ -15,4 +15,6 @@ open class BaseState {
     open var successLoginText = "example@example.com"
     open var isOpen = true
     open var registerFieldIsVisible = false
+    open var registerFieldColor = Constants.accentColor
+    open var settingsFieldIsClickable = true
 }

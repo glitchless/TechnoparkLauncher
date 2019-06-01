@@ -44,6 +44,7 @@ class MainWindow : View(), IImplementState {
     private var successLoginText: Label by singleAssign()
     private var registerLabel: Label by singleAssign()
     private var currentBaseState: BaseState = BaseState()
+    private var settingsField: HBox by singleAssign()
     private var progressBar = ProgressBar()
         set(value) {
             field = value
@@ -125,7 +126,7 @@ class MainWindow : View(), IImplementState {
                                 }
                             }
 
-                            hbox {
+                            settingsField = hbox {
                                 addClass(link)
                                 onMouseClicked = OpenSettingsListener()
                                 gridpaneConstraints {
@@ -263,6 +264,16 @@ class MainWindow : View(), IImplementState {
         } else {
             registerLabel.hide()
         }
+        registerLabel.style { textFill = state.registerFieldColor }
+
+        if (state.settingsFieldIsClickable) {
+            settingsField.onMouseClicked = OpenSettingsListener()
+            settingsField.recursiveEnable()
+        } else {
+            settingsField.onMouseClicked = null
+            settingsField.recursiveDisable()
+        }
+
         primaryStage.sizeToScene()
     }
 }

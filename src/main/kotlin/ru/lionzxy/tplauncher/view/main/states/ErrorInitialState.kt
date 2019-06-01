@@ -7,5 +7,6 @@ class ErrorInitialState(error: String) : InitialState() {
     override var progressTextColor = Constants.errorColor
     override var progressTextContent: String? = error
     override var buttonDisable = true
-    override val buttonText = error
+    override var buttonText = error
+    override var registerFieldColor = Constants.errorColor
 }

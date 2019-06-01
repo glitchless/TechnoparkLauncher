@@ -85,6 +85,7 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
         LogoUtils.setLogoForMinecraft(MinecraftModpack.MIDGARD)
         minecraftAccountManager.launch()
 
+        stateMachine.setState(MinecraftRunningState(currentState))
         progressMonitor.setStatus("Запускаем Minecraft...")
         progressMonitor.setProgress(-1)
         sleep(TimeUnit.MINUTES.toMillis(1))

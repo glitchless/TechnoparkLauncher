@@ -18,4 +18,5 @@ class MainApplication : App(MainWindow::class, GlobalStylesheet::class) {
         stage.initStyle(StageStyle.UNDECORATED)
         super.start(stage)
     }
+
 }

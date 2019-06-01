@@ -14,9 +14,9 @@ import sk.tomsik68.mclauncher.util.HttpUtils
 import tornadofx.attachTo
 import tornadofx.circle
 import tornadofx.singleAssign
-import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
+import java.io.InputStream
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 
@@ -61,11 +61,13 @@ class Avatar : StackPane() {
         try {
             val target = File(ConfigHelper.getDefaultDirectory(), "avatar.png")
             if (target.exists()) {
-                val avatarPng = FileInputStream(target).use {
-                    ByteArrayInputStream(it.readAllBytes())
+                var fis: InputStream? = null
+                try {
+                    fis = FileInputStream(target)
+                    return Image(fis)
+                } finally {
+                    fis?.close()
                 }
-
-                return Image(avatarPng)
             }
             return null
         } finally {
@@ -86,7 +88,13 @@ class Avatar : StackPane() {
                 target,
                 EmptyMonitoring()
             )
-            return Image(FileInputStream(target).use { ByteArrayInputStream(it.readAllBytes()) })
+            var fis: InputStream? = null
+            try {
+                fis = FileInputStream(target)
+                return Image(fis)
+            } finally {
+                fis?.close()
+            }
         } finally {
             avatarLock.unlock()
         }

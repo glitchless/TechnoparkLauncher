@@ -6,6 +6,7 @@ import ru.lionzxy.tplauncher.utils.runAsync
 import ru.lionzxy.tplauncher.view.main.states.*
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
+import java.io.IOException
 import java.lang.Thread.sleep
 import java.util.concurrent.TimeUnit
 

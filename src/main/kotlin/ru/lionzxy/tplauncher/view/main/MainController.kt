@@ -2,6 +2,8 @@ package ru.lionzxy.tplauncher.view.main
 
 import ru.lionzxy.tplauncher.downloader.ComposerDownloader
 import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
+import ru.lionzxy.tplauncher.utils.LogoUtils
+import ru.lionzxy.tplauncher.utils.MinecraftModpack
 import ru.lionzxy.tplauncher.utils.runAsync
 import ru.lionzxy.tplauncher.view.main.states.*
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
@@ -77,6 +79,7 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
             e.printStackTrace()
         }
 
+        LogoUtils.setLogoForMinecraft(MinecraftModpack.MIDGARD)
         minecraftAccountManager.launch()
 
         progressMonitor.setStatus("Запускаем Minecraft...")

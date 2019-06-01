@@ -40,6 +40,7 @@ dependencies {
     implementation 'com.github.LionZXY:oslib:master-SNAPSHOT'
     implementation "org.rauschig:jarchivelib:1.0.0"
     implementation "net.minidev:json-smart:1.1.1"
+    implementation "commons-codec:commons-codec:1.12"
     //implementation 'org.bitbucket.shemnon.javafxplugin:gradle-javafx-plugin:8.1.1'
 
 

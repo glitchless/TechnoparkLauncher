@@ -1,8 +1,8 @@
 package ru.lionzxy.tplauncher.view.settings.listener
 
-import javafx.application.Platform
 import javafx.event.EventHandler
 import javafx.scene.input.MouseEvent
+import ru.lionzxy.tplauncher.Main
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.deleteDirectoryRecursionJava6
 
@@ -19,7 +19,7 @@ class DeleteAllListener : EventHandler<MouseEvent> {
             }
             it.deleteDirectoryRecursionJava6()
         }
-        Platform.exit()
+        Main.closeApplication()
     }
 
 }

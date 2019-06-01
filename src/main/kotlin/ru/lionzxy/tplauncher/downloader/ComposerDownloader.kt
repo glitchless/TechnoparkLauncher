@@ -19,6 +19,9 @@ class ComposerDownloader(minecraftAccountManager: MinecraftAccountManager) {
     }
 
     private fun download(downloader: IDownloader, progressMonitor: IProgressMonitor) {
+        if (Thread.interrupted()) {
+            throw InterruptedException()
+        }
         progressMonitor.setProgress(-1)
         downloader.init(progressMonitor)
         downloader.download(progressMonitor)

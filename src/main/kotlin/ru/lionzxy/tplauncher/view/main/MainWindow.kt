@@ -1,6 +1,5 @@
 package ru.lionzxy.tplauncher.view.main
 
-import javafx.application.Platform
 import javafx.collections.FXCollections
 import javafx.geometry.Insets
 import javafx.geometry.Pos
@@ -10,6 +9,7 @@ import javafx.scene.control.ProgressBar
 import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
+import ru.lionzxy.tplauncher.Main
 import ru.lionzxy.tplauncher.utils.Constants.DEFAULT_MARGIN
 import ru.lionzxy.tplauncher.utils.recursiveDisable
 import ru.lionzxy.tplauncher.utils.recursiveEnable
@@ -22,7 +22,7 @@ import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.progressbox
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.successLogin
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.titleStyle
 import ru.lionzxy.tplauncher.view.common.avatarimage
-import ru.lionzxy.tplauncher.view.main.listener.CloseListener
+import ru.lionzxy.tplauncher.view.main.listener.CloseApplicationListener
 import ru.lionzxy.tplauncher.view.main.listener.MoveWindowHandler
 import ru.lionzxy.tplauncher.view.main.listener.OpenSettingsListener
 import ru.lionzxy.tplauncher.view.main.listener.OpenSiteListener
@@ -184,7 +184,7 @@ class MainWindow : View(), IImplementState {
                 margin = Insets(DEFAULT_MARGIN)
             }
             alignment = Pos.TOP_RIGHT
-            onMouseClicked = CloseListener(this@MainWindow)
+            onMouseClicked = CloseApplicationListener()
         }
         val moveWindowHandler = MoveWindowHandler(this@MainWindow)
         onMouseDragged = moveWindowHandler
@@ -255,7 +255,7 @@ class MainWindow : View(), IImplementState {
         successLoginText.text = state.successLoginText
 
         if (!state.isOpen) {
-            Platform.exit()
+            Main.closeApplication()
         }
 
         if (state.registerFieldIsVisible) {

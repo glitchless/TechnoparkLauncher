@@ -1,8 +1,8 @@
 package ru.lionzxy.tplauncher.view.settings.listener
 
-import javafx.application.Platform
 import javafx.event.EventHandler
 import javafx.scene.input.MouseEvent
+import ru.lionzxy.tplauncher.Main
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 
 class LogOutListener : EventHandler<MouseEvent> {
@@ -11,7 +11,7 @@ class LogOutListener : EventHandler<MouseEvent> {
             profile = null
         }
 
-        Platform.exit()
+        Main.closeApplication()
     }
 
 }

@@ -17,6 +17,9 @@ object MinecraftLauncher {
      * @return runDetached if true run process on system support detach process
      */
     fun launch(minecraft: MinecraftInstance, session: ISession) {
+        if (Thread.interrupted()) {
+            throw InterruptedException()
+        }
         val version = getVersion(minecraft)
         println("Minecraft Location: ${minecraft.location}")
         val launchCommands =

@@ -14,9 +14,9 @@ import ru.lionzxy.tplauncher.utils.svgview
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet
 import ru.lionzxy.tplauncher.view.common.MyCheckBox
 import ru.lionzxy.tplauncher.view.common.myCheckBox
-import ru.lionzxy.tplauncher.view.main.listener.CloseListener
 import ru.lionzxy.tplauncher.view.main.listener.MoveWindowHandler
 import ru.lionzxy.tplauncher.view.main.listener.OpenSiteListener
+import ru.lionzxy.tplauncher.view.settings.listener.CloseListener
 import ru.lionzxy.tplauncher.view.settings.listener.DeleteAllListener
 import ru.lionzxy.tplauncher.view.settings.listener.LogOutListener
 import ru.lionzxy.tplauncher.view.settings.listener.OpenDirectoryListener

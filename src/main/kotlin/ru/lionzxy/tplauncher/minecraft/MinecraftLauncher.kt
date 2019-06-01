@@ -8,6 +8,7 @@ import sk.tomsik68.mclauncher.api.servers.ServerInfo
 import sk.tomsik68.mclauncher.api.versions.IVersion
 import sk.tomsik68.mclauncher.impl.versions.mcdownload.MCDownloadVersionList
 import java.io.File
+import java.net.UnknownHostException
 
 object MinecraftLauncher {
     private var cacheVersion: IVersion? = null
@@ -64,7 +65,11 @@ object MinecraftLauncher {
             return cacheVersion!!
         }
         val versionList = MCDownloadVersionList(minecraftInstance)
-        versionList.startDownload()
+        try {
+            versionList.startDownload()
+        } catch (ex: UnknownHostException) {
+            ex.printStackTrace()
+        }
         cacheVersion = versionList.retrieveVersionInfo("1.12.2-forge1.12.2-14.23.5.2836")
         return cacheVersion!!
     }

@@ -10,6 +10,7 @@ import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
 import java.io.IOException
 import java.lang.Thread.sleep
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
 class MainController(val stateMachine: IImplementState, val progressMonitor: IProgressMonitor) {
@@ -69,6 +70,8 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
         val downloader = ComposerDownloader(minecraftAccountManager)
         try {
             downloader.downloadAll(progressMonitor)
+        } catch (e: UnknownHostException) {
+            e.printStackTrace() //No internet
         } catch (e: Exception) {
             stateMachine.setState(
                 ErrorLaunchGameState(

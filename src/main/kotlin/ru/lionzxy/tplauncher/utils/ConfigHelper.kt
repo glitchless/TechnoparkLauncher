@@ -5,6 +5,10 @@ import ru.lionzxy.tplauncher.config.Config
 import sk.tomsik68.mclauncher.impl.common.Platform
 import java.io.File
 
+enum class MinecraftModpack(val modpackName: String) {
+    MIDGARD("Midgard")
+}
+
 object ConfigHelper {
     private val gson = Gson()
     private val configJson = File(getDefaultDirectory(), "profile.json")
@@ -31,6 +35,12 @@ object ConfigHelper {
         val dir = File(Platform.getCurrentPlatform().workingDirectory, "technomine")
         dir.mkdirs()
         return dir
+    }
+
+    fun getMinecraftDirectory(modpack: MinecraftModpack): File {
+        val file = File(getDefaultDirectory(), modpack.modpackName.toLowerCase())
+        file.mkdir()
+        return file
     }
 
     fun getTemporaryDirectory(): File {

@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
 import ru.lionzxy.tplauncher.utils.ConfigHelper
+import ru.lionzxy.tplauncher.utils.MinecraftModpack
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 import sk.tomsik68.mclauncher.util.FileUtils
 import sk.tomsik68.mclauncher.util.HttpUtils
@@ -19,7 +20,8 @@ class UpdateDownloader : IDownloader {
 
     override fun init(progressMonitor: IProgressMonitor) {
         progressMonitor.setStatus("Получение списка обновлений с сервера...")
-        val lastUpdateTimestamp = ConfigHelper.config.lastUpdateFromChangeLog ?: 0
+        val lastUpdateTimestamp =
+            ConfigHelper.config.modpackDownloadedInfo[MinecraftModpack.MIDGARD]?.lastUpdateFromChangeLog ?: 0
         val json = HttpUtils.httpGet(UPDATER_JSON_URL)
         val type = object : TypeToken<Map<String, Map<String, Action>>>() {}.type
         val map = gson.fromJson<Map<String, Map<String, Action>>>(json, type)
@@ -31,7 +33,7 @@ class UpdateDownloader : IDownloader {
 
     override fun download(progressMonitor: IProgressMonitor) {
         progressMonitor.setStatus("Начинаем загружать обновления...")
-        val base = ConfigHelper.getDefaultDirectory()
+        val base = ConfigHelper.getMinecraftDirectory(MinecraftModpack.MIDGARD)
         if (changes.isEmpty()) {
             return
         }
@@ -52,7 +54,7 @@ class UpdateDownloader : IDownloader {
             return
         }
         ConfigHelper.writeToConfig {
-            lastUpdateFromChangeLog = lastChangeTimestamp
+            modpackDownloadedInfo[MinecraftModpack.MIDGARD]?.lastUpdateFromChangeLog = lastChangeTimestamp
         }
     }
 

@@ -2,6 +2,7 @@ package ru.lionzxy.tplauncher.downloader
 
 import net.lingala.zip4j.core.ZipFile
 import ru.lionzxy.tplauncher.utils.ConfigHelper
+import ru.lionzxy.tplauncher.utils.MinecraftModpack
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 import sk.tomsik68.mclauncher.util.FileUtils
 import java.io.File
@@ -22,17 +23,17 @@ class InitialDownloader : IDownloader {
         val zipFile = ZipFile(dist)
         progressMonitor.setStatus("Разархивирование модов...")
         progressMonitor.setProgress(-1)
-        zipFile.extractAll(ConfigHelper.getDefaultDirectory().absolutePath)
+        zipFile.extractAll(ConfigHelper.getMinecraftDirectory(MinecraftModpack.MIDGARD).absolutePath)
         markDownloaded()
     }
 
     private fun markDownloaded() {
         ConfigHelper.writeToConfig {
-            downloadFirstPack = true
+            modpackDownloadedInfo[MinecraftModpack.MIDGARD]?.initFileDownload = true
         }
     }
 
     override fun shouldDownload(): Boolean {
-        return !(ConfigHelper.config.downloadFirstPack ?: false)
+        return !(ConfigHelper.config.modpackDownloadedInfo[MinecraftModpack.MIDGARD]?.initFileDownload ?: false)
     }
 }

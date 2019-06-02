@@ -22,7 +22,7 @@ object MinecraftLauncher {
         }
         val version = getVersion(minecraft)
         println("Minecraft Location: ${minecraft.location}")
-        val launchCommands =
+        var launchCommands =
             version.launcher.getLaunchCommand(
                 session,
                 minecraft,
@@ -30,9 +30,13 @@ object MinecraftLauncher {
                 version,
                 LauncherSettings(ConfigHelper.config.settings),
                 null
-            ).map {
+            ).filter { !it.isNullOrEmpty() }
+
+        if (OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS) {
+            launchCommands = launchCommands.map {
                 replaceAbsolutePathInString(it, minecraft.location.absolutePath)
             }
+        }
 
         launchCommands.forEach { print("$it ") }
         if (OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS && ConfigHelper.config.settings.isDebug) {

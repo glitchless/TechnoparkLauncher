@@ -2,20 +2,27 @@ buildscript {
     ext.kotlin_version = '1.1.1'
     repositories {
         mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlin_version"
+        classpath 'gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8'
     }
 }
+
 apply plugin: 'kotlin'
 apply plugin: 'java'
 apply plugin: "kotlin-allopen"
+apply plugin: 'de.fuerstenau.buildconfig'
 apply from: "http://dl.bintray.com/content/shemnon/javafx-gradle/8.1.1/javafx.plugin"
 //apply plugin: 'application'
 group 'glicthless'
 version '1.0-SNAPSHOT'
 
+version = "1.0." + getTime()
 sourceCompatibility = 1.8
 
 repositories {
@@ -40,11 +47,17 @@ dependencies {
     implementation 'com.github.LionZXY:oslib:master-SNAPSHOT'
     implementation "org.rauschig:jarchivelib:1.0.0"
     implementation "net.minidev:json-smart:1.1.1"
+    implementation 'io.sentry:sentry:1.7.5'
     implementation "commons-codec:commons-codec:1.12"
     //implementation 'org.bitbucket.shemnon.javafxplugin:gradle-javafx-plugin:8.1.1'
 
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+buildConfig {
+    appName = project.name
+    version = project.version
 }
 
 javafx {
@@ -53,7 +66,7 @@ javafx {
 
 task fatJar(type: Jar) {
     manifest {
-        attributes 'Implementation-Title': 'rpi-sense-hat-lib',
+        attributes 'Implementation-Title': 'launcher',
                 'Implementation-Version': version,
                 'Main-Class': 'ru.lionzxy.tplauncher.MainKt'
     }
@@ -64,4 +77,8 @@ task fatJar(type: Jar) {
         }
     }
     with jar
+}
+
+static def getTime() {
+    return new Date().format('MMddHHmm')
 }

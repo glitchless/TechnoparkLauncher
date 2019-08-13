@@ -1,5 +1,6 @@
 package ru.lionzxy.tplauncher.view.main
 
+import javafx.application.Platform
 import javafx.collections.FXCollections
 import javafx.geometry.Insets
 import javafx.geometry.Pos
@@ -9,7 +10,6 @@ import javafx.scene.control.ProgressBar
 import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
-import ru.lionzxy.tplauncher.Main
 import ru.lionzxy.tplauncher.utils.Constants.DEFAULT_MARGIN
 import ru.lionzxy.tplauncher.utils.recursiveDisable
 import ru.lionzxy.tplauncher.utils.recursiveEnable
@@ -256,7 +256,7 @@ class MainWindow : View(), IImplementState {
         successLoginText.text = state.successLoginText
 
         if (!state.isOpen) {
-            Main.closeApplication()
+            Platform.exit()
         }
 
         if (state.registerFieldIsVisible) {

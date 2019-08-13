@@ -16,13 +16,14 @@ buildscript {
 apply plugin: 'kotlin'
 apply plugin: 'java'
 apply plugin: "kotlin-allopen"
+apply plugin: 'idea'
 apply plugin: 'de.fuerstenau.buildconfig'
 apply from: "http://dl.bintray.com/content/shemnon/javafx-gradle/8.1.1/javafx.plugin"
 //apply plugin: 'application'
-group 'glicthless'
+group 'ru.lionzxy.tplauncher'
 version '1.0-SNAPSHOT'
 
-version = "1.0." + getTime()
+version = "1.2." + getTime()
 sourceCompatibility = 1.8
 
 repositories {
@@ -58,6 +59,11 @@ dependencies {
 buildConfig {
     appName = project.name
     version = project.version
+
+    clsName = 'BuildConfig'      // sets the name of the BuildConfig class
+    packageName = project.group  // sets the package of the BuildConfig class,
+    // 'de.fuerstenau.buildconfig' if project.group is not set
+    charset = 'UTF-8'            // sets charset of the generated class,
 }
 
 javafx {

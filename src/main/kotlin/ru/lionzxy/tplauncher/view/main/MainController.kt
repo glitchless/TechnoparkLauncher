@@ -1,5 +1,6 @@
 package ru.lionzxy.tplauncher.view.main
 
+import ru.lionzxy.tplauncher.SENTRY
 import ru.lionzxy.tplauncher.downloader.ComposerDownloader
 import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
 import ru.lionzxy.tplauncher.utils.LogoUtils
@@ -58,7 +59,7 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
             exp.printStackTrace()
             stateMachine.setState(ErrorInitialState(exp.reason ?: exp.localizedMessage))
         } catch (ioExp: IOException) {
-            stateMachine.setState(ErrorInitialState("Проверьте подключение к интернету"));
+            stateMachine.setState(ErrorInitialState("Проверьте подключение к интернету"))
         }
     }
 
@@ -71,12 +72,14 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
         try {
             downloader.downloadAll(progressMonitor)
         } catch (e: UnknownHostException) {
-            e.printStackTrace() //No internet
+            e.printStackTrace()
+            stateMachine.setState(ErrorInitialState("Проверьте подключение к интернету"))
         } catch (e: Exception) {
+            SENTRY.sendException(e)
             stateMachine.setState(
                 ErrorLaunchGameState(
                     currentState,
-                    "Внутреняя ошибка, сообщите разработчикам: ${e.localizedMessage}"
+                    "Внутреняя ошибка, мы уже исправляем это"
                 )
             )
             e.printStackTrace()

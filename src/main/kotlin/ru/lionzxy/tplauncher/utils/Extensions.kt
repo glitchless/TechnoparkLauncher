@@ -7,7 +7,7 @@ import javafx.scene.Node
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import org.apache.commons.codec.digest.DigestUtils
-import ru.lionzxy.tplauncher.Main
+import ru.lionzxy.tplauncher.ASYNC_TASK_EXECUTOR
 import tornadofx.*
 import java.awt.Desktop
 import java.io.Closeable
@@ -21,7 +21,7 @@ inline fun runOnUi(crossinline invoke: () -> Unit) {
 }
 
 inline fun runAsync(crossinline invoke: () -> Unit) {
-    Main.asyncTaskExecutor.submit {
+    ASYNC_TASK_EXECUTOR.submit {
         try {
             invoke.invoke()
         } catch (e: Exception) {

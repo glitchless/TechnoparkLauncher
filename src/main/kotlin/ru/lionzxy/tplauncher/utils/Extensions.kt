@@ -102,7 +102,7 @@ fun File.hashSHA1(): String {
 
 fun Context.setUser(profile: Profile?) {
     profile ?: return
-    User(profile.uuid, profile.username, user.ipAddress, profile.email, user.data)
+    User(profile.uuid, profile.username, user?.ipAddress, profile.email, user?.data)
 }
 
 /**

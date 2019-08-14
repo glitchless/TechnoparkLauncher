@@ -1,5 +1,6 @@
 package ru.lionzxy.tplauncher.view.main
 
+import io.sentry.Sentry
 import ru.lionzxy.tplauncher.SENTRY
 import ru.lionzxy.tplauncher.downloader.ComposerDownloader
 import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
@@ -54,13 +55,16 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
 
         try {
             minecraftAccountManager.login(email, password)
-            onGameStart(LoggedState(email))
         } catch (exp: YDServiceAuthenticationException) {
             exp.printStackTrace()
             stateMachine.setState(ErrorInitialState(exp.reason ?: exp.localizedMessage))
+            return
         } catch (ioExp: IOException) {
+            ioExp.printStackTrace()
             stateMachine.setState(ErrorInitialState("Проверьте подключение к интернету"))
+            return
         }
+        onGameStart(LoggedState(email))
     }
 
     fun onGameStart(baseState: BaseState = stateMachine.currentState()) {
@@ -71,11 +75,14 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
         val downloader = ComposerDownloader(minecraftAccountManager)
         try {
             downloader.downloadAll(progressMonitor)
+            LogoUtils.setLogoForMinecraft(MinecraftModpack.MIDGARD)
+            minecraftAccountManager.launch()
         } catch (e: UnknownHostException) {
             e.printStackTrace()
             stateMachine.setState(ErrorInitialState("Проверьте подключение к интернету"))
+            return
         } catch (e: Exception) {
-            SENTRY.sendException(e)
+            Sentry.capture(e)
             stateMachine.setState(
                 ErrorLaunchGameState(
                     currentState,
@@ -83,10 +90,9 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
                 )
             )
             e.printStackTrace()
+            return
         }
 
-        LogoUtils.setLogoForMinecraft(MinecraftModpack.MIDGARD)
-        minecraftAccountManager.launch()
 
         stateMachine.setState(MinecraftRunningState(currentState))
         progressMonitor.setStatus("Запускаем Minecraft...")

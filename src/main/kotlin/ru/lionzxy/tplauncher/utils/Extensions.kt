@@ -1,6 +1,7 @@
 package ru.lionzxy.tplauncher.utils
 
 import com.sun.net.httpserver.HttpExchange
+import io.sentry.Sentry
 import javafx.application.Platform
 import javafx.event.EventTarget
 import javafx.scene.Node
@@ -25,6 +26,7 @@ inline fun runAsync(crossinline invoke: () -> Unit) {
         try {
             invoke.invoke()
         } catch (e: Exception) {
+            Sentry.capture(e)
             e.printStackTrace()
         }
     }

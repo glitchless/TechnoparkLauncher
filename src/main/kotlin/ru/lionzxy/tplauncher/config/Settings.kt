@@ -32,7 +32,7 @@ class Settings() {
     }
 
     private fun getDefaultCommandPrefix() =
-        if (OperatingSystem.getOperatingSystem().isUnix) "nohup" else "cmd.exe /C start"
+        if (OperatingSystem.getOperatingSystem().isUnix) "/usr/bin/nohup" else "cmd.exe /C start"
 
     private fun getDefaultJavaLocation(): String? {
         if (!ConfigHelper.getJREPathFile().exists()) {

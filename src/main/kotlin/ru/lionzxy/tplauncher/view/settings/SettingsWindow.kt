@@ -107,7 +107,10 @@ class SettingsWindow : View() {
                         margin = Insets(Constants.DEFAULT_MARGIN)
                     }
                     useMaxWidth = true
-                    action { saveSettings() }
+                    action {
+                        saveSettings()
+                        close()
+                    }
                 }
             }
         }
@@ -155,8 +158,10 @@ class SettingsWindow : View() {
         settings.javaLocation = javaPath.text
         settings.isDebug = debugMod.checked
 
+        val mySettings = settings
+
         ConfigHelper.writeToConfig {
-            this.settings = SettingsWindow@ this.settings
+            this.settings = mySettings
         }
 
         modalStage?.sizeToScene()

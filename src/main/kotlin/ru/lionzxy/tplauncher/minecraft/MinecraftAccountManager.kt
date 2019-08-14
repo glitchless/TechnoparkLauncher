@@ -1,8 +1,11 @@
 package ru.lionzxy.tplauncher.minecraft
 
+import io.sentry.Sentry
+import io.sentry.event.User
 import ru.lionzxy.tplauncher.config.Profile
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.MinecraftModpack
+import ru.lionzxy.tplauncher.utils.setUser
 import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
 import sk.tomsik68.mclauncher.api.login.ISession
 import sk.tomsik68.mclauncher.impl.login.legacy.LegacyProfile
@@ -13,6 +16,10 @@ class MinecraftAccountManager() {
     public val isLogged = isLoggedInternal()
     private var session: ISession? = ConfigHelper.config.profile
     val minecraftInstance = MinecraftInstance(ConfigHelper.getMinecraftDirectory(MinecraftModpack.MIDGARD))
+
+    init {
+        Sentry.getContext().setUser(ConfigHelper.config.profile)
+    }
 
     fun getEmail(): String {
         if (!isLogged) {
@@ -27,6 +34,7 @@ class MinecraftAccountManager() {
         ConfigHelper.writeToConfig {
             profile = Profile(session!!.username, session!!.sessionID, session!!.uuid, email)
         }
+        Sentry.getContext().setUser(ConfigHelper.config.profile)
     }
 
     fun launch() {

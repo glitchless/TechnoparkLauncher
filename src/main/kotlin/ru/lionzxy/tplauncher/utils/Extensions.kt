@@ -2,6 +2,8 @@ package ru.lionzxy.tplauncher.utils
 
 import com.sun.net.httpserver.HttpExchange
 import io.sentry.Sentry
+import io.sentry.context.Context
+import io.sentry.event.User
 import javafx.application.Platform
 import javafx.event.EventTarget
 import javafx.scene.Node
@@ -9,6 +11,7 @@ import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import org.apache.commons.codec.digest.DigestUtils
 import ru.lionzxy.tplauncher.ASYNC_TASK_EXECUTOR
+import ru.lionzxy.tplauncher.config.Profile
 import tornadofx.*
 import java.awt.Desktop
 import java.io.Closeable
@@ -95,6 +98,11 @@ fun Node.recursiveEnable() {
 
 fun File.hashSHA1(): String {
     return DigestUtils.sha1Hex(FileInputStream(this) as InputStream)
+}
+
+fun Context.setUser(profile: Profile?) {
+    profile ?: return
+    User(profile.uuid, profile.username, user.ipAddress, profile.email, user.data)
 }
 
 /**

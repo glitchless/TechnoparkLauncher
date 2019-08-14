@@ -1,6 +1,7 @@
 package ru.lionzxy.tplauncher.view.main
 
 import io.sentry.Sentry
+import io.sentry.event.User
 import ru.lionzxy.tplauncher.SENTRY
 import ru.lionzxy.tplauncher.downloader.ComposerDownloader
 import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager

@@ -29,7 +29,7 @@ object SettingsDefault {
         if (totalBytes == null) {
             return "3G"
         }
-        val totalMB = (totalBytes * 8) / (MEGABYTE * 10) // (totalBytes/MEGABYTE)*(8/10)=
+        val totalMB = (totalBytes * 8) / (MEGABYTE * 10) // (totalBytes/MEGABYTE)*(8/10)
 
         return "${totalMB.coerceAtLeast(3 * 1024)}M"
     }

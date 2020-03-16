@@ -4,7 +4,10 @@ import nu.redpois0n.oslib.Arch
 import nu.redpois0n.oslib.OperatingSystem
 import ru.lionzxy.tplauncher.exceptions.HeapSizeInvalidException
 import ru.lionzxy.tplauncher.utils.ConfigHelper
+import ru.lionzxy.tplauncher.utils.SystemMemoryHelper
 import java.io.File
+
+private const val MEGABYTE = 1024L * 1024L
 
 class Settings(
     heapSize: String,
@@ -44,7 +47,23 @@ class Settings(
         }
 
         private fun getDefaultHeapSize(): String {
-            return if (OperatingSystem.getOperatingSystem().arch == Arch.x86) "1G" else "3G"
+            if (OperatingSystem.getOperatingSystem().arch == Arch.x86) {
+                return "1G"
+            }
+
+            var totalBytes: Long? = null
+            try {
+                totalBytes = SystemMemoryHelper.getSystemTotalMemory()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            if (totalBytes == null) {
+                return "3G"
+            }
+            val totalMB = (totalBytes * 8) / (MEGABYTE * 10) // (totalBytes/MEGABYTE)*(8/10)=
+
+            return "${totalMB.coerceAtLeast(3 * 1024)}M"
         }
 
         private fun getDefaultCommandPrefix() =

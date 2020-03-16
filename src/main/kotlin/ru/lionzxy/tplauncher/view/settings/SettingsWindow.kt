@@ -162,7 +162,7 @@ class SettingsWindow : View() {
         val mySettings = settings
 
         ConfigHelper.writeToConfig {
-            Config@this.settings = mySettings
+            Config@ this.settings = mySettings
         }
 
         modalStage?.sizeToScene()

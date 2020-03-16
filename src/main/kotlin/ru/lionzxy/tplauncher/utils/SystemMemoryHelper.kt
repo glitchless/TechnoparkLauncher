@@ -27,7 +27,7 @@ object SystemMemoryHelper {
 
     private fun getSystemTotalMemoryWindows(): Long? {
         val result = execute("wmic", "OS", "get", "TotalVisibleMemorySize") ?: return null
-        val regex = "TotalVisibleMemorySize[^\\>]*(\\d+)".toRegex()
+        val regex = "TotalVisibleMemorySize[^\\d]*(\\d+)".toRegex()
         val bytes = regex.find(result)?.groupValues?.lastOrNull() ?: return null
         val kbytes = bytes.trim().toLongOrNull() ?: return null
         return kbytes * 1000
@@ -35,7 +35,7 @@ object SystemMemoryHelper {
 
     private fun getSystemTotalMemoryLinux(): Long? {
         val result = execute("cat", "/proc/meminfo") ?: return null
-        val regex = "MemTotal:.+(\\d+) kB".toRegex()
+        val regex = "MemTotal:[^\\d]*(\\d+) kB".toRegex()
         val bytes = regex.find(result)?.groupValues?.lastOrNull() ?: return null
         val kbytes = bytes.trim().toLongOrNull() ?: return null
         return kbytes * 1000

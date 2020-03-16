@@ -142,7 +142,8 @@ class SettingsWindow : View() {
 
     fun saveSettings() {
         try {
-            settings.heapSize = memmorySize.text
+            val heapSize = memmorySize.text
+            settings.heapSize = heapSize
         } catch (exp: HeapSizeInvalidException) {
             memmorySizeError.show()
             titleLabel.style {
@@ -161,7 +162,7 @@ class SettingsWindow : View() {
         val mySettings = settings
 
         ConfigHelper.writeToConfig {
-            this.settings = mySettings
+            Config@this.settings = mySettings
         }
 
         modalStage?.sizeToScene()

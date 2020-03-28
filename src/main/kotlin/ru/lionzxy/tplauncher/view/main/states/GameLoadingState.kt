@@ -7,4 +7,5 @@ open class GameLoadingState(email: String) : LoggedState(email) {
     override var buttonDisable = true
     override var disableInputField = true
     override var progressTextContent: String? = "Загружаем игру..."
+    override var disableSelectModpack = true
 }

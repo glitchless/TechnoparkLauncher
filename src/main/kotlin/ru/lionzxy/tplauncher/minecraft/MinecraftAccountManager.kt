@@ -10,10 +10,10 @@ import sk.tomsik68.mclauncher.impl.login.legacy.LegacyProfile
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDLoginService
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
 
-class MinecraftAccountManager() {
+class MinecraftAccountManager(minecraftModpack: MinecraftModpack) {
     public val isLogged = isLoggedInternal()
-    private var session: ISession? = ConfigHelper.config.profile
-    val minecraftInstance = MinecraftInstance(ConfigHelper.getMinecraftDirectory(MinecraftModpack.MIDGARD))
+    internal var session: ISession? = ConfigHelper.config.profile
+    val minecraftInstance = MinecraftInstance(ConfigHelper.getMinecraftDirectory(minecraftModpack))
 
     init {
         Sentry.getContext().setUser(ConfigHelper.config.profile)
@@ -33,10 +33,6 @@ class MinecraftAccountManager() {
             profile = Profile(session!!.username, session!!.sessionID, session!!.uuid, email)
         }
         Sentry.getContext().setUser(ConfigHelper.config.profile)
-    }
-
-    fun launch() {
-        MinecraftLauncher.launch(minecraftInstance, session!!)
     }
 
     private fun isLoggedInternal(): Boolean {

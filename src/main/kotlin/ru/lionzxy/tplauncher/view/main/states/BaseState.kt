@@ -2,7 +2,7 @@ package ru.lionzxy.tplauncher.view.main.states
 
 import ru.lionzxy.tplauncher.utils.Constants
 
-open class BaseState {
+open class BaseState() {
     open var titleColor = Constants.accentColor
     open var loginPasswordVisible = true
     open var successLoginVisible = false
@@ -17,4 +17,5 @@ open class BaseState {
     open var registerFieldIsVisible = false
     open var registerFieldColor = Constants.accentColor
     open var settingsFieldIsClickable = true
+    open var disableSelectModpack = false
 }

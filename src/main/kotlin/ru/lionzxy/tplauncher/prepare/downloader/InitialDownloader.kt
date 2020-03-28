@@ -3,6 +3,7 @@ package ru.lionzxy.tplauncher.prepare.downloader
 import net.lingala.zip4j.core.ZipFile
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.utils.ConfigHelper
+import ru.lionzxy.tplauncher.utils.TextProgressMonitor
 import sk.tomsik68.mclauncher.util.FileUtils
 import java.io.File
 
@@ -16,7 +17,7 @@ class InitialDownloader : IDownloader {
         FileUtils.downloadFileWithProgress(
             minecraft.modpack.initialDownloadLink,
             dist,
-            minecraft.progressMonitor
+            TextProgressMonitor("Загрузка модов... %s", minecraft.progressMonitor)
         )
         val zipFile = ZipFile(dist)
         minecraft.progressMonitor.setStatus("Разархивирование модов...")

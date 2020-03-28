@@ -4,17 +4,12 @@ import javafx.application.Platform
 import javafx.collections.FXCollections
 import javafx.geometry.Insets
 import javafx.geometry.Pos
-import javafx.scene.control.Button
-import javafx.scene.control.Label
-import javafx.scene.control.ProgressBar
-import javafx.scene.control.TextField
+import javafx.scene.control.*
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
+import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
+import ru.lionzxy.tplauncher.utils.*
 import ru.lionzxy.tplauncher.utils.Constants.DEFAULT_MARGIN
-import ru.lionzxy.tplauncher.utils.recursiveDisable
-import ru.lionzxy.tplauncher.utils.recursiveEnable
-import ru.lionzxy.tplauncher.utils.runOnUi
-import ru.lionzxy.tplauncher.utils.svgview
 import ru.lionzxy.tplauncher.view.common.Avatar
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.activated
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.link
@@ -45,6 +40,7 @@ class MainWindow : View(), IImplementState {
     private var registerLabel: Label by singleAssign()
     private var currentBaseState: BaseState = BaseState()
     private var settingsField: HBox by singleAssign()
+    private var modpackCombobox: ComboBox<MinecraftModpack> by singleAssign()
     private var progressBar = ProgressBar()
         set(value) {
             field = value
@@ -109,12 +105,14 @@ class MainWindow : View(), IImplementState {
                                 gridpaneConstraints {
                                     marginLeft = DEFAULT_MARGIN * 2
                                 }
-                                combobox<String> {
+                                modpackCombobox = combobox<MinecraftModpack> {
                                     hgrow = Priority.ALWAYS
                                     maxWidth = Double.MAX_VALUE
-                                    items = FXCollections.observableArrayList("Medium")
+                                    items = FXCollections.observableArrayList(*MinecraftModpack.values())
                                     selectionModel.select(0)
-                                    isDisable = true
+                                    selectionModel.selectedItemProperty().addListener { _, _, newValue ->
+                                        controller.onChangeModpack(newValue)
+                                    }
                                 }
                                 recursiveDisable()
                             }
@@ -251,6 +249,13 @@ class MainWindow : View(), IImplementState {
             loginButton.recursiveEnable()
         }
         loginButton.text = state.buttonText
+
+        if (state.disableSelectModpack) {
+            modpackCombobox.recursiveDisable()
+        } else {
+            modpackCombobox.recursiveEnable()
+        }
+        modpackCombobox.selectionModel.select(ConfigHelper.config.currentModpack)
 
         state.progressTextContent?.let { progressText.text = it }
         successLoginText.text = state.successLoginText

@@ -5,6 +5,7 @@ import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
 import ru.lionzxy.tplauncher.prepare.ComposePrepare
+import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.LogoUtils
 import ru.lionzxy.tplauncher.utils.runAsync
 import ru.lionzxy.tplauncher.view.main.states.*
@@ -16,11 +17,15 @@ import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
 class MainController(val stateMachine: IImplementState, val progressMonitor: IProgressMonitor) {
-    val minecraftAccountManager = MinecraftAccountManager()
+    var context = MinecraftContext(
+        progressMonitor,
+        ConfigHelper.config.currentModpack,
+        MinecraftAccountManager(ConfigHelper.config.currentModpack)
+    )
 
     fun onInitView() {
-        if (minecraftAccountManager.isLogged) {
-            stateMachine.setState(LoggedState(minecraftAccountManager.getEmail()))
+        if (context.minecraftAccountManager.isLogged) {
+            stateMachine.setState(LoggedState(context.minecraftAccountManager.getEmail()))
             return
         }
         stateMachine.setState(InitialState())
@@ -54,7 +59,7 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
         progressMonitor.setProgress(-1)
 
         try {
-            minecraftAccountManager.login(email, password)
+            context.minecraftAccountManager.login(email, password)
         } catch (exp: YDServiceAuthenticationException) {
             exp.printStackTrace()
             stateMachine.setState(ErrorInitialState(exp.reason ?: exp.localizedMessage))
@@ -73,16 +78,11 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
         progressMonitor.setProgress(-1)
 
         val prepareManager = ComposePrepare()
-        val context = MinecraftContext(
-            progressMonitor,
-            MinecraftModpack.MIDGARD,
-            minecraftAccountManager
-        )
 
         try {
             prepareManager.prepareMinecraft(context)
             LogoUtils.setLogoForMinecraft(context)
-            minecraftAccountManager.launch()
+            context.launch()
         } catch (e: UnknownHostException) {
             e.printStackTrace()
             stateMachine.setState(ErrorInitialState("Проверьте подключение к интернету"))
@@ -104,6 +104,14 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
         progressMonitor.setProgress(-1)
         sleep(TimeUnit.MINUTES.toMillis(1))
         stateMachine.setState(MinecraftLaunchedState(currentState))
+    }
+
+    fun onChangeModpack(newPack: MinecraftModpack) {
+        context = MinecraftContext(progressMonitor, newPack, MinecraftAccountManager(newPack))
+        ConfigHelper.writeToConfig {
+            currentModpack = newPack
+        }
+        stateMachine.setState(stateMachine.currentState())
     }
 
     fun onPasswordOrLoginChange() {

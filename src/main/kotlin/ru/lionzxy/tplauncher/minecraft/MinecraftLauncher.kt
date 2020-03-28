@@ -2,9 +2,7 @@ package ru.lionzxy.tplauncher.minecraft
 
 import nu.redpois0n.oslib.OperatingSystem
 import ru.lionzxy.tplauncher.utils.ConfigHelper
-import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
 import sk.tomsik68.mclauncher.api.login.ISession
-import sk.tomsik68.mclauncher.api.servers.ServerInfo
 import sk.tomsik68.mclauncher.api.versions.IVersion
 import sk.tomsik68.mclauncher.impl.versions.mcdownload.MCDownloadVersionList
 import java.io.File
@@ -16,17 +14,18 @@ object MinecraftLauncher {
     /**
      * @return runDetached if true run process on system support detach process
      */
-    fun launch(minecraft: MinecraftInstance, session: ISession) {
+    fun launch(minecraft: MinecraftContext, session: ISession) {
         if (Thread.interrupted()) {
             throw InterruptedException()
         }
+        val instance = minecraft.getMinecraftInstance()
         val version = getVersion(minecraft)
-        println("Minecraft Location: ${minecraft.location}")
+        println("Minecraft Location: ${minecraft.getDirectory()}")
         var launchCommands =
             version.launcher.getLaunchCommand(
                 session,
-                minecraft,
-                ServerInfo("minecraft.glitchless.ru", "Glitchless Server", null, 25565),
+                instance,
+                minecraft.modpack.defaultServer,
                 version,
                 LauncherSettings(ConfigHelper.config.settings),
                 null
@@ -34,7 +33,7 @@ object MinecraftLauncher {
 
         if (OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS) {
             launchCommands = launchCommands.map {
-                replaceAbsolutePathInString(it, minecraft.location.absolutePath)
+                replaceAbsolutePathInString(it, minecraft.getDirectory().absolutePath)
             }
         }
 
@@ -46,7 +45,7 @@ object MinecraftLauncher {
         val pb = ProcessBuilder(launchCommands)
         pb.redirectError(File("mcerr.log"))
         pb.redirectOutput(File("mcout.log"))
-        pb.directory(minecraft.location)
+        pb.directory(minecraft.getDirectory())
         pb.start()
     }
 
@@ -66,11 +65,11 @@ object MinecraftLauncher {
         return input.replace(pathForReplace, currentPathRelative)
     }
 
-    fun getVersion(minecraftInstance: MinecraftInstance): IVersion {
+    fun getVersion(minecraft: MinecraftContext): IVersion {
         if (cacheVersion != null) {
             return cacheVersion!!
         }
-        val versionList = MCDownloadVersionList(minecraftInstance)
+        val versionList = MCDownloadVersionList(minecraft.getMinecraftInstance())
         try {
             versionList.startDownload()
         } catch (ex: UnknownHostException) {

@@ -1,6 +1,7 @@
 package ru.lionzxy.tplauncher.config
 
-import ru.lionzxy.tplauncher.utils.MinecraftModpack
+import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
+
 
 data class Config(
     var profile: Profile? = null,

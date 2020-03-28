@@ -2,12 +2,9 @@ package ru.lionzxy.tplauncher.utils
 
 import com.google.gson.Gson
 import ru.lionzxy.tplauncher.config.Config
+import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
 import sk.tomsik68.mclauncher.impl.common.Platform
 import java.io.File
-
-enum class MinecraftModpack(val modpackName: String) {
-    MIDGARD("Midgard")
-}
 
 object ConfigHelper {
     private val gson = Gson()

@@ -1,28 +1,24 @@
-package ru.lionzxy.tplauncher.downloader
+package ru.lionzxy.tplauncher.prepare.downloader
 
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
+import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.utils.ConfigHelper
-import ru.lionzxy.tplauncher.utils.MinecraftModpack
-import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 import sk.tomsik68.mclauncher.util.FileUtils
 import sk.tomsik68.mclauncher.util.HttpUtils
 import java.io.File
-
-const val UPDATER_JSON_URL = "https://minecraft.glitchless.ru/minecraft_dist/first_server/changelog.json"
-const val HOST_URL = "https://minecraft.glitchless.ru/minecraft_dist/first_server/"
 
 class UpdateDownloader : IDownloader {
     val changes = HashMap<String, Action>()
     val gson = Gson()
     var lastChangeTimestamp = 0L
 
-    override fun init(progressMonitor: IProgressMonitor) {
-        progressMonitor.setStatus("Получение списка обновлений с сервера...")
+    override fun init(minecraft: MinecraftContext) {
+        minecraft.progressMonitor.setStatus("Получение списка обновлений с сервера...")
         val lastUpdateTimestamp =
-            ConfigHelper.config.modpackDownloadedInfo[MinecraftModpack.MIDGARD]?.lastUpdateFromChangeLog ?: 0
-        val json = HttpUtils.httpGet(UPDATER_JSON_URL)
+            ConfigHelper.config.modpackDownloadedInfo[minecraft.modpack]?.lastUpdateFromChangeLog ?: 0
+        val json = HttpUtils.httpGet(minecraft.modpack.updateJsonLink)
         val type = object : TypeToken<Map<String, Map<String, Action>>>() {}.type
         val map = gson.fromJson<Map<String, Map<String, Action>>>(json, type)
         val changeLog = map.map { it.key.toLong() to it.value }
@@ -31,9 +27,9 @@ class UpdateDownloader : IDownloader {
         changeLog.forEach { changes.putAll(it.second) }
     }
 
-    override fun download(progressMonitor: IProgressMonitor) {
-        progressMonitor.setStatus("Начинаем загружать обновления...")
-        val base = ConfigHelper.getMinecraftDirectory(MinecraftModpack.MIDGARD)
+    override fun download(minecraft: MinecraftContext) {
+        minecraft.progressMonitor.setStatus("Начинаем загружать обновления...")
+        val base = minecraft.getDirectory()
         if (changes.isEmpty()) {
             return
         }
@@ -46,19 +42,23 @@ class UpdateDownloader : IDownloader {
                 if (file.parentFile.exists()) {
                     file.parentFile.mkdirs()
                 }
-                progressMonitor.setStatus("Загрузка ${it.key}")
-                FileUtils.downloadFileWithProgress(HOST_URL + it.key, file, progressMonitor)
+                minecraft.progressMonitor.setStatus("Загрузка ${it.key}")
+                FileUtils.downloadFileWithProgress(
+                    minecraft.modpack.updateHostLink + it.key,
+                    file,
+                    minecraft.progressMonitor
+                )
             }
         }
         if (lastChangeTimestamp <= 0) {
             return
         }
         ConfigHelper.writeToConfig {
-            modpackDownloadedInfo[MinecraftModpack.MIDGARD]?.lastUpdateFromChangeLog = lastChangeTimestamp
+            modpackDownloadedInfo[minecraft.modpack]?.lastUpdateFromChangeLog = lastChangeTimestamp
         }
     }
 
-    override fun shouldDownload() = true
+    override fun shouldDownload(minecraft: MinecraftContext) = true
 }
 
 enum class Action(code: Int) {

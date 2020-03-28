@@ -6,6 +6,7 @@ import javafx.stage.Stage
 import nu.redpois0n.oslib.OperatingSystem
 import ru.lionzxy.tplauncher.data.AssetsIndex
 import ru.lionzxy.tplauncher.data.MinecraftAsset
+import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import java.awt.Toolkit
 import java.io.File
 import java.net.URL
@@ -32,13 +33,13 @@ object LogoUtils {
         stage.icons.add(Image(ResourceHelper.getResource("icon/logo.png").openStream()))
     }
 
-    fun setLogoForMinecraft(minecraftModpack: MinecraftModpack) {
+    fun setLogoForMinecraft(minecraft: MinecraftContext) {
         val indexesFile = File(
-            ConfigHelper.getMinecraftDirectory(minecraftModpack),
+            minecraft.getDirectory(),
             "assets/indexes/"
         ).listFiles { _, name -> name.endsWith(".json") }
-        val logo16x16 = getAsset(minecraftModpack, ResourceHelper.getResource("icon/logo_16x16.png"))
-        val logo32x32 = getAsset(minecraftModpack, ResourceHelper.getResource("icon/logo_32x32.png"))
+        val logo16x16 = getAsset(minecraft, ResourceHelper.getResource("icon/logo_16x16.png"))
+        val logo32x32 = getAsset(minecraft, ResourceHelper.getResource("icon/logo_32x32.png"))
         indexesFile.forEach {
             pathAssetsFile(it, logo16x16, logo32x32)
         }
@@ -63,7 +64,7 @@ object LogoUtils {
         assetsFile.writeText(json)
     }
 
-    private fun getAsset(minecraftModpack: MinecraftModpack, url: URL): MinecraftAsset {
+    private fun getAsset(minecraft: MinecraftContext, url: URL): MinecraftAsset {
         val tmpFile = File(ConfigHelper.getTemporaryDirectory(), "filetohash")
         tmpFile.delete()
         url.openStream().use { it.copyTo(tmpFile.outputStream()) }
@@ -71,7 +72,7 @@ object LogoUtils {
         val size = tmpFile.length()
 
         val target =
-            File(ConfigHelper.getMinecraftDirectory(minecraftModpack), "assets/objects/${hash.substring(0, 2)}/$hash")
+            File(minecraft.getDirectory(), "assets/objects/${hash.substring(0, 2)}/$hash")
         target.delete()
         tmpFile.copyTo(target)
         tmpFile.delete()

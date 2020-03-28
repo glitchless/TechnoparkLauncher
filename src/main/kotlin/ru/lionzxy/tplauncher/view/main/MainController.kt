@@ -1,12 +1,11 @@
 package ru.lionzxy.tplauncher.view.main
 
 import io.sentry.Sentry
-import io.sentry.event.User
-import ru.lionzxy.tplauncher.SENTRY
-import ru.lionzxy.tplauncher.downloader.ComposerDownloader
 import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
+import ru.lionzxy.tplauncher.minecraft.MinecraftContext
+import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
+import ru.lionzxy.tplauncher.prepare.ComposePrepare
 import ru.lionzxy.tplauncher.utils.LogoUtils
-import ru.lionzxy.tplauncher.utils.MinecraftModpack
 import ru.lionzxy.tplauncher.utils.runAsync
 import ru.lionzxy.tplauncher.view.main.states.*
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
@@ -73,10 +72,16 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
         stateMachine.setState(GameLoadingState(currentState))
         progressMonitor.setProgress(-1)
 
-        val downloader = ComposerDownloader(minecraftAccountManager)
+        val prepareManager = ComposePrepare()
+        val context = MinecraftContext(
+            progressMonitor,
+            MinecraftModpack.MIDGARD,
+            minecraftAccountManager
+        )
+
         try {
-            downloader.downloadAll(progressMonitor)
-            LogoUtils.setLogoForMinecraft(MinecraftModpack.MIDGARD)
+            prepareManager.prepareMinecraft(context)
+            LogoUtils.setLogoForMinecraft(context)
             minecraftAccountManager.launch()
         } catch (e: UnknownHostException) {
             e.printStackTrace()
@@ -93,7 +98,6 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
             e.printStackTrace()
             return
         }
-
 
         stateMachine.setState(MinecraftRunningState(currentState))
         progressMonitor.setStatus("Запускаем Minecraft...")

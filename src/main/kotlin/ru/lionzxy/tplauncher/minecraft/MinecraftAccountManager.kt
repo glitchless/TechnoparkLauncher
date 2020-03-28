@@ -1,10 +1,8 @@
 package ru.lionzxy.tplauncher.minecraft
 
 import io.sentry.Sentry
-import io.sentry.event.User
 import ru.lionzxy.tplauncher.config.Profile
 import ru.lionzxy.tplauncher.utils.ConfigHelper
-import ru.lionzxy.tplauncher.utils.MinecraftModpack
 import ru.lionzxy.tplauncher.utils.setUser
 import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
 import sk.tomsik68.mclauncher.api.login.ISession

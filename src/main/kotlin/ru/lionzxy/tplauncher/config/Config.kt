@@ -8,5 +8,6 @@ data class Config(
     var settings: Settings = Settings(),
     var currentModpack: MinecraftModpack = MinecraftModpack.MIDGARD,
     var modpackDownloadedInfo: HashMap<String, DownloadedInfo>
-    = HashMap(MinecraftModpack.values().map { it.modpackName to DownloadedInfo() }.toMap())
+    = HashMap(MinecraftModpack.values().map { it.modpackName to DownloadedInfo() }.toMap()),
+    var modpackSyncInfo: HashMap<String, SyncInfo> = HashMap()
 )

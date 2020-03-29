@@ -1,6 +1,5 @@
 package ru.lionzxy.tplauncher.utils
 
-import com.sun.net.httpserver.HttpExchange
 import io.sentry.Sentry
 import io.sentry.context.Context
 import io.sentry.event.User
@@ -18,7 +17,12 @@ import java.io.Closeable
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
+import java.lang.Long.signum
+import java.lang.Math.abs
 import java.net.URI
+import java.text.CharacterIterator
+import java.text.StringCharacterIterator
+
 
 inline fun runOnUi(crossinline invoke: () -> Unit) {
     Platform.runLater { invoke.invoke() }
@@ -132,4 +136,36 @@ public inline fun <T : Closeable?, R> T.use(block: (T) -> R): R {
                 }
         }
     }
+}
+
+fun File.folderSize(): Long {
+    if (isFile) {
+        return length()
+    }
+    val files = listFiles()
+    if (files == null || files.isEmpty()) {
+        return 0
+    }
+    var length: Long = 0
+    for (file in files) {
+        length += if (file.isFile) file.length() else folderSize()
+    }
+    return length
+}
+
+fun Long.humanReadableByteCountBin(): String? {
+    val absB = if (this == Long.MIN_VALUE) Long.MAX_VALUE else abs(this)
+    if (absB < 1024) {
+        return "$this B"
+    }
+    var value = absB
+    val ci: CharacterIterator = StringCharacterIterator("KMGTPE")
+    var i = 40
+    while (i >= 0 && absB > 0xfffccccccccccccL shr i) {
+        value = value shr 10
+        ci.next()
+        i -= 10
+    }
+    value *= signum(this).toLong()
+    return String.format("%.1f %ciB", value / 1024.0, ci.current())
 }

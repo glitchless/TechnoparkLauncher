@@ -50,6 +50,12 @@ object ConfigHelper {
         return dir
     }
 
+    fun getBackupFolder(): File {
+        val dir = File(getDefaultDirectory(), "backup")
+        dir.mkdirs()
+        return dir
+    }
+
     fun getJavaDirectory(): File {
         val dir = File(getDefaultDirectory(), "jre")
         dir.mkdirs()

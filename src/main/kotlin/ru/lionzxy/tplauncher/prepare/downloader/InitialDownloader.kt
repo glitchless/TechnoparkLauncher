@@ -1,6 +1,6 @@
 package ru.lionzxy.tplauncher.prepare.downloader
 
-import net.lingala.zip4j.core.ZipFile
+import org.zeroturnaround.zip.ZipUtil
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.TextProgressMonitor
@@ -19,10 +19,10 @@ class InitialDownloader : IDownloader {
             dist,
             TextProgressMonitor("Загрузка модов... %s", minecraft.progressMonitor)
         )
-        val zipFile = ZipFile(dist)
+
         minecraft.progressMonitor.setStatus("Разархивирование модов...")
         minecraft.progressMonitor.setProgress(-1)
-        zipFile.extractAll(minecraft.getDirectory().absolutePath)
+        ZipUtil.unpack(dist, minecraft.getDirectory())
         markDownloaded(minecraft)
     }
 

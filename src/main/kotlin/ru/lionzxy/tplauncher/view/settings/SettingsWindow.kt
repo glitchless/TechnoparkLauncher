@@ -16,10 +16,7 @@ import ru.lionzxy.tplauncher.view.common.MyCheckBox
 import ru.lionzxy.tplauncher.view.common.myCheckBox
 import ru.lionzxy.tplauncher.view.main.listener.MoveWindowHandler
 import ru.lionzxy.tplauncher.view.main.listener.OpenSiteListener
-import ru.lionzxy.tplauncher.view.settings.listener.CloseListener
-import ru.lionzxy.tplauncher.view.settings.listener.DeleteAllListener
-import ru.lionzxy.tplauncher.view.settings.listener.LogOutListener
-import ru.lionzxy.tplauncher.view.settings.listener.OpenDirectoryListener
+import ru.lionzxy.tplauncher.view.settings.listener.*
 import tornadofx.*
 
 class SettingsWindow : View() {
@@ -80,6 +77,13 @@ class SettingsWindow : View() {
                 }
                 addClass(GlobalStylesheet.activated)
                 onMouseClicked = LogOutListener()
+            }
+            label(ClearBackupListener.getBackupClearText()) {
+                vboxConstraints {
+                    marginLeft = 23.0
+                }
+                addClass(GlobalStylesheet.activated)
+                onMouseClicked = ClearBackupListener(this)
             }
             label("Удалить игру и сбросить настройки лаунчера") {
                 vboxConstraints {

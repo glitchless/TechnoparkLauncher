@@ -252,8 +252,10 @@ class MainWindow : View(), IImplementState {
 
         if (state.disableSelectModpack) {
             modpackCombobox.recursiveDisable()
+            modpackCombobox.isDisable = true
         } else {
             modpackCombobox.recursiveEnable()
+            modpackCombobox.isDisable = false
         }
         modpackCombobox.selectionModel.select(ConfigHelper.config.currentModpack)
 

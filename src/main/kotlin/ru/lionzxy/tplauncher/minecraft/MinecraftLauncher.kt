@@ -75,7 +75,7 @@ object MinecraftLauncher {
         } catch (ex: UnknownHostException) {
             ex.printStackTrace()
         }
-        cacheVersion = versionList.retrieveVersionInfo("1.12.2-forge1.12.2-14.23.5.2836")
+        cacheVersion = versionList.retrieveVersionInfo(minecraft.modpack.version)
         return cacheVersion!!
     }
 }

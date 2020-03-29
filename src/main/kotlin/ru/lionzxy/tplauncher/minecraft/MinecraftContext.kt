@@ -1,5 +1,6 @@
 package ru.lionzxy.tplauncher.minecraft
 
+import com.google.gson.annotations.SerializedName
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
 import sk.tomsik68.mclauncher.api.servers.ServerInfo
@@ -14,6 +15,7 @@ enum class MinecraftModpack(
     val defaultServer: ServerInfo,
     val version: String
 ) {
+    @SerializedName("MIDGARD")
     MIDGARD(
         "Midgard",
         "https://minecraft.glitchless.ru/minecraft_dist/first_server/initial.zip",
@@ -22,6 +24,7 @@ enum class MinecraftModpack(
         ServerInfo("minecraft.glitchless.ru", "Glitchless Server", null, 25565),
         "1.12.2-forge1.12.2-14.23.5.2836"
     ),
+    @SerializedName("LIGHT")
     LIGHT(
         "Light",
         "https://minecraft.glitchless.ru/minecraft_dist/first_server/initial.zip",

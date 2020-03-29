@@ -2,6 +2,7 @@ package ru.lionzxy.tplauncher.utils
 
 import com.google.gson.Gson
 import ru.lionzxy.tplauncher.config.Config
+import ru.lionzxy.tplauncher.config.DownloadedInfo
 import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
 import sk.tomsik68.mclauncher.impl.common.Platform
 import java.io.File
@@ -16,7 +17,10 @@ object ConfigHelper {
             return@lazy internalConfig
         }
 
-        gson.fromJson(configJson.readText(), Config::class.java)
+        val config = gson.fromJson(configJson.readText(), Config::class.java)
+        MinecraftModpack.values().filter { config.modpackDownloadedInfo[it.modpackName] == null }
+            .forEach { config.modpackDownloadedInfo[it.modpackName] = DownloadedInfo() }
+        return@lazy config
     }
 
     init {

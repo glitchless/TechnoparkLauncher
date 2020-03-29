@@ -28,11 +28,11 @@ class InitialDownloader : IDownloader {
 
     private fun markDownloaded(minecraft: MinecraftContext) {
         ConfigHelper.writeToConfig {
-            modpackDownloadedInfo[minecraft.modpack]?.initFileDownload = true
+            modpackDownloadedInfo[minecraft.modpack.modpackName]!!.initFileDownload = true
         }
     }
 
     override fun shouldDownload(minecraft: MinecraftContext): Boolean {
-        return !(ConfigHelper.config.modpackDownloadedInfo[minecraft.modpack]?.initFileDownload ?: false)
+        return !(ConfigHelper.config.modpackDownloadedInfo[minecraft.modpack.modpackName]!!.initFileDownload ?: false)
     }
 }

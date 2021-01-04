@@ -1,15 +1,19 @@
 buildscript {
-    ext.kotlin_version = '1.1.1'
+    ext.kotlin_version = '1.4.20'
     repositories {
         mavenCentral()
         maven {
             url "https://plugins.gradle.org/m2/"
+        }
+        maven {
+            url "https://jcenter.bintray.com"
         }
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlin_version"
         classpath 'gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8'
+        classpath group: 'de.dynamicfiles.projects.gradle.plugins', name: 'javafx-gradle-plugin', version: '8.8.2'
     }
 }
 
@@ -18,7 +22,7 @@ apply plugin: 'java'
 apply plugin: "kotlin-allopen"
 apply plugin: 'idea'
 apply plugin: 'de.fuerstenau.buildconfig'
-apply from: "http://dl.bintray.com/content/shemnon/javafx-gradle/8.1.1/javafx.plugin"
+apply plugin: 'javafx-gradle-plugin'
 //apply plugin: 'application'
 group 'ru.lionzxy.tplauncher'
 version '1.0-SNAPSHOT'
@@ -71,7 +75,8 @@ buildConfig {
     charset = 'UTF-8'            // sets charset of the generated class,
 }
 
-javafx {
+// Wait https://github.com/FibreFoX/javafx-gradle-plugin/issues/147
+jfx {
     mainClass 'ru.lionzxy.tplauncher.MainApplication'
 }
 

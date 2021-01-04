@@ -82,6 +82,7 @@ object LogoUtils {
 
     private fun setLogoForMac() {
         val image = Toolkit.getDefaultToolkit().getImage(logoUrl)
+        // Only for JDK 8, for JDK 9 use https://stackoverflow.com/questions/6006173/how-do-you-change-the-dock-icon-of-a-java-program/56924202#56924202
         com.apple.eawt.Application.getApplication().dockIconImage = image
     }
 }

@@ -9,10 +9,10 @@ import java.io.File
 
 enum class MinecraftModpack(
     val modpackName: String,
-    val initialDownloadLink: String,
-    val updateJsonLink: String,
-    val updateHostLink: String,
-    val defaultServer: ServerInfo,
+    val initialDownloadLink: String?,
+    val updateJsonLink: String?,
+    val updateHostLink: String?,
+    val defaultServer: ServerInfo?,
     val version: String
 ) {
     @SerializedName("MIDGARD")
@@ -24,6 +24,7 @@ enum class MinecraftModpack(
         ServerInfo("minecraft.glitchless.ru", "Glitchless Server", null, 25565),
         "1.12.2-forge1.12.2-14.23.5.2836"
     ),
+
     @SerializedName("LIGHT")
     LIGHT(
         "Light",
@@ -32,6 +33,14 @@ enum class MinecraftModpack(
         "https://minecraft.glitchless.ru/minecraft_dist/first_server/",
         ServerInfo("minecraft.glitchless.ru", "Glitchless Server", null, 25565),
         "1.12.2-forge1.12.2-14.23.5.2836"
+    ),
+    TEST(
+        modpackName = "Test",
+        initialDownloadLink = null,
+        updateJsonLink = null,
+        updateHostLink = null,
+        defaultServer = ServerInfo("minecraft.glitchless.ru", "Glitchless Server", null, 25565),
+        version = "1.16.4"
     );
 
     override fun toString(): String {

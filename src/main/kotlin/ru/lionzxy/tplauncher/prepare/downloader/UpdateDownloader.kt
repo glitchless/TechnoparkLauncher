@@ -18,7 +18,11 @@ class UpdateDownloader : IDownloader {
         minecraft.progressMonitor.setStatus("Получение списка обновлений с сервера...")
         val lastUpdateTimestamp =
             ConfigHelper.config.modpackDownloadedInfo[minecraft.modpack.modpackName]!!.lastUpdateFromChangeLog ?: 0
-        val json = HttpUtils.httpGet(minecraft.modpack.updateJsonLink)
+        val url = minecraft.modpack.updateJsonLink
+        if (url.isNullOrEmpty()) {
+            return
+        }
+        val json = HttpUtils.httpGet(url)
         val type = object : TypeToken<Map<String, Map<String, Action>>>() {}.type
         val map = gson.fromJson<Map<String, Map<String, Action>>>(json, type)
         val changeLog = map.map { it.key.toLong() to it.value }

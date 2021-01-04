@@ -14,6 +14,11 @@ class InitialDownloader : IDownloader {
     override fun download(minecraft: MinecraftContext) {
         val dist = File(ConfigHelper.getTemporaryDirectory(), "minecraft.zip")
         minecraft.progressMonitor.setStatus("Загрузка модов...")
+        val url = minecraft.modpack.initialDownloadLink
+        if (url.isNullOrEmpty()) {
+            markDownloaded(minecraft)
+            return
+        }
         FileUtils.downloadFileWithProgress(
             minecraft.modpack.initialDownloadLink,
             dist,

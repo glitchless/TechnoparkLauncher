@@ -1,7 +1,6 @@
 #!/bin/bash
 
 URL="$1"
-FOLDER_NAME="jre8u282-full"
 filename=$(basename -- "$URL")
 extension="${filename#*.}"
 UNZIP_DIR="tmp"
@@ -22,9 +21,11 @@ chmod -R 777 $UNZIP_DIR
 
 THIS_CONTEXT=$(pwd)
 cd $UNZIP_DIR || exit
+tmp_files=(*)
+FOLDER_NAME="${tmp_files[0]}"
 if [[ "$extension" == "tar.gz" ]]; then
-  tar -czvf "$THIS_CONTEXT/new-$filename" "$FOLDER_NAME"
+  tar -czvf "$THIS_CONTEXT/$filename" "$FOLDER_NAME"
 else
-  zip -r "$THIS_CONTEXT/new-$filename" "$FOLDER_NAME"
+  zip -r "$THIS_CONTEXT/$filename" "$FOLDER_NAME"
 fi
 cd "$THIS_CONTEXT" || exit

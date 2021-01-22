@@ -28,6 +28,3 @@ else
   zip -r "$THIS_CONTEXT/new-$filename" "$FOLDER_NAME"
 fi
 cd "$THIS_CONTEXT" || exit
-
-
-

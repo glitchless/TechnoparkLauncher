@@ -1,6 +1,5 @@
 package ru.lionzxy.tplauncher.minecraft
 
-import com.google.gson.annotations.SerializedName
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
 import sk.tomsik68.mclauncher.api.servers.ServerInfo
@@ -20,8 +19,8 @@ enum class MinecraftModpack(
         initialDownloadLink = null,
         updateJsonLink = null,
         updateHostLink = null,
-        defaultServer = ServerInfo("mc1.glitchless.ru", "Glitchless Server", null, 25565),
-        version = "1.16.5"
+        defaultServer = ServerInfo("localhost", "Glitchless Server", null, 25565),
+        version = "1.16.5-forge-36.0.0"
     );
 
     override fun toString(): String {

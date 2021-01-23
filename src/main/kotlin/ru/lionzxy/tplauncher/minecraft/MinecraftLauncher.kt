@@ -30,7 +30,7 @@ object MinecraftLauncher {
             additionalJavaArguments = additionalJavaArguments.plus("-XstartOnFirstThread")
         }
 
-        additionalJavaArguments = additionalJavaArguments.plus(getAuthParams(MINECRAFT_API_HOST))
+        additionalJavaArguments = additionalJavaArguments.plus(getAuthParams(USER_API_HOST))
 
         var launchCommands =
             version.launcher.getLaunchCommand(
@@ -68,7 +68,7 @@ object MinecraftLauncher {
             "-Dminecraft.api.auth.host" to apiHost,
             "-Dminecraft.api.account.host" to apiHost,
             "-Dminecraft.api.session.host" to apiHost,
-            "-Dminecraft.api.services.host" to "https://mc-gls.free.beeceptor.com"
+            "-Dminecraft.api.services.host" to MINECRAFT_API_HOST
         ).map { "${it.first}=${it.second}" }
     }
 

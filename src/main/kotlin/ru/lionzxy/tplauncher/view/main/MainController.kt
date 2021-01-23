@@ -62,7 +62,7 @@ class MainController(val stateMachine: IImplementState, val progressMonitor: IPr
             context.minecraftAccountManager.login(email, password)
         } catch (exp: YDServiceAuthenticationException) {
             exp.printStackTrace()
-            //stateMachine.setState(ErrorInitialState(exp.reason ?: exp.localizedMessage))
+            stateMachine.setState(ErrorInitialState(exp.reason?.error ?: exp.localizedMessage))
             return
         } catch (ioExp: IOException) {
             ioExp.printStackTrace()

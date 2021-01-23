@@ -28,7 +28,8 @@ class MinecraftAccountManager(minecraftModpack: MinecraftModpack) {
 
     @Throws(YDServiceAuthenticationException::class)
     fun login(email: String, password: String) {
-        session = YDLoginService().login(LegacyProfile(email, password))
+        session = YDLoginService.custom("https://games.glitchless.ru/api/minecraft/users/")
+            .login(LegacyProfile(email, password))
         ConfigHelper.writeToConfig {
             profile = Profile(session!!.username, session!!.sessionID, session!!.uuid, email)
         }

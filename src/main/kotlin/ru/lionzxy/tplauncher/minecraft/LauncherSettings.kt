@@ -1,21 +1,25 @@
 package ru.lionzxy.tplauncher.minecraft
 
 import ru.lionzxy.tplauncher.config.Settings
-import ru.lionzxy.tplauncher.utils.LogoUtils
 import sk.tomsik68.mclauncher.api.common.ILaunchSettings
 import java.io.File
 
-class LauncherSettings(val settings: Settings) : ILaunchSettings {
+class LauncherSettings(
+    val settings: Settings,
+    private val additionalJavaArguments: List<String> = listOf(),
+    private val customMinecraftParams: Map<String, String> = mutableMapOf()
+) : ILaunchSettings {
     override fun isModifyAppletOptions() = false
 
-    override fun getCustomParameters() = mutableMapOf<String, String>()
+    override fun getCustomParameters() = customMinecraftParams
 
     override fun getCommandPrefix(): MutableList<String> {
         return settings.commandPrefix.split(" ").toMutableList()
     }
 
     override fun getJavaArguments(): MutableList<String> {
-        return settings.customJavaParameter.split(" ").plus(LogoUtils.getArgumentForSetLogo()).toMutableList()
+        return settings.customJavaParameter.split(" ")
+            .plus(additionalJavaArguments).toMutableList()
     }
 
     override fun getJavaLocation(): File? {

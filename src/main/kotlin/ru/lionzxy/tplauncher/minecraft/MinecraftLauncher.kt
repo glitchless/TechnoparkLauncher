@@ -2,6 +2,7 @@ package ru.lionzxy.tplauncher.minecraft
 
 import nu.redpois0n.oslib.OperatingSystem
 import ru.lionzxy.tplauncher.utils.ConfigHelper
+import ru.lionzxy.tplauncher.utils.LogoUtils
 import sk.tomsik68.mclauncher.api.login.ISession
 import sk.tomsik68.mclauncher.api.versions.IVersion
 import sk.tomsik68.mclauncher.impl.versions.mcdownload.MCDownloadVersionList
@@ -21,13 +22,22 @@ object MinecraftLauncher {
         val instance = minecraft.getMinecraftInstance()
         val version = getVersion(minecraft)
         println("Minecraft Location: ${minecraft.getDirectory()}")
+
+        val additionalJavaArguments = listOf(
+            "-XstartOnFirstThread",
+            LogoUtils.getArgumentForSetLogo()
+        )
+
         var launchCommands =
             version.launcher.getLaunchCommand(
                 session,
                 instance,
                 minecraft.modpack.defaultServer,
                 version,
-                LauncherSettings(ConfigHelper.config.settings),
+                LauncherSettings(
+                    ConfigHelper.config.settings,
+                    additionalJavaArguments
+                ),
                 null
             ).filter { !it.isNullOrEmpty() }
 

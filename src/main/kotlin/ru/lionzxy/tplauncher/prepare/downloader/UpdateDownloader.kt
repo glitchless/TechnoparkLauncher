@@ -46,7 +46,7 @@ class UpdateDownloader : IDownloader {
                 if (file.parentFile.exists()) {
                     file.parentFile.mkdirs()
                 }
-                minecraft.progressMonitor.setStatus("Загрузка ${it.key}")
+                minecraft.progressMonitor.setStatus("Загрузка ${file.name}")
                 FileUtils.downloadFileWithProgress(
                     minecraft.modpack.updateHostLink + it.key,
                     file,

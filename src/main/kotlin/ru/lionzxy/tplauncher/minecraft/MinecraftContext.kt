@@ -16,10 +16,10 @@ enum class MinecraftModpack(
 ) {
     VANILLA(
         modpackName = "Vanilla",
-        initialDownloadLink = null,
-        updateJsonLink = null,
-        updateHostLink = null,
-        defaultServer = ServerInfo("localhost", "Glitchless Server", null, 25565),
+        initialDownloadLink = "https://minecraft.glitchless.ru/initial/vanilla.zip",
+        updateJsonLink = "https://minecraft.glitchless.ru/incremental/vanilla_changelog.json",
+        updateHostLink = "https://minecraft.glitchless.ru/incremental/vanilla",
+        defaultServer = ServerInfo("mc1.glitchless.ru", "Glitchless Server", null, 25565),
         version = "1.16.5-forge-36.0.0"
     );
 

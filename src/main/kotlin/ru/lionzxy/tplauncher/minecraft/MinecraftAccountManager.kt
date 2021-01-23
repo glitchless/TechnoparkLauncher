@@ -10,7 +10,7 @@ import sk.tomsik68.mclauncher.impl.login.legacy.LegacyProfile
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDLoginService
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
 
-const val MINECRAFT_API_HOST = "https://games.glitchless/api/minecraft/"
+const val MINECRAFT_API_HOST = "https://games.glitchless.ru/api/minecraft/"
 const val USER_API_HOST = "${MINECRAFT_API_HOST}users/"
 
 class MinecraftAccountManager(minecraftModpack: MinecraftModpack) {

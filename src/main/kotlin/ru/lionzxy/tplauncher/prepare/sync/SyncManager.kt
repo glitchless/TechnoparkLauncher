@@ -33,7 +33,7 @@ class SyncManager : IPrepareTask {
         }
 
         if (syncFromServer(minecraft, syncInfo)) {
-            val filename = SimpleDateFormat("yyyy-MM-dd-HH-mm").format(Date())
+            val filename = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(Date())
             zipFile.copyTo(File(ConfigHelper.getBackupFolder(), "${minecraft.modpack.modpackName}-$filename-sync.zip"))
             return
         }

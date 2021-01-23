@@ -20,6 +20,9 @@ object ConfigHelper {
         val config = gson.fromJson(configJson.readText(), Config::class.java)
         MinecraftModpack.values().filter { config.modpackDownloadedInfo[it.modpackName] == null }
             .forEach { config.modpackDownloadedInfo[it.modpackName] = DownloadedInfo() }
+        if (config.currentModpack == null) {
+            config.currentModpack = MinecraftModpack.VANILLA
+        }
         return@lazy config
     }
 

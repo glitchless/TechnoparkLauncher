@@ -23,10 +23,14 @@ object MinecraftLauncher {
         val version = getVersion(minecraft)
         println("Minecraft Location: ${minecraft.getDirectory()}")
 
-        val additionalJavaArguments = listOf(
-            "-XstartOnFirstThread",
+        var additionalJavaArguments = listOf(
             LogoUtils.getArgumentForSetLogo()
         )
+        if (OperatingSystem.getOperatingSystem().type == OperatingSystem.MACOS) {
+            additionalJavaArguments = additionalJavaArguments.plus("-XstartOnFirstThread")
+        }
+
+        additionalJavaArguments = additionalJavaArguments.plus(getAuthParams(MINECRAFT_API_HOST))
 
         var launchCommands =
             version.launcher.getLaunchCommand(
@@ -57,6 +61,15 @@ object MinecraftLauncher {
         pb.redirectOutput(File("mcout.log"))
         pb.directory(minecraft.getDirectory())
         pb.start()
+    }
+
+    private fun getAuthParams(apiHost: String): List<String> {
+        return listOf(
+            "-Dminecraft.api.auth.host" to apiHost,
+            "-Dminecraft.api.account.host" to apiHost,
+            "-Dminecraft.api.session.host" to apiHost,
+            "-Dminecraft.api.services.host" to "https://mc-gls.free.beeceptor.com"
+        ).map { "${it.first}=${it.second}" }
     }
 
     private val currentPathRelative =

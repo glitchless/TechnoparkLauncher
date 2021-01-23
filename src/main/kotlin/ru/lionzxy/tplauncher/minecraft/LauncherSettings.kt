@@ -6,12 +6,11 @@ import java.io.File
 
 class LauncherSettings(
     val settings: Settings,
-    private val additionalJavaArguments: List<String> = listOf(),
-    private val customMinecraftParams: Map<String, String> = mutableMapOf()
+    private val additionalJavaArguments: List<String> = listOf()
 ) : ILaunchSettings {
     override fun isModifyAppletOptions() = false
 
-    override fun getCustomParameters() = customMinecraftParams
+    override fun getCustomParameters() = mutableMapOf<String, String>()
 
     override fun getCommandPrefix(): MutableList<String> {
         return settings.commandPrefix.split(" ").toMutableList()

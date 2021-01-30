@@ -21,6 +21,14 @@ enum class MinecraftModpack(
         updateHostLink = "https://minecraft.glitchless.ru/incremental/vanilla",
         defaultServer = ServerInfo("mc1.glitchless.ru", "Glitchless Server", null, 25565),
         version = "1.16.5-forge-36.0.0"
+    ),
+    VALHELSIA(
+        modpackName = "Valhelsia",
+        initialDownloadLink = "https://minecraft.glitchless.ru/initial/valhelsia.zip",
+        updateJsonLink = "https://minecraft.glitchless.ru/incremental/valhelsia_changelog.json",
+        updateHostLink = "https://minecraft.glitchless.ru/incremental/valhelsia",
+        defaultServer = ServerInfo("mcbig.glitchless.ru", "Glitchless Valhelsia Server", null, 25565),
+        version = "1.16.5-forge-36.0.0"
     );
 
     override fun toString(): String {

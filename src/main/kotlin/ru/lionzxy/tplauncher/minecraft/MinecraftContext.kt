@@ -22,13 +22,13 @@ enum class MinecraftModpack(
         defaultServer = ServerInfo("mc1.glitchless.ru", "Glitchless Server", null, 25565),
         version = "1.16.5-forge-36.0.0"
     ),
-    VALHELSIA(
-        modpackName = "Valhelsia",
+    HEAVY(
+        modpackName = "Heavy",
         initialDownloadLink = null,
-        updateJsonLink = "https://minecraft.glitchless.ru/incremental/valhelsia_changelog.json",
-        updateHostLink = "https://minecraft.glitchless.ru/incremental/valhelsia",
-        defaultServer = ServerInfo("mc2.glitchless.ru", "Glitchless Valhelsia Server", null, 25565),
-        version = "1.16.5-forge-36.0.0"
+        updateJsonLink = "https://minecraft.glitchless.ru/incremental/heavy_changelog.json",
+        updateHostLink = "https://minecraft.glitchless.ru/incremental/heavy",
+        defaultServer = ServerInfo("mc2.glitchless.ru", "Glitchless Modded Server", null, 25565),
+        version = "1.16.5-forge-36.0.13"
     );
 
     override fun toString(): String {

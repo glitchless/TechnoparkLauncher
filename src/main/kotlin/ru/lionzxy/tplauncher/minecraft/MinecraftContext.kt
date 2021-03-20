@@ -28,7 +28,7 @@ enum class MinecraftModpack(
         updateJsonLink = "https://minecraft.glitchless.ru/incremental/heavy_changelog.json",
         updateHostLink = "https://minecraft.glitchless.ru/incremental/heavy",
         defaultServer = ServerInfo("mc.glitchless.ru", "Heavy Server", null, 25567),
-        version = "1.16.5-forge-36.0.13"
+        version = "1.16.5-forge-36.0.43"
     );
 
     override fun toString(): String {

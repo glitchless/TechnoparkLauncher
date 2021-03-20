@@ -6,7 +6,12 @@ import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.setWritableToFolder
 
 class ComposerDownloader() : IPrepareTask {
-    val downloaders = listOf(InitialDownloader(), UpdateDownloader(), MinecraftDownloader())
+    val downloaders = listOf(
+        InitialDownloader(),
+        UpdateDownloader(),
+        NativeAppleSiliconDownloader(),
+        MinecraftDownloader()
+    )
 
 
     override fun prepareMinecraft(minecraft: MinecraftContext) {

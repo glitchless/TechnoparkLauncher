@@ -6,6 +6,10 @@ import sk.tomsik68.mclauncher.api.servers.ServerInfo
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 import java.io.File
 
+const val BASE_URL = "https://minecraft.glitchless.ru"
+const val APPLE_SILICON_UPDATE_HOST_LINK = "$BASE_URL/incremental/asworkaround/"
+const val APPLE_SILICON_UPDATE_JSON_LINK = "$BASE_URL/incremental/asworkaround_changelog.json"
+
 enum class MinecraftModpack(
     val modpackName: String,
     val initialDownloadLink: String?,
@@ -16,17 +20,17 @@ enum class MinecraftModpack(
 ) {
     VANILLA(
         modpackName = "Vanilla",
-        initialDownloadLink = "https://minecraft.glitchless.ru/initial/vanilla.zip",
-        updateJsonLink = "https://minecraft.glitchless.ru/incremental/vanilla_changelog.json",
-        updateHostLink = "https://minecraft.glitchless.ru/incremental/vanilla",
+        initialDownloadLink = "$BASE_URL/initial/vanilla.zip",
+        updateJsonLink = "$BASE_URL/incremental/vanilla_changelog.json",
+        updateHostLink = "$BASE_URL/incremental/vanilla",
         defaultServer = ServerInfo("mc.glitchless.ru", "Vanilla Server", null, 25566),
         version = "1.16.5-forge-36.0.0"
     ),
     HEAVY(
         modpackName = "Heavy",
         initialDownloadLink = null,
-        updateJsonLink = "https://minecraft.glitchless.ru/incremental/heavy_changelog.json",
-        updateHostLink = "https://minecraft.glitchless.ru/incremental/heavy",
+        updateJsonLink = "$BASE_URL/incremental/heavy_changelog.json",
+        updateHostLink = "$BASE_URL/incremental/heavy",
         defaultServer = ServerInfo("mc.glitchless.ru", "Heavy Server", null, 25567),
         version = "1.16.5-forge-36.0.43"
     );

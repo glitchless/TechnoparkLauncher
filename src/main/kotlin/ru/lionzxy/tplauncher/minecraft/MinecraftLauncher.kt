@@ -11,6 +11,7 @@ import java.net.UnknownHostException
 
 object MinecraftLauncher {
     private var cacheVersion: IVersion? = null
+    private val os = OperatingSystem.getOperatingSystem()
 
     /**
      * @return runDetached if true run process on system support detach process
@@ -26,7 +27,7 @@ object MinecraftLauncher {
         var additionalJavaArguments = listOf(
             LogoUtils.getArgumentForSetLogo()
         )
-        if (OperatingSystem.getOperatingSystem().type == OperatingSystem.MACOS) {
+        if (os.type == OperatingSystem.MACOS) {
             additionalJavaArguments = additionalJavaArguments.plus("-XstartOnFirstThread")
         }
 
@@ -45,14 +46,14 @@ object MinecraftLauncher {
                 null
             ).filter { !it.isNullOrEmpty() }
 
-        if (OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS) {
+        if (os.type == OperatingSystem.WINDOWS) {
             launchCommands = launchCommands.map {
                 replaceAbsolutePathInString(it, minecraft.getDirectory().absolutePath)
             }
         }
 
         launchCommands.forEach { print("$it ") }
-        if (OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS && ConfigHelper.config.settings.isDebug) {
+        if (os.type == OperatingSystem.WINDOWS && ConfigHelper.config.settings.isDebug) {
             launchCommands.plus("&").plus("PAUSE")
         }
 
@@ -72,20 +73,12 @@ object MinecraftLauncher {
         ).map { "${it.first}=${it.second}" }
     }
 
-    private val currentPathRelative =
-        if (OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS) ".\\" else "./"
-
     private fun replaceAbsolutePathInString(input: String, currentPath: String): String {
-        val postFix = if (OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS) {
-            '\\'
-        } else {
-            '/'
-        }
         var pathForReplace = currentPath
-        if (pathForReplace.last() != postFix) {
-            pathForReplace += postFix
+        if (pathForReplace.last() != File.separatorChar) {
+            pathForReplace += File.separatorChar
         }
-        return input.replace(pathForReplace, currentPathRelative)
+        return input.replace(pathForReplace, ".${File.separatorChar}")
     }
 
     fun getVersion(minecraft: MinecraftContext): IVersion {

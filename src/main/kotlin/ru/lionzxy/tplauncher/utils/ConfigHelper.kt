@@ -41,6 +41,12 @@ object ConfigHelper {
         return dir
     }
 
+    fun getAppleSiliconWorkaroundDirectory(): File {
+        val dir = File(getDefaultDirectory(), "asworkaround")
+        dir.mkdirs()
+        return dir
+    }
+
     fun getMinecraftDirectory(modpack: MinecraftModpack): File {
         val file = File(getDefaultDirectory(), modpack.modpackName.toLowerCase())
         file.mkdir()

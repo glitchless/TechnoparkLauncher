@@ -1,24 +1,27 @@
-package ru.lionzxy.tplauncher.prepare.downloader
+package ru.lionzxy.tplauncher.prepare.downloader.base
 
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
+import ru.lionzxy.tplauncher.config.DownloadedInfo
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
+import ru.lionzxy.tplauncher.prepare.downloader.IDownloader
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import sk.tomsik68.mclauncher.util.FileUtils
 import sk.tomsik68.mclauncher.util.HttpUtils
 import java.io.File
 
-class UpdateDownloader : IDownloader {
-    val changes = HashMap<String, Action>()
-    val gson = Gson()
-    var lastChangeTimestamp = 0L
+abstract class IncrementalDownloader : IDownloader {
+    private val changes = HashMap<String, Action>()
+    private val gson = Gson()
+    private var lastChangeTimestamp = 0L
 
     override fun init(minecraft: MinecraftContext) {
         minecraft.progressMonitor.setStatus("Получение списка обновлений с сервера...")
+        val downloaderInfo = getDownloaderInfo(minecraft)
         val lastUpdateTimestamp =
-            ConfigHelper.config.modpackDownloadedInfo[minecraft.modpack.modpackName]!!.lastUpdateFromChangeLog ?: 0
-        val url = minecraft.modpack.updateJsonLink
+            ConfigHelper.config.modpackDownloadedInfo[downloaderInfo.key]?.lastUpdateFromChangeLog ?: 0
+        val url = downloaderInfo.updateJsonLink
         if (url.isNullOrEmpty()) {
             return
         }
@@ -33,7 +36,8 @@ class UpdateDownloader : IDownloader {
 
     override fun download(minecraft: MinecraftContext) {
         minecraft.progressMonitor.setStatus("Начинаем загружать обновления...")
-        val base = minecraft.getDirectory()
+        val downloaderInfo = getDownloaderInfo(minecraft)
+        val base = downloaderInfo.modpackDirectory ?: minecraft.getDirectory()
         if (changes.isEmpty()) {
             return
         }
@@ -48,7 +52,7 @@ class UpdateDownloader : IDownloader {
                 }
                 minecraft.progressMonitor.setStatus("Загрузка ${file.name}")
                 FileUtils.downloadFileWithProgress(
-                    minecraft.modpack.updateHostLink + it.key,
+                    downloaderInfo.updateHostLink + it.key,
                     file,
                     minecraft.progressMonitor
                 )
@@ -58,16 +62,31 @@ class UpdateDownloader : IDownloader {
             return
         }
         ConfigHelper.writeToConfig {
-            modpackDownloadedInfo[minecraft.modpack.modpackName]!!.lastUpdateFromChangeLog = lastChangeTimestamp
+            val downloadedInfo = modpackDownloadedInfo[downloaderInfo.key] ?: DownloadedInfo()
+            downloadedInfo.lastUpdateFromChangeLog = lastChangeTimestamp
+            modpackDownloadedInfo[downloaderInfo.key] = downloadedInfo
         }
     }
 
     override fun shouldDownload(minecraft: MinecraftContext) = true
+
+    abstract fun getDownloaderInfo(minecraft: MinecraftContext): IncrementalDownloaderInfo
 }
+
+data class IncrementalDownloaderInfo(
+    val key: String,
+    // Json file with meta information about update
+    val updateJsonLink: String?,
+    // Where download files
+    val updateHostLink: String?,
+    // Where save file
+    val modpackDirectory: File? = null
+)
 
 enum class Action(code: Int) {
     @SerializedName("0")
     REMOVE(0),
+
     @SerializedName("1")
     ADD(1)
 }

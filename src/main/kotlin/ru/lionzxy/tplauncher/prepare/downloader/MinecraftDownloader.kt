@@ -8,7 +8,7 @@ class MinecraftDownloader() : IDownloader {
     var version: IVersion? = null
     override fun init(minecraft: MinecraftContext) {
         minecraft.progressMonitor.setStatus("Получение версии Minecraft...")
-        version = MinecraftLauncher.getVersion(minecraft)
+        version = MinecraftLauncher(minecraft).getVersion()
     }
 
     override fun download(minecraft: MinecraftContext) {

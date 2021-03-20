@@ -23,13 +23,10 @@ object LogoUtils {
         logoUrl.openStream().use { it.copyTo(logoFile.outputStream()) }
     }
 
-    fun setLogo() {
+    fun setLogo(stage: Stage) {
         if (OperatingSystem.getOperatingSystem().type == OperatingSystem.MACOS) {
             setLogoForMac()
         }
-    }
-
-    fun setLogo(stage: Stage) {
         stage.icons.add(Image(ResourceHelper.getResource("icon/logo.png").openStream()))
     }
 
@@ -43,13 +40,6 @@ object LogoUtils {
         indexesFile.forEach {
             pathAssetsFile(it, logo16x16, logo32x32)
         }
-    }
-
-    fun getArgumentForSetLogo(): String {
-        if (OperatingSystem.getOperatingSystem().type != OperatingSystem.MACOS) {
-            return ""
-        }
-        return "-Xdock:icon=${logoFile.absolutePath}"
     }
 
     private fun pathAssetsFile(assetsFile: File, logo16x16: MinecraftAsset, logo32x32: MinecraftAsset) {

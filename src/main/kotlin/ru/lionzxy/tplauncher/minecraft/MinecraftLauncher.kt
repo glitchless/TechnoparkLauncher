@@ -1,37 +1,41 @@
 package ru.lionzxy.tplauncher.minecraft
 
 import nu.redpois0n.oslib.OperatingSystem
+import ru.lionzxy.tplauncher.minecraft.delegates.AuthDelegate
+import ru.lionzxy.tplauncher.minecraft.workarounds.BaseWorkaround
+import ru.lionzxy.tplauncher.minecraft.workarounds.MacOSLogoFix
+import ru.lionzxy.tplauncher.minecraft.workarounds.MacOSThreadFix
+import ru.lionzxy.tplauncher.minecraft.workarounds.WindowsPathFix
 import ru.lionzxy.tplauncher.utils.ConfigHelper
-import ru.lionzxy.tplauncher.utils.LogoUtils
 import sk.tomsik68.mclauncher.api.login.ISession
 import sk.tomsik68.mclauncher.api.versions.IVersion
 import sk.tomsik68.mclauncher.impl.versions.mcdownload.MCDownloadVersionList
 import java.io.File
 import java.net.UnknownHostException
 
-object MinecraftLauncher {
+class MinecraftLauncher(private val minecraft: MinecraftContext) {
     private var cacheVersion: IVersion? = null
     private val os = OperatingSystem.getOperatingSystem()
+    private val workarounds: List<BaseWorkaround> = listOf(
+        MacOSLogoFix,
+        MacOSThreadFix,
+        AuthDelegate,
+        WindowsPathFix(minecraft.getDirectory().absolutePath)
+    )
 
     /**
      * @return runDetached if true run process on system support detach process
      */
-    fun launch(minecraft: MinecraftContext, session: ISession) {
+    fun launch(session: ISession) {
         if (Thread.interrupted()) {
             throw InterruptedException()
         }
         val instance = minecraft.getMinecraftInstance()
-        val version = getVersion(minecraft)
+        val version = getVersion()
         println("Minecraft Location: ${minecraft.getDirectory()}")
 
-        var additionalJavaArguments = listOf(
-            LogoUtils.getArgumentForSetLogo()
-        )
-        if (os.type == OperatingSystem.MACOS) {
-            additionalJavaArguments = additionalJavaArguments.plus("-XstartOnFirstThread")
-        }
-
-        additionalJavaArguments = additionalJavaArguments.plus(getAuthParams(USER_API_HOST))
+        val additionalJavaArguments =
+            workarounds.map { it.getAdditionalJavaArguments() }.flatten()
 
         var launchCommands =
             version.launcher.getLaunchCommand(
@@ -46,10 +50,8 @@ object MinecraftLauncher {
                 null
             ).filter { !it.isNullOrEmpty() }
 
-        if (os.type == OperatingSystem.WINDOWS) {
-            launchCommands = launchCommands.map {
-                replaceAbsolutePathInString(it, minecraft.getDirectory().absolutePath)
-            }
+        workarounds.forEach { workaround ->
+            launchCommands = workaround.processLaunchCommands(launchCommands)
         }
 
         launchCommands.forEach { print("$it ") }
@@ -64,24 +66,7 @@ object MinecraftLauncher {
         pb.start()
     }
 
-    private fun getAuthParams(apiHost: String): List<String> {
-        return listOf(
-            "-Dminecraft.api.auth.host" to apiHost,
-            "-Dminecraft.api.account.host" to apiHost,
-            "-Dminecraft.api.session.host" to apiHost,
-            "-Dminecraft.api.services.host" to MINECRAFT_API_HOST
-        ).map { "${it.first}=${it.second}" }
-    }
-
-    private fun replaceAbsolutePathInString(input: String, currentPath: String): String {
-        var pathForReplace = currentPath
-        if (pathForReplace.last() != File.separatorChar) {
-            pathForReplace += File.separatorChar
-        }
-        return input.replace(pathForReplace, ".${File.separatorChar}")
-    }
-
-    fun getVersion(minecraft: MinecraftContext): IVersion {
+    fun getVersion(): IVersion {
         if (cacheVersion != null) {
             return cacheVersion!!
         }

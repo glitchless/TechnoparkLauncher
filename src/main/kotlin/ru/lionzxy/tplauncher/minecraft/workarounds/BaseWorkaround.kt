@@ -1,9 +1,10 @@
 package ru.lionzxy.tplauncher.minecraft.workarounds
 
+import nu.redpois0n.oslib.AbstractOperatingSystem
 import nu.redpois0n.oslib.OperatingSystem
 
 abstract class BaseWorkaround {
-    val currentOS = OperatingSystem.getOperatingSystem()
+    val currentOS: AbstractOperatingSystem = OperatingSystem.getOperatingSystem()
 
     open fun getAdditionalJavaArguments() = listOf<String>()
 

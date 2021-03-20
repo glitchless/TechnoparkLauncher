@@ -2,10 +2,7 @@ package ru.lionzxy.tplauncher.minecraft
 
 import nu.redpois0n.oslib.OperatingSystem
 import ru.lionzxy.tplauncher.minecraft.delegates.AuthDelegate
-import ru.lionzxy.tplauncher.minecraft.workarounds.BaseWorkaround
-import ru.lionzxy.tplauncher.minecraft.workarounds.MacOSLogoFix
-import ru.lionzxy.tplauncher.minecraft.workarounds.MacOSThreadFix
-import ru.lionzxy.tplauncher.minecraft.workarounds.WindowsPathFix
+import ru.lionzxy.tplauncher.minecraft.workarounds.*
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import sk.tomsik68.mclauncher.api.login.ISession
 import sk.tomsik68.mclauncher.api.versions.IVersion
@@ -20,6 +17,7 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
         MacOSLogoFix,
         MacOSThreadFix,
         AuthDelegate,
+        MacOSAppleSiliconLWJGLFix,
         WindowsPathFix(minecraft.getDirectory().absolutePath)
     )
 

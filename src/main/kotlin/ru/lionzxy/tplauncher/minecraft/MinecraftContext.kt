@@ -40,7 +40,7 @@ class MinecraftContext(
     }
 
     fun launch() {
-        MinecraftLauncher.launch(this, minecraftAccountManager.session!!)
+        MinecraftLauncher(this).launch(minecraftAccountManager.session!!)
     }
 
     fun getMinecraftInstance(): MinecraftInstance {

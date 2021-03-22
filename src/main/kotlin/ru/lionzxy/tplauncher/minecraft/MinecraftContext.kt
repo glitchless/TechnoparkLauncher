@@ -33,6 +33,14 @@ enum class MinecraftModpack(
         updateHostLink = "$BASE_URL/incremental/heavy",
         defaultServer = ServerInfo("mc.glitchless.ru", "Heavy Server", null, 25567),
         version = "1.16.5-forge-36.0.43"
+    ),
+    SKYBLOCK(
+        modpackName = "Skyblock",
+        initialDownloadLink = null,
+        updateJsonLink = null,
+        updateHostLink = null,
+        defaultServer = ServerInfo("mc.glitchless.ru", "Heavy Server", null, 25567),
+        version = "1.12.2-forge1.12.2-14.23.5.2847"
     );
 
     override fun toString(): String {

@@ -17,7 +17,7 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
         MacOSLogoFix,
         MacOSThreadFix,
         AuthDelegate,
-        MacOSAppleSiliconLWJGLFix,
+        MacOSAppleSiliconLWJGLFix(minecraft.modpack.version),
         WindowsPathFix(minecraft.getDirectory().absolutePath)
     )
 

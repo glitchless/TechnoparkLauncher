@@ -37,8 +37,8 @@ enum class MinecraftModpack(
     SKYBLOCK(
         modpackName = "Skyblock",
         initialDownloadLink = null,
-        updateJsonLink = null,
-        updateHostLink = null,
+        updateJsonLink = "$BASE_URL/incremental/skyblock_changelog.json",
+        updateHostLink = "$BASE_URL/incremental/skyblock",
         defaultServer = ServerInfo("mc.glitchless.ru", "Heavy Server", null, 25567),
         version = "1.12.2-forge1.12.2-14.23.5.2847"
     );

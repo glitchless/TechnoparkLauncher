@@ -7,9 +7,11 @@ import ru.lionzxy.tplauncher.config.DownloadedInfo
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.prepare.downloader.IDownloader
 import ru.lionzxy.tplauncher.utils.ConfigHelper
+import ru.lionzxy.tplauncher.utils.UriEncodeUtils
 import sk.tomsik68.mclauncher.util.FileUtils
 import sk.tomsik68.mclauncher.util.HttpUtils
 import java.io.File
+import java.nio.charset.Charset
 
 abstract class IncrementalDownloader : IDownloader {
     private val changes = HashMap<String, Action>()
@@ -51,8 +53,9 @@ abstract class IncrementalDownloader : IDownloader {
                     file.parentFile.mkdirs()
                 }
                 minecraft.progressMonitor.setStatus("Загрузка ${file.name}")
+                val url = downloaderInfo.updateHostLink + it.key
                 FileUtils.downloadFileWithProgress(
-                    downloaderInfo.updateHostLink + it.key,
+                    UriEncodeUtils.encodePath(url, Charset.forName("utf-8")),
                     file,
                     minecraft.progressMonitor
                 )
@@ -68,7 +71,7 @@ abstract class IncrementalDownloader : IDownloader {
         }
     }
 
-    override fun shouldDownload(minecraft: MinecraftContext) = true
+    override fun shouldDownload(minecraft: MinecraftContext) = false
 
     abstract fun getDownloaderInfo(minecraft: MinecraftContext): IncrementalDownloaderInfo
 }

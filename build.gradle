@@ -23,7 +23,7 @@ apply from: "http://dl.bintray.com/content/shemnon/javafx-gradle/8.1.1/javafx.pl
 group 'ru.lionzxy.tplauncher'
 version '1.0-SNAPSHOT'
 
-version = "1.2." + getTime()
+version = "1.2"
 sourceCompatibility = 1.8
 
 repositories {

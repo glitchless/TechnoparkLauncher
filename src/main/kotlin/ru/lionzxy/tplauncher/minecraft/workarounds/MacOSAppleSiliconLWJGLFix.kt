@@ -36,13 +36,16 @@ class MacOSAppleSiliconLWJGLFix(
     }
 
     private fun replaceLwjglLibs(lwjglFolder: File, classpath: String): String {
-        val withoutLwjgl = classpath.split(":").filter { !it.contains("lwjgl") }
+        var withoutLwjgl = classpath.split(":")
+        if (!minecraftModpack.isOldVersion()) {
+            withoutLwjgl = withoutLwjgl.filter { !it.contains("lwjgl") }
+        }
         val lwjglClasspath = File(lwjglFolder, "classpath")
             .walk()
             .asIterable()
             .toList()
             .filter { it.isFile && it.extension == "jar" }
-        return withoutLwjgl.plus(lwjglClasspath).joinToString(":")
+        return lwjglClasspath.plus(withoutLwjgl).joinToString(":")
     }
 
     private fun getLwjglFolder(): File {

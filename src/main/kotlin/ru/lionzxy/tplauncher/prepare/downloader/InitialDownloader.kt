@@ -33,6 +33,6 @@ class InitialDownloader : IDownloader {
     }
 
     override fun shouldDownload(minecraft: MinecraftContext): Boolean {
-        return !(ConfigHelper.config.modpackDownloadedInfo[minecraft.modpack.modpackName]!!.initFileDownload ?: false)
+        return false
     }
 }

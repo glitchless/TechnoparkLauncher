@@ -22,16 +22,7 @@ enum class MinecraftModpack(
         "https://minecraft.glitchless.ru/minecraft_dist/first_server/changelog.json",
         "https://minecraft.glitchless.ru/minecraft_dist/first_server/",
         ServerInfo("minecraft.glitchless.ru", "Glitchless Server", null, 25565),
-        "1.12.2-forge1.12.2-14.23.5.2836"
-    ),
-    @SerializedName("LIGHT")
-    LIGHT(
-        "Light",
-        "https://minecraft.glitchless.ru/minecraft_dist/first_server/initial.zip",
-        "https://minecraft.glitchless.ru/minecraft_dist/first_server/changelog.json",
-        "https://minecraft.glitchless.ru/minecraft_dist/first_server/",
-        ServerInfo("minecraft.glitchless.ru", "Glitchless Server", null, 25565),
-        "1.12.2-forge1.12.2-14.23.5.2836"
+        "1.12.2"
     );
 
     override fun toString(): String {

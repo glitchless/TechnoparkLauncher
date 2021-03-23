@@ -82,6 +82,6 @@ object LogoUtils {
 
     private fun setLogoForMac() {
         val image = Toolkit.getDefaultToolkit().getImage(logoUrl)
-        com.apple.eawt.Application.getApplication().dockIconImage = image
+        //com.apple.eawt.Application.getApplication().dockIconImage = image
     }
 }

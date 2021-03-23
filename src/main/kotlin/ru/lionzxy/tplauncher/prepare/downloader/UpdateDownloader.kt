@@ -58,7 +58,7 @@ class UpdateDownloader : IDownloader {
         }
     }
 
-    override fun shouldDownload(minecraft: MinecraftContext) = true
+    override fun shouldDownload(minecraft: MinecraftContext) = false
 }
 
 enum class Action(code: Int) {

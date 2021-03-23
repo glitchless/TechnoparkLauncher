@@ -1,7 +1,6 @@
 package ru.lionzxy.tplauncher.minecraft
 
 import ru.lionzxy.tplauncher.config.Settings
-import ru.lionzxy.tplauncher.utils.LogoUtils
 import sk.tomsik68.mclauncher.api.common.ILaunchSettings
 import java.io.File
 
@@ -15,7 +14,7 @@ class LauncherSettings(val settings: Settings) : ILaunchSettings {
     }
 
     override fun getJavaArguments(): MutableList<String> {
-        return settings.customJavaParameter.split(" ").plus(LogoUtils.getArgumentForSetLogo()).toMutableList()
+        return settings.customJavaParameter.split(" ").toMutableList()
     }
 
     override fun getJavaLocation(): File? {

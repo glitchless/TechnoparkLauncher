@@ -71,7 +71,7 @@ abstract class IncrementalDownloader : IDownloader {
         }
     }
 
-    override fun shouldDownload(minecraft: MinecraftContext) = false
+    override fun shouldDownload(minecraft: MinecraftContext) = true
 
     abstract fun getDownloaderInfo(minecraft: MinecraftContext): IncrementalDownloaderInfo
 }

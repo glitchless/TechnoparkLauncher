@@ -10,6 +10,10 @@ import sk.tomsik68.mclauncher.impl.login.legacy.LegacyProfile
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDLoginService
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
 
+
+const val MINECRAFT_API_HOST = "https://games.glitchless.ru/api/minecraft"
+const val USER_API_HOST = "${MINECRAFT_API_HOST}/users"
+
 class MinecraftAccountManager(minecraftModpack: MinecraftModpack) {
     public val isLogged = isLoggedInternal()
     internal var session: ISession? = ConfigHelper.config.profile
@@ -28,7 +32,7 @@ class MinecraftAccountManager(minecraftModpack: MinecraftModpack) {
 
     @Throws(YDServiceAuthenticationException::class)
     fun login(email: String, password: String) {
-        session = YDLoginService().login(LegacyProfile(email, password))
+        session = YDLoginService.custom(USER_API_HOST).login(LegacyProfile(email, password))
         ConfigHelper.writeToConfig {
             profile = Profile(session!!.username, session!!.sessionID, session!!.uuid, email)
         }

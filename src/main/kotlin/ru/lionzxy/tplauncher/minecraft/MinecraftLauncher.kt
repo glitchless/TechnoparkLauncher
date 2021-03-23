@@ -1,7 +1,6 @@
 package ru.lionzxy.tplauncher.minecraft
 
 import nu.redpois0n.oslib.OperatingSystem
-import ru.lionzxy.tplauncher.minecraft.delegates.AuthDelegate
 import ru.lionzxy.tplauncher.minecraft.workarounds.BaseWorkaround
 import ru.lionzxy.tplauncher.minecraft.workarounds.MacOSLogoFix
 import ru.lionzxy.tplauncher.minecraft.workarounds.MacOSThreadFix
@@ -19,7 +18,6 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
     private val workarounds: List<BaseWorkaround> = listOf(
         MacOSLogoFix,
         MacOSThreadFix,
-        AuthDelegate,
         WindowsPathFix(minecraft.getDirectory().absolutePath)
     )
 

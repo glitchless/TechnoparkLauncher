@@ -15,9 +15,9 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
     private val os = OperatingSystem.getOperatingSystem()
     private val workarounds: List<BaseWorkaround> = listOf(
         MacOSLogoFix,
-        MacOSThreadFix,
+        MacOSThreadFix(minecraft.modpack),
         AuthDelegate,
-        MacOSAppleSiliconLWJGLFix(minecraft.modpack.version),
+        MacOSAppleSiliconLWJGLFix(minecraft.modpack),
         WindowsPathFix(minecraft.getDirectory().absolutePath)
     )
 
@@ -52,7 +52,7 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
             launchCommands = workaround.processLaunchCommands(launchCommands)
         }
 
-        launchCommands.forEach { print("$it ") }
+        launchCommands.forEach { print("${it.replace(" ", "\\ ")} ") }
         if (os.type == OperatingSystem.WINDOWS && ConfigHelper.config.settings.isDebug) {
             launchCommands.plus("&").plus("PAUSE")
         }

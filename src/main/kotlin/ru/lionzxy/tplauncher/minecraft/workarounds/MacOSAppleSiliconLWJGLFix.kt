@@ -2,11 +2,12 @@ package ru.lionzxy.tplauncher.minecraft.workarounds
 
 import nu.redpois0n.oslib.Arch
 import nu.redpois0n.oslib.OperatingSystem
+import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import java.io.File
 
 class MacOSAppleSiliconLWJGLFix(
-    private val minecraftVersion: String
+    private val minecraftModpack: MinecraftModpack
 ) : BaseWorkaround() {
     override fun getAdditionalJavaArguments(): List<String> {
         if (currentOS.type != OperatingSystem.MACOS || currentOS.arch != Arch.ARM) {
@@ -46,8 +47,7 @@ class MacOSAppleSiliconLWJGLFix(
 
     private fun getLwjglFolder(): File {
         //val isOldVersion = launchCommands.find { it.contains("lwjgl-2.9.4-nightly-20150209") } != null
-        val isOldVersion = minecraftVersion.startsWith("1.12.") //FIXME Very dirty hack
-        if (isOldVersion) {
+        if (minecraftModpack.isOldVersion()) {
             return File(ConfigHelper.getAppleSiliconWorkaroundDirectory(), "lwjgl2")
         }
         return File(ConfigHelper.getAppleSiliconWorkaroundDirectory(), "lwjgl3")

@@ -46,6 +46,10 @@ enum class MinecraftModpack(
     override fun toString(): String {
         return modpackName
     }
+
+    fun isOldVersion(): Boolean {
+        return version.startsWith("1.12") //FIXME Dirty hack
+    }
 }
 
 class MinecraftContext(

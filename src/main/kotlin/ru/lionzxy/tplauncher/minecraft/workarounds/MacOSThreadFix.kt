@@ -1,12 +1,16 @@
 package ru.lionzxy.tplauncher.minecraft.workarounds
 
 import nu.redpois0n.oslib.OperatingSystem
+import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
 
-object MacOSThreadFix : BaseWorkaround() {
+class MacOSThreadFix(private val minecraftModpack: MinecraftModpack) : BaseWorkaround() {
     override fun getAdditionalJavaArguments(): List<String> {
-        if (currentOS.type == OperatingSystem.MACOS) {
-            return listOf("-XstartOnFirstThread")
+        if (currentOS.type != OperatingSystem.MACOS) {
+            return emptyList()
         }
-        return emptyList()
+        if (minecraftModpack.isOldVersion()) {
+            return emptyList()
+        }
+        return listOf("-XstartOnFirstThread")
     }
 }

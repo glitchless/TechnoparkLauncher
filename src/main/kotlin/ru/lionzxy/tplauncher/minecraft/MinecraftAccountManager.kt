@@ -32,7 +32,7 @@ class MinecraftAccountManager(minecraftModpack: MinecraftModpack) {
 
     @Throws(YDServiceAuthenticationException::class)
     fun login(email: String, password: String) {
-        session = YDLoginService.custom(USER_API_HOST).login(LegacyProfile(email, password))
+        session = YDLoginService.custom("$USER_API_HOST/").login(LegacyProfile(email, password))
         ConfigHelper.writeToConfig {
             profile = Profile(session!!.username, session!!.sessionID, session!!.uuid, email)
         }

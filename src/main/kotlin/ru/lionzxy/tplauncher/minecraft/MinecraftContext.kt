@@ -41,6 +41,14 @@ enum class MinecraftModpack(
         updateHostLink = "$BASE_URL/incremental/skyblock",
         defaultServer = ServerInfo("mc.glitchless.ru", "Skyblock Server", null, 25568),
         version = "1.12.2-forge1.12.2-14.23.5.2847"
+    ),
+    RLCRAFT(
+        modpackName = "RLCraft",
+        initialDownloadLink = null,
+        updateJsonLink = "$BASE_URL/incremental/rlcraft_changelog.json",
+        updateHostLink = "$BASE_URL/incremental/rlcraft",
+        defaultServer = ServerInfo("mc.glitchless.ru", "RLCraft Server", null, 25569),
+        version = "1.12.2-forge1.12.2-14.23.5.2847"
     );
 
     override fun toString(): String {

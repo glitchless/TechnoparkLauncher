@@ -11,6 +11,7 @@ public class Settings {
     private String commandPrefix = null;
     @Nullable
     private String javaLocation = null;
+    private boolean autoLoginMinecraft = true;
     private boolean isDebug = false;
 
     public Settings() {
@@ -23,6 +24,7 @@ public class Settings {
         this.commandPrefix = settings.commandPrefix;
         this.javaLocation = settings.javaLocation;
         this.isDebug = settings.isDebug;
+        this.autoLoginMinecraft = settings.autoLoginMinecraft;
     }
 
     public String getHeapSize() {
@@ -79,5 +81,13 @@ public class Settings {
 
     public void setDebug(boolean debug) {
         isDebug = debug;
+    }
+
+    public boolean isAutoLoginMinecraft() {
+        return autoLoginMinecraft;
+    }
+
+    public void setAutoLoginMinecraft(boolean autoLoginMinecraft) {
+        this.autoLoginMinecraft = autoLoginMinecraft;
     }
 }

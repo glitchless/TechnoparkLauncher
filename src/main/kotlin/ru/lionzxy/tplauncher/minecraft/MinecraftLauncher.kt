@@ -35,11 +35,15 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
         val additionalJavaArguments =
             workarounds.map { it.getAdditionalJavaArguments() }.flatten()
 
+        val loginServer = if (ConfigHelper.config.settings.isAutoLoginMinecraft) {
+            minecraft.modpack.defaultServer
+        } else null
+
         var launchCommands =
             version.launcher.getLaunchCommand(
                 session,
                 instance,
-                minecraft.modpack.defaultServer,
+                loginServer,
                 version,
                 LauncherSettings(
                     ConfigHelper.config.settings,

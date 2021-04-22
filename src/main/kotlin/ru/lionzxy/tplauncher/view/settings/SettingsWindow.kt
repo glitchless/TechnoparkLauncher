@@ -29,6 +29,7 @@ class SettingsWindow : View() {
     private var prefix: TextField by singleAssign()
     private var javaPath: TextField by singleAssign()
     private var debugMod: MyCheckBox by singleAssign()
+    private var autoLoginMinecraft: MyCheckBox by singleAssign()
 
     private var backButton: Button by singleAssign()
     private var applyButton: Button by singleAssign()
@@ -62,6 +63,7 @@ class SettingsWindow : View() {
                     field("Prefix") { prefix = textfield() }
                     field("Путь до Java") { javaPath = textfield() }
                     field("Дебаг-режим") { debugMod = myCheckBox() }
+                    field("Авто-заход на сервер") { autoLoginMinecraft = myCheckBox() }
                 }
             }
             label("Перейти в директорию игры") {
@@ -142,6 +144,7 @@ class SettingsWindow : View() {
         prefix.text = settings.commandPrefix
         javaPath.text = settings.javaLocation
         debugMod.checked = settings.isDebug
+        autoLoginMinecraft.checked = settings.isAutoLoginMinecraft
     }
 
     fun saveSettings() {
@@ -162,6 +165,7 @@ class SettingsWindow : View() {
         settings.commandPrefix = prefix.text
         settings.javaLocation = javaPath.text
         settings.isDebug = debugMod.checked
+        settings.isAutoLoginMinecraft = autoLoginMinecraft.checked
 
         val mySettings = settings
 

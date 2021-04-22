@@ -2,6 +2,8 @@
 
 cd ../
 
+export JAVA_HOME="/Library/Java/JavaVirtualMachines/liberica-jdk-8-full.jdk/Contents/Home/"
+
 rm -rf build/libs/
 
 ./gradlew fatJar

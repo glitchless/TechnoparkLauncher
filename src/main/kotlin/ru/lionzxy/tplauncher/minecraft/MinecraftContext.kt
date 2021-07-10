@@ -26,13 +26,13 @@ enum class MinecraftModpack(
         defaultServer = ServerInfo("mc.glitchless.ru", "Vanilla Server", null, 25566),
         version = "1.16.5-forge-36.0.0"
     ),
-    HEAVY(
-        modpackName = "Heavy",
+    GTNH(
+        modpackName = "NewHorizon",
         initialDownloadLink = null,
-        updateJsonLink = "$BASE_URL/incremental/heavy_changelog.json",
-        updateHostLink = "$BASE_URL/incremental/heavy",
-        defaultServer = ServerInfo("mc.glitchless.ru", "Heavy Server", null, 25567),
-        version = "1.16.5-forge-36.0.43"
+        updateJsonLink = "$BASE_URL/incremental/gtnh_changelog.json",
+        updateHostLink = "$BASE_URL/incremental/gtnh",
+        defaultServer = ServerInfo("mc.glitchless.ru", "GTNH Server", null, 25567),
+        version = "1.7.10-Forge10.13.4.1614-1.7.10"
     ),
     SKYBLOCK(
         modpackName = "Skyblock",
@@ -56,7 +56,7 @@ enum class MinecraftModpack(
     }
 
     fun isOldVersion(): Boolean {
-        return version.startsWith("1.12") //FIXME Dirty hack
+        return version.startsWith("1.12") || version.startsWith("1.7") //FIXME Dirty hack
     }
 }
 

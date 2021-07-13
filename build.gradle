@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.3.61'
+    ext.kotlin_version = '1.5.20'
     repositories {
         mavenCentral()
         maven {
@@ -8,18 +8,22 @@ buildscript {
         maven {
             url "https://jcenter.bintray.com"
         }
+        maven { url 'https://jitpack.io' }
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlin_version"
         classpath 'gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8'
-        classpath group: 'de.dynamicfiles.projects.gradle.plugins', name: 'javafx-gradle-plugin', version: '8.8.2'
+        classpath "com.squareup.anvil:gradle-plugin:2.3.3"
+        classpath 'com.github.LionZXY:javafx-gradle-plugin:c7fc4e7656'
     }
 }
 
 apply plugin: 'kotlin'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'com.squareup.anvil'
 apply plugin: 'java'
-apply plugin: "kotlin-allopen"
+apply plugin: 'kotlin-allopen'
 apply plugin: 'idea'
 apply plugin: 'de.fuerstenau.buildconfig'
 apply plugin: 'javafx-gradle-plugin'
@@ -27,7 +31,7 @@ apply plugin: 'javafx-gradle-plugin'
 group 'ru.lionzxy.tplauncher'
 version '1.0-SNAPSHOT'
 
-version = "1.2." + getTime()
+version = "1.3." + getTime()
 sourceCompatibility = 1.8
 
 repositories {
@@ -43,6 +47,8 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 }
 
 dependencies {
+    implementation 'com.google.dagger:dagger:2.37'
+    kapt 'com.google.dagger:dagger-compiler:2.37'
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation 'com.github.LionZXY:mclauncher-api:fc7552047a'
@@ -54,8 +60,6 @@ dependencies {
     implementation 'io.sentry:sentry:1.7.5'
     implementation "commons-codec:commons-codec:1.12"
     implementation 'org.zeroturnaround:zt-zip:1.14'
-    //implementation 'org.bitbucket.shemnon.javafxplugin:gradle-javafx-plugin:8.1.1'
-
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }

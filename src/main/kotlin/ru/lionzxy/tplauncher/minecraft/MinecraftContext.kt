@@ -2,6 +2,7 @@ package ru.lionzxy.tplauncher.minecraft
 
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
+import sk.tomsik68.mclauncher.api.login.ISession
 import sk.tomsik68.mclauncher.api.servers.ServerInfo
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 import java.io.File
@@ -58,19 +59,22 @@ enum class MinecraftModpack(
     fun isOldVersion(): Boolean {
         return version.startsWith("1.12") || version.startsWith("1.7") //FIXME Dirty hack
     }
+
+    fun getDirectory(): File {
+        return ConfigHelper.getMinecraftDirectory(this)
+    }
 }
 
 class MinecraftContext(
     val progressMonitor: IProgressMonitor,
-    val modpack: MinecraftModpack,
-    val minecraftAccountManager: MinecraftAccountManager
+    val modpack: MinecraftModpack
 ) {
     fun getDirectory(): File {
         return ConfigHelper.getMinecraftDirectory(modpack)
     }
 
-    fun launch() {
-        MinecraftLauncher(this).launch(minecraftAccountManager.session!!)
+    fun launch(session: ISession) {
+        MinecraftLauncher(this).launch(session)
     }
 
     fun getMinecraftInstance(): MinecraftInstance {

@@ -7,6 +7,8 @@ import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
+import ru.lionzxy.tplauncher.di.AppModule
+import ru.lionzxy.tplauncher.di.DaggerAppComponent
 import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
 import ru.lionzxy.tplauncher.utils.*
 import ru.lionzxy.tplauncher.utils.Constants.DEFAULT_MARGIN
@@ -17,6 +19,7 @@ import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.progressbox
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.successLogin
 import ru.lionzxy.tplauncher.view.common.GlobalStylesheet.Companion.titleStyle
 import ru.lionzxy.tplauncher.view.common.avatarimage
+import ru.lionzxy.tplauncher.view.main.controller.MainController
 import ru.lionzxy.tplauncher.view.main.listener.CloseApplicationListener
 import ru.lionzxy.tplauncher.view.main.listener.MoveWindowHandler
 import ru.lionzxy.tplauncher.view.main.listener.OpenSettingsListener
@@ -24,6 +27,7 @@ import ru.lionzxy.tplauncher.view.main.listener.OpenSiteListener
 import ru.lionzxy.tplauncher.view.main.states.BaseState
 import ru.lionzxy.tplauncher.view.main.states.IImplementState
 import tornadofx.*
+import javax.inject.Inject
 
 class MainWindow : View(), IImplementState {
     //Delegates
@@ -56,9 +60,16 @@ class MainWindow : View(), IImplementState {
     private var loginInput: TextField by singleAssign()
     private var passwordInput: TextField by singleAssign()
 
-    private var controller: MainController = MainController(this, progressDelegate)
+    @Inject
+    lateinit var controller: MainController
 
     init {
+        DaggerAppComponent.builder().appModule(
+            AppModule(
+                this,
+                progressDelegate
+            )
+        ).build().inject(this)
         controller.onInitView()
     }
 

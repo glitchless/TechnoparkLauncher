@@ -19,4 +19,7 @@ object Constants {
     val errorColor = c("#D75379")
 
     val DEFAULT_MARGIN = 16.0
+
+    val MINECRAFT_API_HOST = "https://games.glitchless.ru/api/minecraft"
+    val USER_API_HOST = "${MINECRAFT_API_HOST}/users"
 }

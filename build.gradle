@@ -27,7 +27,6 @@ apply plugin: 'kotlin-allopen'
 apply plugin: 'idea'
 apply plugin: 'de.fuerstenau.buildconfig'
 apply plugin: 'javafx-gradle-plugin'
-//apply plugin: 'application'
 group 'ru.lionzxy.tplauncher'
 version '1.0-SNAPSHOT'
 
@@ -79,7 +78,6 @@ buildConfig {
     charset = 'UTF-8'            // sets charset of the generated class,
 }
 
-// Wait https://github.com/FibreFoX/javafx-gradle-plugin/issues/147
 jfx {
     mainClass 'ru.lionzxy.tplauncher.MainApplication'
 }

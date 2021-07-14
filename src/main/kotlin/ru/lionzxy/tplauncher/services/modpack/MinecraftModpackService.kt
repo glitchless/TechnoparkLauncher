@@ -1,4 +1,4 @@
-package ru.lionzxy.tplauncher.minecraft.modpack
+package ru.lionzxy.tplauncher.services.modpack
 
 import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
 

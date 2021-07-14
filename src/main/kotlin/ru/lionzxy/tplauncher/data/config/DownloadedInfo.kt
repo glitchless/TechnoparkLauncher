@@ -1,4 +1,4 @@
-package ru.lionzxy.tplauncher.config
+package ru.lionzxy.tplauncher.data.config
 
 class DownloadedInfo(
     var initFileDownload: Boolean? = false,

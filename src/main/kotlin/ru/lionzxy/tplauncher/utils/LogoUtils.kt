@@ -4,8 +4,8 @@ import com.google.gson.Gson
 import javafx.scene.image.Image
 import javafx.stage.Stage
 import nu.redpois0n.oslib.OperatingSystem
-import ru.lionzxy.tplauncher.data.AssetsIndex
-import ru.lionzxy.tplauncher.data.MinecraftAsset
+import ru.lionzxy.tplauncher.data.assets.AssetsIndex
+import ru.lionzxy.tplauncher.data.assets.MinecraftAsset
 import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
 import java.awt.Toolkit
 import java.io.File

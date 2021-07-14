@@ -3,7 +3,7 @@ package ru.lionzxy.tplauncher.prepare.downloader.base
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
-import ru.lionzxy.tplauncher.config.DownloadedInfo
+import ru.lionzxy.tplauncher.data.config.DownloadedInfo
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.prepare.downloader.IDownloader
 import ru.lionzxy.tplauncher.utils.ConfigHelper

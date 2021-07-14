@@ -1,6 +1,6 @@
-package ru.lionzxy.tplauncher.minecraft.auth
+package ru.lionzxy.tplauncher.services.auth
 
-import ru.lionzxy.tplauncher.config.Profile
+import ru.lionzxy.tplauncher.data.auth.Profile
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
 
 interface MinecraftAccountService {

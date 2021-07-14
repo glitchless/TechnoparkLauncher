@@ -1,4 +1,4 @@
-package ru.lionzxy.tplauncher.data
+package ru.lionzxy.tplauncher.data.assets
 
 data class MinecraftAsset(
     var hash: String = "",

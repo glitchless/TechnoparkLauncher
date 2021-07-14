@@ -1,4 +1,4 @@
-package ru.lionzxy.tplauncher.config
+package ru.lionzxy.tplauncher.data.auth
 
 import sk.tomsik68.mclauncher.api.login.ESessionType
 import sk.tomsik68.mclauncher.api.login.ISession

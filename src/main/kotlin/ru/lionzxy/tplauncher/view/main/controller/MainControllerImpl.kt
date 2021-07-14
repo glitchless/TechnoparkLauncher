@@ -5,9 +5,9 @@ import io.sentry.Sentry
 import ru.lionzxy.tplauncher.di.AppScope
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
-import ru.lionzxy.tplauncher.minecraft.auth.MinecraftAccountService
-import ru.lionzxy.tplauncher.minecraft.modpack.MinecraftModpackService
 import ru.lionzxy.tplauncher.prepare.ComposePrepare
+import ru.lionzxy.tplauncher.services.auth.MinecraftAccountService
+import ru.lionzxy.tplauncher.services.modpack.MinecraftModpackService
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.LogoUtils
 import ru.lionzxy.tplauncher.utils.runAsync

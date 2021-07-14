@@ -10,7 +10,7 @@ import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import org.apache.commons.codec.digest.DigestUtils
 import ru.lionzxy.tplauncher.ASYNC_TASK_EXECUTOR
-import ru.lionzxy.tplauncher.config.Profile
+import ru.lionzxy.tplauncher.data.auth.Profile
 import tornadofx.*
 import java.awt.Desktop
 import java.io.Closeable

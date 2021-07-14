@@ -1,4 +1,4 @@
-package ru.lionzxy.tplauncher.config
+package ru.lionzxy.tplauncher.data.sync
 
 import java.io.BufferedInputStream
 import java.io.File

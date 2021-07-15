@@ -31,7 +31,7 @@ enum class MinecraftModpack(
         initialDownloadLink = null,
         updateJsonLink = "$BASE_URL/incremental/gtnh_changelog.json",
         updateHostLink = "$BASE_URL/incremental/gtnh",
-        defaultServer = ServerInfo("mc.glitchless.ru", "GTNH Server", null, 25567),
+        defaultServer = null,
         version = "1.7.10-Forge10.13.4.1614-1.7.10"
     ),
     SKYBLOCK(

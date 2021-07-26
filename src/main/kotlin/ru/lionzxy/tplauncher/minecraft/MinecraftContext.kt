@@ -34,14 +34,6 @@ enum class MinecraftModpack(
         defaultServer = null,
         version = "1.7.10-Forge10.13.4.1614-1.7.10"
     ),
-    SKYBLOCK(
-        modpackName = "Skyblock",
-        initialDownloadLink = null,
-        updateJsonLink = "$BASE_URL/incremental/skyblock_changelog.json",
-        updateHostLink = "$BASE_URL/incremental/skyblock",
-        defaultServer = ServerInfo("mc.glitchless.ru", "Skyblock Server", null, 25568),
-        version = "1.12.2-forge1.12.2-14.23.5.2847"
-    ),
     RLCRAFT(
         modpackName = "RLCraft",
         initialDownloadLink = null,

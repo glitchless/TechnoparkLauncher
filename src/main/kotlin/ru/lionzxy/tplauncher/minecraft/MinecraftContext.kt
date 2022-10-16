@@ -20,7 +20,7 @@ enum class MinecraftModpack(
 ) {
     VANILLA(
         modpackName = "Vanilla",
-        initialDownloadLink = "$BASE_URL/initial/vanilla.zip",
+        initialDownloadLink = null,
         updateJsonLink = "$BASE_URL/incremental/vanilla_changelog.json",
         updateHostLink = "$BASE_URL/incremental/vanilla",
         defaultServer = ServerInfo("mc.glitchless.ru", "Vanilla Server", null, 25566),

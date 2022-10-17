@@ -21,6 +21,7 @@ class NativeAppleSiliconDownloader : IncrementalDownloader() {
 
     override fun shouldDownload(minecraft: MinecraftContext): Boolean {
         val os = OperatingSystem.getOperatingSystem()
+        println("Detect os is ${os.detailedString}")
         // Use only for macOs
         if (os.type != OperatingSystem.MACOS) {
             return false

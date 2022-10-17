@@ -48,7 +48,7 @@ dependencies {
     implementation 'com.github.LionZXY:mclauncher-api:fc7552047a'
     implementation "no.tornado:tornadofx:1.7.20"
     implementation 'de.codecentric.centerdevice:javafxsvg:1.3.0'
-    implementation 'com.github.LionZXY:oslib:4a529cbef2'
+    implementation 'com.github.LionZXY:oslib:feature~detect_rosetta-SNAPSHOT'
     implementation "org.rauschig:jarchivelib:1.0.0"
     implementation "net.minidev:json-smart:1.1.1"
     implementation 'io.sentry:sentry:1.7.5'

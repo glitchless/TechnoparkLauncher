@@ -3,20 +3,28 @@ package ru.lionzxy.tplauncher.prepare.downloader.base
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import ru.lionzxy.tplauncher.config.DownloadedInfo
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.prepare.downloader.IDownloader
 import ru.lionzxy.tplauncher.utils.ConfigHelper
+import ru.lionzxy.tplauncher.utils.EmptyMonitoring
 import ru.lionzxy.tplauncher.utils.UriEncodeUtils
 import sk.tomsik68.mclauncher.util.FileUtils
 import sk.tomsik68.mclauncher.util.HttpUtils
 import java.io.File
 import java.nio.charset.Charset
+import java.util.concurrent.atomic.AtomicInteger
 
 abstract class IncrementalDownloader : IDownloader {
     private val changes = HashMap<String, Action>()
     private val gson = Gson()
     private var lastChangeTimestamp = 0L
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    private val downloadDispatcher = newFixedThreadPoolContext(nThreads = 64, name = "minecraft_downloader")
+    private val mutex = Mutex()
 
     override fun init(minecraft: MinecraftContext) {
         minecraft.progressMonitor.setStatus("Получение списка обновлений с сервера...")
@@ -43,24 +51,61 @@ abstract class IncrementalDownloader : IDownloader {
         if (changes.isEmpty()) {
             return
         }
-        changes.forEach {
-            val file = File(base, it.key)
-            if (it.value == Action.REMOVE) {
-                file.delete()
-            } else if (it.value == Action.ADD) {
-                file.delete()
+
+        minecraft.progressMonitor.setStatus("Удаляем не нужные файлы...")
+        val toDelete = changes.filter { it.value == Action.REMOVE }
+        toDelete.forEach { File(base, it.key).delete() }
+
+        val toDownload = changes.filter { it.value == Action.ADD }.map { it.key to File(base, it.key) }
+        minecraft.progressMonitor.setStatus("Загружаем модпак...")
+        minecraft.progressMonitor.setMax(toDownload.size)
+        minecraft.progressMonitor.setProgress(0)
+        val downloadedFiles = AtomicInteger(0)
+        val debugCounter = AtomicInteger(0)
+        var exceptions = emptyList<Throwable>()
+        val downloadJob = coroutineScope.launch {
+            // Create folders
+            toDownload.forEach { (_, file) ->
                 if (file.parentFile.exists()) {
                     file.parentFile.mkdirs()
                 }
-                minecraft.progressMonitor.setStatus("Загрузка ${file.name}")
-                val url = downloaderInfo.updateHostLink + it.key
-                FileUtils.downloadFileWithProgress(
-                    UriEncodeUtils.encodePath(url, Charset.forName("utf-8")),
-                    file,
-                    minecraft.progressMonitor
-                )
             }
+            // Download
+            exceptions = toDownload.map { (path, file) ->
+                async {
+                    runBlocking(downloadDispatcher) {
+                        runCatching {
+                            file.delete()
+                            val url = downloaderInfo.updateHostLink + path
+                            println("Start download ${debugCounter.incrementAndGet()}")
+                            FileUtils.downloadFileWithProgress(
+                                UriEncodeUtils.encodePath(url, Charset.forName("utf-8")),
+                                file,
+                                EmptyMonitoring()
+                            )
+                            val downloadedCount = downloadedFiles.incrementAndGet()
+                            mutex.withLock {
+                                withContext(Dispatchers.Main) {
+                                    minecraft.progressMonitor.setStatus("Загружено $downloadedCount/${toDownload.size}")
+                                    minecraft.progressMonitor.setProgress(downloadedCount)
+                                }
+                            }
+                        }.exceptionOrNull()
+                    }
+                }
+            }.mapNotNull { it.await() }
         }
+
+        runBlocking {
+            downloadJob.join()
+        }
+        if (exceptions.isNotEmpty()) {
+            exceptions.forEach {
+                it.printStackTrace()
+            }
+            throw exceptions.first()
+        }
+
         if (lastChangeTimestamp <= 0) {
             return
         }
@@ -69,6 +114,7 @@ abstract class IncrementalDownloader : IDownloader {
             downloadedInfo.lastUpdateFromChangeLog = lastChangeTimestamp
             modpackDownloadedInfo[downloaderInfo.key] = downloadedInfo
         }
+
     }
 
     override fun shouldDownload(minecraft: MinecraftContext) = true

@@ -78,6 +78,9 @@ abstract class IncrementalDownloader : IDownloader {
                             file.delete()
                             val url = downloaderInfo.updateHostLink + path
                             println("Start download ${debugCounter.incrementAndGet()}")
+
+                            File(file.parent).mkdirs()
+
                             FileUtils.downloadFileWithProgress(
                                 UriEncodeUtils.encodePath(url, Charset.forName("utf-8")),
                                 file,

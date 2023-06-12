@@ -40,7 +40,7 @@ enum class MinecraftModpack(
         updateJsonLink = "$BASE_URL/incremental/rlcraft_changelog.json",
         updateHostLink = "$BASE_URL/incremental/rlcraft",
         defaultServer = ServerInfo("mc.glitchless.ru", "RLCraft Server", null, 25569),
-        version = "1.12.2-forge1.12.2-14.23.5.2847"
+        version = "1.12.2-forge-14.23.5.2860"
     );
 
     override fun toString(): String {

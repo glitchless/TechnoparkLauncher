@@ -27,7 +27,6 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.kotlin.serialization.json)
                 implementation(libs.bundles.ktor)
-                implementation("com.github.LionZXY:oslib:d5ba9facde")
                 implementation("com.squareup.okio:okio:3.3.0")
                 implementation("org.apache.commons:commons-compress:1.23.0")
             }

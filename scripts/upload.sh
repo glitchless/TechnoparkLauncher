@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-cd ../
+#cd ../
 
-export JAVA_HOME="/Library/Java/JavaVirtualMachines/liberica-jdk-8-full.jdk/Contents/Home/"
+#export JAVA_HOME="/Library/Java/JavaVirtualMachines/liberica-jdk-8-full.jdk/Contents/Home/"
 
-rm -rf build/libs/
+#rm -rf build/libs/
 
-./gradlew fatJar
+#./gradlew fatJar
 
 JARPATH="build/libs/$(ls build/libs/ | tail -n +1 | head -1)"
 

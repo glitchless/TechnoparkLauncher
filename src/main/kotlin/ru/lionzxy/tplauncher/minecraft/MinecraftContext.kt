@@ -34,12 +34,12 @@ enum class MinecraftModpack(
         defaultServer = null,
         version = "1.7.10-Forge10.13.4.1614-1.7.10"
     ),
-    RLCRAFT(
-        modpackName = "RLCraft",
+    SKYFACTORY(
+        modpackName = "SkyFactory",
         initialDownloadLink = null,
-        updateJsonLink = "$BASE_URL/incremental/rlcraft_changelog.json",
-        updateHostLink = "$BASE_URL/incremental/rlcraft",
-        defaultServer = ServerInfo("mc.glitchless.ru", "RLCraft Server", null, 25569),
+        updateJsonLink = "$BASE_URL/incremental/skyfactory_changelog.json",
+        updateHostLink = "$BASE_URL/incremental/skyfactory",
+        defaultServer = ServerInfo("mc.glitchless.ru", "SkyFactory Server", null, 25568),
         version = "1.12.2-forge-14.23.5.2860"
     );
 

@@ -18,6 +18,7 @@ import sk.tomsik68.mclauncher.util.HttpUtils
 import java.io.File
 import java.nio.charset.Charset
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.min
 
 abstract class IncrementalDownloader : IDownloader {
     private val changes = HashMap<String, Action>()
@@ -28,6 +29,14 @@ abstract class IncrementalDownloader : IDownloader {
     private val mutex = Mutex()
 
     override fun init(minecraft: MinecraftContext) {
+        try {
+            internalInit(minecraft)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun internalInit(minecraft: MinecraftContext) {
         minecraft.progressMonitor.setStatus("Получение списка обновлений с сервера...")
         val downloaderInfo = getDownloaderInfo(minecraft)
         val lastUpdateTimestamp =

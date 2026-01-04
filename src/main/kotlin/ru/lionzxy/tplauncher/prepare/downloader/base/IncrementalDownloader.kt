@@ -12,6 +12,7 @@ import ru.lionzxy.tplauncher.prepare.downloader.IDownloader
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.EmptyMonitoring
 import ru.lionzxy.tplauncher.utils.UriEncodeUtils
+import ru.lionzxy.tplauncher.utils.UrlDownloader
 import sk.tomsik68.mclauncher.util.FileUtils
 import sk.tomsik68.mclauncher.util.HttpUtils
 import java.io.File
@@ -35,7 +36,8 @@ abstract class IncrementalDownloader : IDownloader {
         if (url.isNullOrEmpty()) {
             return
         }
-        val json = HttpUtils.httpGet(url)
+        val json = UrlDownloader.downloadToString(url)
+        minecraft.progressMonitor.setStatus("Данные обновления получены, применяем их...")
         val type = object : TypeToken<Map<String, Map<String, Action>>>() {}.type
         val map = gson.fromJson<Map<String, Map<String, Action>>>(json, type)
         val changeLog = map.map { it.key.toLong() to it.value }

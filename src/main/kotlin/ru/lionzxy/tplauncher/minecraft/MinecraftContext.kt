@@ -34,12 +34,12 @@ enum class MinecraftModpack(
         defaultServer = null,
         version = "1.7.10-Forge10.13.4.1614-1.7.10"
     ),
-    SKYFACTORY(
-        modpackName = "SkyFactory",
+    NOMI(
+        modpackName = "Nomifactory",
         initialDownloadLink = null,
-        updateJsonLink = "$BASE_URL/incremental/skyfactory_changelog.json",
-        updateHostLink = "$BASE_URL/incremental/skyfactory",
-        defaultServer = ServerInfo("mc.glitchless.ru", "SkyFactory Server", null, 25568),
+        updateJsonLink = "$BASE_URL/incremental/nomi_changelog.json",
+        updateHostLink = "$BASE_URL/incremental/nomi",
+        defaultServer = ServerInfo("mc.glitchless.ru", "Nomi Server", null, 25568),
         version = "1.12.2-forge-14.23.5.2860"
     );
 

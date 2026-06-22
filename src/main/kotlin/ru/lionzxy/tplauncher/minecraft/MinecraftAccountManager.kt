@@ -2,6 +2,7 @@ package ru.lionzxy.tplauncher.minecraft
 
 import io.sentry.Sentry
 import ru.lionzxy.tplauncher.config.Profile
+import ru.lionzxy.tplauncher.exceptions.InvalidCredentialsException
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.setUser
 import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
@@ -31,8 +32,17 @@ class MinecraftAccountManager(minecraftModpack: MinecraftModpack) {
 
     @Throws(YDServiceAuthenticationException::class)
     fun login(email: String, password: String) {
-        session = YDLoginService.custom("$USER_API_HOST/")
-            .login(LegacyProfile(email, password))
+        try {
+            session = YDLoginService.custom("$USER_API_HOST/")
+                .login(LegacyProfile(email, password))
+        } catch (exp: YDServiceAuthenticationException) {
+            // mclauncher-api masks a 401/403 (wrong login/password) as a generic IOException.
+            // Surface a clear message; let real network failures keep their original handling.
+            if (exp.isInvalidCredentials()) {
+                throw InvalidCredentialsException(exp)
+            }
+            throw exp
+        }
         ConfigHelper.writeToConfig {
             profile = Profile(session!!.username, session!!.sessionID, session!!.uuid, email)
         }

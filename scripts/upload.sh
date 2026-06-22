@@ -6,7 +6,7 @@
 
 #rm -rf build/libs/
 
-#./gradlew fatJar
+./gradlew fatJar
 
 JARPATH="build/libs/$(ls build/libs/ | tail -n +1 | head -1)"
 

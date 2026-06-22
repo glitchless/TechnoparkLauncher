@@ -82,6 +82,37 @@ jfx {
     mainClass 'ru.lionzxy.tplauncher.MainApplication'
 }
 
+// Run the launcher with Gradle 5.6.4 / Kotlin 1.3.61 (the toolchain this project is pinned to).
+// GDK_BACKEND=x11 forces JavaFX/GTK onto X11/XWayland; without it JavaFX SIGSEGVs in libX11
+// on a Wayland session. The fix travels with the task, so any `gradlew run` gets it.
+task run(type: JavaExec) {
+    group = 'application'
+    description = 'Run TechnoparkLauncher (JavaFX) on JDK 8'
+    main = 'ru.lionzxy.tplauncher.MainKt'
+    classpath = sourceSets.main.runtimeClasspath
+    environment 'GDK_BACKEND', 'x11'
+}
+
+// Headless login/launch flow for debugging. Credentials via -Pemail=.. -Ppassword=.. (set as env
+// vars on the task so they reach the JVM regardless of the Gradle daemon's own environment).
+// Add -Pcli='--no-launch' to stop after authentication.
+task runCli(type: JavaExec) {
+    group = 'application'
+    description = 'Run the login/launch flow headless (CLI)'
+    main = 'ru.lionzxy.tplauncher.MainCliKt'
+    classpath = sourceSets.main.runtimeClasspath
+    if (project.hasProperty('email')) {
+        environment 'TPL_EMAIL', project.property('email')
+    }
+    if (project.hasProperty('password')) {
+        environment 'TPL_PASSWORD', project.property('password')
+    }
+    if (project.hasProperty('cli')) {
+        args(project.property('cli').toString().split(' '))
+    }
+    standardInput = System.in
+}
+
 task fatJar(type: Jar) {
     manifest {
         attributes 'Implementation-Title': 'launcher',

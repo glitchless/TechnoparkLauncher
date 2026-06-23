@@ -34,8 +34,12 @@ object SettingsDefault {
         return "${totalMB.coerceAtLeast(3 * 1024)}M"
     }
 
+    // On Windows we launch javaw.exe directly via ProcessBuilder (CreateProcessW), which passes the
+    // command line as lossless UTF-16. The old "cmd.exe /C start" prefix re-parsed the command line
+    // through cmd/start, which mangled non-ASCII (e.g. Cyrillic) paths in the game dir / JRE location
+    // and detached the child so its crash output never reached mcout.log/mcerr.log.
     fun getDefaultCommandPrefix() =
-        if (OperatingSystem.getOperatingSystem().isUnix) "/usr/bin/nohup" else "cmd.exe /C start"
+        if (OperatingSystem.getOperatingSystem().isUnix) "/usr/bin/nohup" else ""
 
     fun getDefaultJavaLocation(): String? {
         if (!ConfigHelper.getJREPathFile().exists()) {

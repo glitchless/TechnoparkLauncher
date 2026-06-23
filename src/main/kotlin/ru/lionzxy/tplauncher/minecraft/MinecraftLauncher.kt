@@ -4,6 +4,7 @@ import nu.redpois0n.oslib.OperatingSystem
 import ru.lionzxy.tplauncher.minecraft.delegates.AuthDelegate
 import ru.lionzxy.tplauncher.minecraft.workarounds.*
 import ru.lionzxy.tplauncher.utils.ConfigHelper
+import ru.lionzxy.tplauncher.utils.WindowsPathHelper
 import sk.tomsik68.mclauncher.api.login.ISession
 import sk.tomsik68.mclauncher.api.versions.IVersion
 import sk.tomsik68.mclauncher.impl.versions.mcdownload.MCDownloadVersionList
@@ -64,8 +65,29 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
         val pb = ProcessBuilder(launchCommands)
         pb.redirectError(File("mcerr.log"))
         pb.redirectOutput(File("mcout.log"))
-        pb.directory(minecraft.getDirectory())
+        pb.directory(resolveWorkingDirectory(minecraft.getDirectory()))
         pb.start()
+    }
+
+    // On Windows, run the game from the directory's 8.3 short (ASCII) path when the real path contains
+    // non-ASCII characters (e.g. a Cyrillic username in %APPDATA%). The relative paths produced by
+    // WindowsPathFix then resolve against an ASCII working directory, so JDK 8 can load LWJGL natives
+    // without going through the lossy ANSI codepage (JDK-8195129). No-op for ASCII paths / non-Windows.
+    private fun resolveWorkingDirectory(directory: File): File {
+        if (os.type != OperatingSystem.WINDOWS) return directory
+        val path = directory.absolutePath
+        if (WindowsPathHelper.isAscii(path)) return directory
+        val short = WindowsPathHelper.toShortPath(directory)
+        if (WindowsPathHelper.isAscii(short.absolutePath)) return short
+        if (!WindowsPathHelper.isRepresentableInSystemEncoding(path)) {
+            System.err.println(
+                "WARNING: launch directory '$path' contains characters that are not representable in " +
+                    "the system encoding (${System.getProperty("sun.jnu.encoding")}) and has no 8.3 short " +
+                    "path. The game may fail to load native libraries. Move the launcher data to an " +
+                    "ASCII-only path (e.g. C:\\TechnoMine)."
+            )
+        }
+        return directory
     }
 
     fun getVersion(): IVersion {

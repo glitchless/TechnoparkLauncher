@@ -194,7 +194,9 @@ fun main() {
                                 currentScale = uiScale,
                                 onScaleChange = { newScale ->
                                     uiScale = newScale
-                                    ConfigHelper.writeToConfig { uiScale = newScale }
+                                    // `this.` is REQUIRED: an unqualified `uiScale` here binds to the
+                                    // outer Compose state var, not Config.uiScale, so it would never persist.
+                                    ConfigHelper.writeToConfig { this.uiScale = newScale }
                                 },
                             )
                         }

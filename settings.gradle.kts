@@ -2,7 +2,6 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         mavenCentral()
-        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     }
 }
 
@@ -11,7 +10,6 @@ dependencyResolutionManagement {
         mavenCentral()
         maven("https://jitpack.io")
         google()
-        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     }
 }
 

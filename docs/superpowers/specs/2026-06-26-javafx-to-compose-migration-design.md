@@ -45,16 +45,17 @@ JavaFX-coupled, plus **exactly one line** of business logic.
 ## 3. Target architecture
 
 ```
-settings.gradle.kts            Kotlin 2.x · JDK 17 toolchain · Gradle 8.x
+settings.gradle.kts            Kotlin 2.4.0 · JDK 17 · Gradle 9.6.0 · Compose MP 1.11.1
 │
 ├── :core    (id "org.jetbrains.kotlin.jvm")  — pure JVM library, no UI framework
 │     • all framework-free business logic (auth, download, sync, launch chain,
 │       config, OS workarounds) — see §4 disposition table
 │     • the headless CLI entry point (regression harness)
 │     • depends on: mclauncher-api, oslib, JNA, Gson, sentry, commons-codec,
-│       jarchivelib, zt-zip, json-smart, kotlinx-coroutines-core
+│       jarchivelib, zt-zip, kotlinx-coroutines-core
 │       (sentry: :core uses Sentry.capture/getContext in MinecraftAccountManager
-│        + Extensions; the SentryClient init/DSN moves to the :desktop app shell)
+│        + Extensions; the SentryClient init/DSN moves to the :desktop app shell.
+│        json-smart is used only by Avatar.kt → :desktop, and is dropped — §13)
 │
 └── :desktop (id "org.jetbrains.compose" + "org.jetbrains.kotlin.plugin.compose")
       • Compose application: Main → application { Window { … } }
@@ -63,21 +64,29 @@ settings.gradle.kts            Kotlin 2.x · JDK 17 toolchain · Gradle 8.x
         platform natives for the cross-platform uber jar)
 ```
 
-### Dependency changes
-- **Remove:** `no.tornado:tornadofx`, `de.codecentric.centerdevice:javafxsvg`,
-  `kotlinx-coroutines-javafx`, the `javafx-gradle-plugin` + its `jfx{}` block,
-  the `de.fuerstenau` BuildConfig plugin.
-- **Add:** `org.jetbrains.compose` Gradle plugin + the Compose compiler plugin
-  (Kotlin 2.x), `compose.desktop.currentOs`, the four `skiko-awt-runtime-*`
-  platform natives (linux-x64, macos-x64, macos-arm64, windows-x64) for a
-  single cross-platform jar.
-- **Bump:** `io.sentry` (currently 1.7.5, 2018-era) to a JDK-17-compatible
-  release; replace the BuildConfig-generated version constant with a small
-  generated `BuildConfig`-equivalent (Compose-friendly, e.g. a generated Kotlin
-  file or `buildConfig` plugin successor).
-- **Unchanged:** `mclauncher-api` (`com.github.LionZXY:mclauncher-api`), `oslib`,
-  JNA 5.13.0, Gson, commons-codec, jarchivelib, zt-zip, json-smart,
-  kotlinx-coroutines-core. The game's JRE-8 download scheme is untouched.
+### Dependency changes (all deps → latest stable)
+Per the user's request, **every dependency is upgraded to its latest stable
+version** (verified on Maven Central / JitPack on 2026-06-26). The full pinned
+table, the mutually-compatible version triple, and the breaking-change
+migrations live in **§13**. Headlines:
+- **Remove (JavaFX stack):** `no.tornado:tornadofx`,
+  `de.codecentric.centerdevice:javafxsvg`, `kotlinx-coroutines-javafx`, the
+  `javafx-gradle-plugin` + its `jfx{}` block, and the abandoned `de.fuerstenau`
+  BuildConfig plugin. Also drop the redundant `kotlin-stdlib-jdk8` and the dead
+  `jcenter`/`bintray` repos.
+- **Add:** `org.jetbrains.compose` 1.11.1 + the bundled Compose-compiler plugin
+  `org.jetbrains.kotlin.plugin.compose` (version = Kotlin version),
+  `compose.desktop`, and the four `skiko-awt-runtime-*` natives (linux-x64,
+  macos-x64, macos-arm64, windows-x64) for the cross-platform uber jar. Replace
+  BuildConfig with `com.github.gmazzo.buildconfig` 6.0.10 (keeps
+  `BuildConfig.NAME`/`.VERSION` call sites unchanged).
+- **Major code-impact bumps:** the Kotlin/Gradle toolchain (K2) and `io.sentry`
+  1.7.5 → 8.46.0 (full API rewrite — §13.3). `json-smart` (single site,
+  `Avatar.kt:83`) is **dropped** in favor of Gson during the Avatar rewrite.
+- **Zero-impact bumps:** Gson 2.14.0, JNA 5.19.1, commons-codec 1.22.0,
+  jarchivelib 1.2.0, zt-zip 1.17, coroutines-core 1.11.0, JUnit 4.13.2; bump
+  `oslib` to `4a529cbef2`; **keep** `mclauncher-api` at `37e0f29fc7` (already
+  master HEAD). The game's JRE-8 download scheme is untouched.
 
 ### Build tasks
 - `fatJar` → Compose uber jar (`packageUberJarForCurrentOS`) **extended to
@@ -190,7 +199,11 @@ A `:core` `IProgressMonitor` implementation backed by
 replaces `ProgressDelegate`. The composable collects it. Because the monitor is
 now thread-safe, **`IncrementalDownloader.kt:102` drops its
 `withContext(Dispatchers.Main)` hop** — eliminating the only hard JavaFX runtime
-coupling without pulling in `coroutines-javafx` or `-swing`.
+coupling without pulling in `coroutines-javafx` or `-swing`. (Fallback if a UI
+hop is ever needed: Compose Desktop's `Dispatchers.Main` is supplied by
+`kotlinx-coroutines-swing`, the AWT/Swing EDT.) On the coroutines 1.11.0 bump,
+`newFixedThreadPoolContext` (`IncrementalDownloader.kt:28`) now requires
+`@OptIn(DelicateCoroutinesApi::class)`.
 
 `sleep(60s)` in the launch flow is preserved verbatim (deferred bug, §9).
 
@@ -286,3 +299,106 @@ lands, keeping the migration diff a pure framework swap.
 - Native installers via `jpackage` (kept as an option, not this migration).
 - Any UI redesign or new features.
 - A real i18n layer (Russian literals centralized, but not externalized).
+
+---
+
+## 13. Dependency upgrades (pinned — verified 2026-06-26)
+
+All dependencies upgrade to their latest stable versions (user request),
+verified on Maven Central (`maven-metadata.xml` timestamps) / JitPack on
+2026-06-26. This is a **coordinated toolchain rewrite**, not independent bumps:
+Gradle 9 requires JDK 17 to run, Compose Desktop targets JDK 11+, and the build
+moves from the Groovy `buildscript{}`/`apply plugin` style to the `plugins{}`
+DSL + version catalog, dropping the dead `jcenter`/`bintray` repos.
+
+### 13.1 Upgrade table
+
+| Coordinate | Current | Target | Impact | Notes |
+|---|---|---|---|---|
+| **Toolchain** | | | | |
+| `org.jetbrains.kotlin.jvm` | 1.3.61 | **2.4.0** | major | K2 default since 2.0 — stricter nullability/smart-cast/overload resolution. `kotlinOptions{}` → `compilerOptions{}`. |
+| `org.jetbrains.compose` | — | **1.11.1** | major | New. Replaces the JavaFX/TornadoFX UI. CMP 1.11.1 ↔ Jetpack Compose 1.11.2; requires Kotlin ≥ 2.1.0. |
+| `org.jetbrains.kotlin.plugin.compose` | — | **= Kotlin (2.4.0)** | minor | Compose compiler ships inside Kotlin since 2.0 — **version always equals the Kotlin version**, never pinned independently. |
+| Gradle wrapper | 5.6.4 | **9.6.0** | major | `compile`/`testCompile`/`runtime` → `implementation`/`testImplementation`; `Jar.baseName` → `archiveBaseName`; needs JDK 17 to run. |
+| `kotlin-stdlib-jdk8` | (via plugin) | **REMOVE** | minor | Since Kotlin 1.8, `-jdk7/-jdk8` merged into `kotlin-stdlib` (added automatically). |
+| **Libraries** | | | | |
+| `com.google.code.gson:gson` | 2.8.5 | **2.14.0** | none | API used is stable. 2.14.0 rejects duplicate JSON keys — smoke-test config/asset parsing. |
+| `kotlinx-coroutines-core` | 1.3.3 | **1.11.0** | minor | `newFixedThreadPoolContext` (`IncrementalDownloader.kt:28`) now `@DelicateCoroutinesApi` → add `@OptIn`. See §13.2 Kotlin tension. |
+| `kotlinx-coroutines-javafx` | 1.3.3 | **REMOVED** | minor | JavaFX-bound; dropped (see §6 for the `Dispatchers.Main` resolution). |
+| `net.java.dev.jna:jna` | 5.13.0 | **5.19.1** | none | `Native.load`/`StdCallLibrary`/`WString` (`WindowsPathHelper`) stable; better JDK-17 strong-encapsulation handling. |
+| `commons-codec:commons-codec` | 1.12 | **1.22.0** | none | Only `DigestUtils.sha1Hex(InputStream)` used (`Extensions.kt`). |
+| `io.sentry:sentry` | 1.7.5 | **8.46.0** | major | Entire 1.x static-client API removed. Full migration §13.3. Min Java still 8. |
+| `net.minidev:json-smart` | 1.1.1 | **DROP** (or 2.6.0) | none | Single site `Avatar.kt:83`; re-parse the tiny payload with Gson in the Avatar rewrite and drop the dep (also clears CVEs + the `accessor-smart`/ASM transitives). |
+| `org.rauschig:jarchivelib` | 1.0.0 | **1.2.0** | none | API-compatible; bundled `commons-compress` → 1.21. |
+| `org.zeroturnaround:zt-zip` | 1.14 | **1.17** | none | Maintenance only; `ZipUtil` facade stable. |
+| `junit:junit` | 4.12 | **4.13.2** | none | Stay on JUnit 4 (final maintenance release); near-zero test code today. JUnit 5 optional, not worth it now. |
+| **Build plugins** | | | | |
+| `de.fuerstenau:BuildConfigPlugin` | 1.1.8 | **→ `com.github.gmazzo.buildconfig` 6.0.10** | minor | Old plugin abandoned/breaks on Gradle 8+. gmazzo 6.x needs Gradle 8.3+ (satisfied). Keep `className('BuildConfig')` + `packageName(project.group)`. |
+| `javafx-gradle-plugin` | 8.8.2 | **REMOVED** | major | Obsoleted by `compose.desktop` packaging. |
+| **JitPack pins** | | | | |
+| `com.github.LionZXY:mclauncher-api` | `37e0f29fc7` | **KEEP `37e0f29fc7`** | none | Already master HEAD (2023-03-12). Do NOT "upgrade" to tag `0.3.2` (2019, older). |
+| `com.github.LionZXY:oslib` | `d5ba9facde` | **BUMP `4a529cbef2`** | none | HEAD; +arm64 arch detection + uname fix, purely additive. |
+| **Removed UI stack** | | | | |
+| `no.tornado:tornadofx`, `de.codecentric.centerdevice:javafxsvg` | (current) | **REMOVED** | major | Replaced by Compose. Confirm exact declared versions before deleting the lines. |
+
+### 13.2 Compatibility triple (must be used together)
+
+> **Kotlin `2.4.0` + `org.jetbrains.compose` `1.11.1` + `org.jetbrains.kotlin.plugin.compose` `2.4.0`, on Gradle `9.6.0`, targeting JDK `17`.**
+
+Hard rules: (1) the Compose-compiler plugin version **always equals** the Kotlin
+version (`version.ref = kotlin`); (2) JetBrains guarantees latest CMP ↔ latest
+Kotlin, so 1.11.1 + 2.4.0 needs no manual alignment (CMP's higher Kotlin minimums
+apply only to iOS/web, irrelevant here); (3) raise `sourceCompatibility`/
+`jvmTarget`/toolchain to 17.
+
+> **⚠ Tension to resolve at build time (medium confidence):** toolchain research
+> says Kotlin 2.4.0; coroutines research says `coroutines-core:1.11.0` was built
+> against Kotlin ~2.2.x. In practice this is a *"compiled with an incompatible
+> version of Kotlin"* **warning, not an error**, and 2.4.0 + 1.11.0 is expected
+> to work. **Mitigation:** watch the first compile; if it escalates to an error,
+> either use a coroutines build targeting 2.4.x (if one exists by then) or fall
+> back to Kotlin 2.2.x (still ≥ CMP's 2.1.0 floor, triple stays valid). Verify on
+> Maven Central at implementation time — don't assume.
+
+### 13.3 Sentry 1.7.5 → 8.46.0 (call-by-call)
+
+The 1.x static-client API is gone. Single coordinate `io.sentry:sentry:8.46.0`.
+Because `Extensions.kt` is split, **both `:core` and `:desktop` depend on
+`io.sentry:sentry`**.
+
+| Old call (file:line) | New call | Module |
+|---|---|---|
+| `SentryClientFactory.sentryClient(dsn).apply { serverName=…; tags[…]=… }` — `MainApplication.kt:22-27` | `Sentry.init { o -> o.dsn=…; o.serverName=BuildConfig.NAME; o.release=BuildConfig.VERSION; o.setTag("version", BuildConfig.VERSION) }` | :desktop |
+| `Sentry.setStoredClient(SENTRY)` — `MainApplication.kt:32` | **Delete** (Sentry is fully static in 8.x); delete `val SENTRY` + `SentryClient`/`SentryClientFactory` imports | :desktop |
+| `import io.sentry.event.EventBuilder` — `MainApplication.kt:8` | **Delete** — verified dead import | :desktop |
+| `Sentry.capture(e)` — `Extensions.kt:36`, `MainController.kt:91` | `Sentry.captureException(e)` (ignore returned `SentryId`) | split / :desktop |
+| `Sentry.getContext().setUser(profile)` — `MinecraftAccountManager.kt:23,49` | `Sentry.setUser(io.sentry.protocol.User().apply { id=…; username=…; email=… })`; clear via `Sentry.setUser(null)` | :core |
+| `fun Context.setUser(profile)` building `io.sentry.event.User(...)` — `Extensions.kt:107-110` | **Rewrite** to call `Sentry.setUser(...)`; `io.sentry.context.Context` + `io.sentry.event.User` removed. **Also fixes a latent bug:** the current body builds a `User` and never assigns it (no-op today). | split (called from :core) |
+
+### 13.4 json-smart
+
+Used directly at exactly one site — `Avatar.kt:83-84`, parsing
+`{"data":{"avatar_url":"…"}}` with `JSONParser(MODE_PERMISSIVE)`. `Avatar.kt` is
+rewritten in `:desktop` anyway. **Decision: drop json-smart**, re-parse with the
+already-present Gson. (If kept, 2.6.0 is a drop-in with no code change and clears
+CVEs, but adds `accessor-smart` + ASM transitives.)
+
+### 13.5 Verification ordering
+
+Set `JAVA_HOME` to a JDK 17. Land the **zero-impact bumps first** (gson, jna,
+commons-codec, jarchivelib, zt-zip, junit, oslib SHA) to confirm a green
+baseline, *then* the major toolchain + Sentry + UI changes — so a regression is
+attributable to the risky change, not a safe one.
+
+1. **Build:** re-run the wrapper to 9.6.0, then `./gradlew clean build` — catches
+   K2 strictness, removed Sentry 1.x symbols, the `@DelicateCoroutinesApi`
+   opt-in, `compile`→`implementation` renames, and the BuildConfig swap (confirm
+   `BuildConfig.NAME`/`.VERSION` still resolve).
+2. **Tests:** `./gradlew test` (`:core`, JUnit 4.13.2 / `testImplementation`).
+3. **Smoke behavior:** config load/save + incremental download (Gson 2.14.0
+   duplicate-key behavior); avatar fetch (Gson-replacement path); Windows short
+   paths (JNA 5.19.1); JRE archive extraction (jarchivelib/zt-zip).
+4. **Run + Sentry:** launch the app on JDK 17; confirm `Sentry.init` runs once,
+   force a captured exception (reaches the DSN with `version` tag + serverName),
+   and confirm the user is attached after login (validates the `setUser`
+   rewrite). Confirm `runCli` still drives the `:core` login→launch flow.

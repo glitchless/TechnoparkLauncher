@@ -1,10 +1,9 @@
 package ru.lionzxy.tplauncher.minecraft
 
-import io.sentry.Sentry
 import ru.lionzxy.tplauncher.config.Profile
 import ru.lionzxy.tplauncher.exceptions.InvalidCredentialsException
 import ru.lionzxy.tplauncher.utils.ConfigHelper
-import ru.lionzxy.tplauncher.utils.setUser
+import ru.lionzxy.tplauncher.utils.setSentryUser
 import sk.tomsik68.mclauncher.api.common.mc.MinecraftInstance
 import sk.tomsik68.mclauncher.api.login.ISession
 import sk.tomsik68.mclauncher.impl.login.legacy.LegacyProfile
@@ -20,7 +19,7 @@ class MinecraftAccountManager(minecraftModpack: MinecraftModpack) {
     val minecraftInstance = MinecraftInstance(ConfigHelper.getMinecraftDirectory(minecraftModpack))
 
     init {
-        Sentry.getContext().setUser(ConfigHelper.config.profile)
+        setSentryUser(ConfigHelper.config.profile)
     }
 
     fun getEmail(): String {
@@ -46,7 +45,7 @@ class MinecraftAccountManager(minecraftModpack: MinecraftModpack) {
         ConfigHelper.writeToConfig {
             profile = Profile(session!!.username, session!!.sessionID, session!!.uuid, email)
         }
-        Sentry.getContext().setUser(ConfigHelper.config.profile)
+        setSentryUser(ConfigHelper.config.profile)
     }
 
     private fun isLoggedInternal(): Boolean {

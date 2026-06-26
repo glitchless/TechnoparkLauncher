@@ -10,10 +10,12 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
         maven("https://jitpack.io")
+        google()
+        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     }
 }
 
 rootProject.name = "TechnoparkLauncher"
 
 include(":core")
-// ":desktop" is added in Plan 2
+include(":desktop")

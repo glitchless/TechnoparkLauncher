@@ -1,0 +1,35 @@
+[versions]
+kotlin = "2.4.0"
+compose = "1.11.1"            # used in Plan 2
+coroutines = "1.11.0"
+gson = "2.14.0"
+jna = "5.19.1"
+commonsCodec = "1.22.0"
+sentry = "8.46.0"
+jarchivelib = "1.2.0"
+ztzip = "1.17"
+junit = "4.13.2"
+buildconfig = "6.0.10"        # used in Plan 2
+roborazzi = "1.64.0"
+mclauncherApi = "37e0f29fc7"  # KEEP — already master HEAD
+oslib = "4a529cbef2"          # BUMP — master HEAD
+
+[libraries]
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+commons-codec = { module = "commons-codec:commons-codec", version.ref = "commonsCodec" }
+sentry = { module = "io.sentry:sentry", version.ref = "sentry" }
+jarchivelib = { module = "org.rauschig:jarchivelib", version.ref = "jarchivelib" }
+zt-zip = { module = "org.zeroturnaround:zt-zip", version.ref = "ztzip" }
+mclauncher-api = { module = "com.github.LionZXY:mclauncher-api", version.ref = "mclauncherApi" }
+oslib = { module = "com.github.LionZXY:oslib", version.ref = "oslib" }
+junit = { module = "junit:junit", version.ref = "junit" }
+roborazzi-compose-desktop = { module = "io.github.takahirom.roborazzi:roborazzi-compose-desktop", version.ref = "roborazzi" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+compose = { id = "org.jetbrains.compose", version.ref = "compose" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+buildconfig = { id = "com.github.gmazzo.buildconfig", version.ref = "buildconfig" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }

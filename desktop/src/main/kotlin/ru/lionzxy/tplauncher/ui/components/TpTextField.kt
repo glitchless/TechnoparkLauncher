@@ -49,6 +49,7 @@ fun TpTextField(
                 onValueChange = onValueChange,
                 enabled = enabled,
                 readOnly = !enabled,
+                singleLine = true,
                 textStyle = TpTypography.body.copy(
                     color = if (enabled) TpColors.text else TpColors.textDisable,
                 ),

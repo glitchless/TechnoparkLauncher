@@ -1,10 +1,11 @@
 package ru.lionzxy.tplauncher.prepare.downloader
 
+import kotlinx.coroutines.runBlocking
 import org.zeroturnaround.zip.ZipUtil
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.utils.ConfigHelper
+import ru.lionzxy.tplauncher.utils.HttpDownloader
 import ru.lionzxy.tplauncher.utils.TextProgressMonitor
-import sk.tomsik68.mclauncher.util.FileUtils
 import java.io.File
 
 
@@ -19,11 +20,15 @@ class InitialDownloader : IDownloader {
             markDownloaded(minecraft)
             return
         }
-        FileUtils.downloadFileWithProgress(
-            minecraft.modpack.initialDownloadLink,
-            dist,
-            TextProgressMonitor("Загрузка модов... %s", minecraft.progressMonitor)
-        )
+        val monitor = TextProgressMonitor("Загрузка модов... %s", minecraft.progressMonitor)
+        runBlocking {
+            HttpDownloader.instance.downloadToFile(url, dist) { read, total ->
+                if (total != null) {
+                    monitor.setMax(total.toInt())
+                }
+                monitor.setProgress(read.toInt())
+            }
+        }
 
         minecraft.progressMonitor.setStatus("Разархивирование модов...")
         minecraft.progressMonitor.setProgress(-1)

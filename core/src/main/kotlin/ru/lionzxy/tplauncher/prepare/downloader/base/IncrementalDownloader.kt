@@ -1,9 +1,11 @@
 package ru.lionzxy.tplauncher.prepare.downloader.base
 
-import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
-import com.google.gson.reflect.TypeToken
-import kotlinx.coroutines.*
+import io.sentry.Sentry
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import ru.lionzxy.tplauncher.config.DownloadedInfo
@@ -11,145 +13,152 @@ import ru.lionzxy.tplauncher.log.Logger
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.prepare.downloader.IDownloader
 import ru.lionzxy.tplauncher.utils.ConfigHelper
-import ru.lionzxy.tplauncher.utils.EmptyMonitoring
+import ru.lionzxy.tplauncher.utils.HttpDownloader
 import ru.lionzxy.tplauncher.utils.UriEncodeUtils
-import ru.lionzxy.tplauncher.utils.UrlDownloader
-import sk.tomsik68.mclauncher.util.FileUtils
-import sk.tomsik68.mclauncher.util.HttpUtils
 import java.io.File
-import java.nio.charset.Charset
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.math.min
+
+private const val LOG_TAG = "Downloader"
 
 abstract class IncrementalDownloader : IDownloader {
-    private val changes = HashMap<String, Action>()
-    private val gson = Gson()
+    private var changes: Map<String, Action> = emptyMap()
     private var lastChangeTimestamp = 0L
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
-    @OptIn(DelicateCoroutinesApi::class)
-    private val downloadDispatcher = newFixedThreadPoolContext(nThreads = 64, name = "minecraft_downloader")
-    private val mutex = Mutex()
+    private val progressMutex = Mutex()
 
+    /**
+     * Fetches and parses the changelog. A failure here is best-effort: it is surfaced loudly (status
+     * message + log + Sentry) but does NOT abort the launch — the game starts on the currently
+     * installed files rather than silently pretending the update succeeded.
+     */
     override fun init(minecraft: MinecraftContext) {
-        try {
-            internalInit(minecraft)
-        } catch (e: Exception) {
-            Logger.e("Downloader", "Failed to fetch update list", e)
-        }
-    }
-
-    private fun internalInit(minecraft: MinecraftContext) {
-        minecraft.progressMonitor.setStatus("Получение списка обновлений с сервера...")
-        val downloaderInfo = getDownloaderInfo(minecraft)
-        val lastUpdateTimestamp =
-            ConfigHelper.config.modpackDownloadedInfo[downloaderInfo.key]?.lastUpdateFromChangeLog ?: 0
-        val url = downloaderInfo.updateJsonLink
+        val info = getDownloaderInfo(minecraft)
+        val url = info.updateJsonLink
         if (url.isNullOrEmpty()) {
-            Logger.i("Downloader", "No update URL for '${downloaderInfo.key}', skipping update list")
+            Logger.i(LOG_TAG, "No update URL for '${info.key}', skipping update list")
             return
         }
-        Logger.i("Downloader", "Fetching update list for '${downloaderInfo.key}' from $url")
-        val json = UrlDownloader.downloadToString(url)
-        minecraft.progressMonitor.setStatus("Данные обновления получены, применяем их...")
-        val type = object : TypeToken<Map<String, Map<String, Action>>>() {}.type
-        val map = gson.fromJson<Map<String, Map<String, Action>>>(json, type)
-        val changeLog = map.map { it.key.toLong() to it.value }
-            .filter { it.first > lastUpdateTimestamp }.sortedBy { it.first }
-        lastChangeTimestamp = changeLog.lastOrNull()?.first ?: 0
-        changeLog.forEach { changes.putAll(it.second) }
-        Logger.i(
-            "Downloader",
-            "Update list parsed: ${changes.size} changed file(s) since timestamp $lastUpdateTimestamp",
-        )
+        val lastUpdate = ConfigHelper.config.modpackDownloadedInfo[info.key]?.lastUpdateFromChangeLog ?: 0
+        minecraft.progressMonitor.setStatus("Получение списка обновлений с сервера...")
+        Logger.i(LOG_TAG, "Fetching update list for '${info.key}' from $url")
+        try {
+            val json = runBlocking { HttpDownloader.instance.getString(url) }
+            val parsed = parseChangeLog(json, lastUpdate)
+            changes = parsed.changes
+            lastChangeTimestamp = parsed.lastTimestamp
+            Logger.i(LOG_TAG, "Update list parsed: ${changes.size} changed file(s) since timestamp $lastUpdate")
+            minecraft.progressMonitor.setStatus("Данные обновления получены, применяем их...")
+        } catch (e: Exception) {
+            Logger.e(LOG_TAG, "Failed to fetch update list for '${info.key}'", e)
+            Sentry.captureException(e)
+            minecraft.progressMonitor.setStatus("Не удалось получить обновления, запуск на текущей версии")
+        }
     }
 
     override fun download(minecraft: MinecraftContext) {
-        minecraft.progressMonitor.setStatus("Начинаем загружать обновления...")
-        val downloaderInfo = getDownloaderInfo(minecraft)
-        val base = downloaderInfo.modpackDirectory ?: minecraft.getDirectory()
+        val info = getDownloaderInfo(minecraft)
+        val base = info.modpackDirectory ?: minecraft.getDirectory()
+
         if (changes.isEmpty()) {
-            Logger.i("Downloader", "No changes to apply for '${downloaderInfo.key}'")
+            Logger.i(LOG_TAG, "No changes to apply for '${info.key}'")
+            // A newer (possibly empty) bucket may have advanced the timestamp even with no file ops.
+            persistTimestamp(info)
             return
         }
 
-        minecraft.progressMonitor.setStatus("Удаляем не нужные файлы...")
-        val toDelete = changes.filter { it.value == Action.REMOVE }
-        Logger.i("Downloader", "Removing ${toDelete.size} obsolete file(s) for '${downloaderInfo.key}'")
-        toDelete.forEach {
-            Logger.i("Downloader", "Deleting ${it.key}")
-            File(base, it.key).delete()
+        minecraft.progressMonitor.setStatus("Начинаем загружать обновления...")
+        val host = info.updateHostLink
+        if (host.isNullOrEmpty()) {
+            throw IllegalStateException(
+                "updateHostLink is missing for '${info.key}' but the changelog has ${changes.size} change(s)"
+            )
         }
 
-        val toDownload = changes.filter { it.value == Action.ADD }.map { it.key to File(base, it.key) }
-        Logger.i("Downloader", "Downloading ${toDownload.size} file(s) for '${downloaderInfo.key}'")
+        // Validates every key (REMOVE and ADD) against `base`; throws on any path-traversal attempt.
+        val plan = buildDownloadPlan(base, changes)
+
+        if (plan.toDelete.isNotEmpty()) {
+            minecraft.progressMonitor.setStatus("Удаляем ненужные файлы...")
+            Logger.i(LOG_TAG, "Removing ${plan.toDelete.size} obsolete file(s) for '${info.key}'")
+            plan.toDelete.forEach { file ->
+                Logger.d(LOG_TAG, "Deleting $file")
+                if (file.exists() && !file.deleteRecursively()) {
+                    Logger.w(LOG_TAG, "Failed to delete $file")
+                }
+            }
+        }
+
+        val toDownload = plan.toDownload
+        if (toDownload.isEmpty()) {
+            persistTimestamp(info)
+            return
+        }
+
+        Logger.i(LOG_TAG, "Downloading ${toDownload.size} file(s) for '${info.key}'")
         minecraft.progressMonitor.setStatus("Загружаем модпак...")
         minecraft.progressMonitor.setMax(toDownload.size)
         minecraft.progressMonitor.setProgress(0)
+
         val downloadedFiles = AtomicInteger(0)
-        var exceptions = emptyList<Throwable>()
-        val downloadJob = coroutineScope.launch {
-            // Create folders
-            toDownload.forEach { (_, file) ->
-                if (file.parentFile.exists()) {
-                    file.parentFile.mkdirs()
+        val failures = runBlocking {
+            val dispatcher = Dispatchers.IO.limitedParallelism(DOWNLOAD_PARALLELISM)
+            toDownload.map { (key, file) ->
+                async(dispatcher) {
+                    runCatching {
+                        Logger.d(LOG_TAG, "Downloading $key")
+                        val url = UriEncodeUtils.encodePath(joinUrl(host, key), Charsets.UTF_8)
+                        HttpDownloader.instance.downloadToFile(url, file)
+                        val done = downloadedFiles.incrementAndGet()
+                        progressMutex.withLock {
+                            minecraft.progressMonitor.setStatus("Загружено $done/${toDownload.size}")
+                            minecraft.progressMonitor.setProgress(done)
+                        }
+                    }.exceptionOrNull()?.let { key to it }
                 }
+            }.awaitAll().filterNotNull()
+        }
+
+        Logger.i(LOG_TAG, "Downloaded ${downloadedFiles.get()}/${toDownload.size} file(s) for '${info.key}'")
+
+        if (failures.isNotEmpty()) {
+            Logger.e(LOG_TAG, "${failures.size} file(s) failed to download for '${info.key}'")
+            failures.forEach { (key, error) ->
+                Logger.e(LOG_TAG, "Download failed: $key", error)
             }
-            // Download
-            exceptions = toDownload.map { (path, file) ->
-                async {
-                    runBlocking(downloadDispatcher) {
-                        runCatching {
-                            file.delete()
-                            val url = downloaderInfo.updateHostLink + path
-                            Logger.i("Downloader", "Downloading $path")
-
-                            File(file.parent).mkdirs()
-
-                            FileUtils.downloadFileWithProgress(
-                                UriEncodeUtils.encodePath(url, Charset.forName("utf-8")),
-                                file,
-                                EmptyMonitoring()
-                            )
-                            val downloadedCount = downloadedFiles.incrementAndGet()
-                            mutex.withLock {
-                                minecraft.progressMonitor.setStatus("Загружено $downloadedCount/${toDownload.size}")
-                                minecraft.progressMonitor.setProgress(downloadedCount)
-                            }
-                        }.exceptionOrNull()
-                    }
-                }
-            }.mapNotNull { it.await() }
+            val primary = failures.first().second
+            val aggregated = IOException(
+                "Failed to download ${failures.size}/${toDownload.size} file(s): " +
+                    failures.joinToString(", ") { it.first },
+                primary,
+            )
+            failures.drop(1).forEach { aggregated.addSuppressed(it.second) }
+            throw aggregated
         }
 
-        runBlocking {
-            downloadJob.join()
-        }
-        Logger.i(
-            "Downloader",
-            "Downloaded ${downloadedFiles.get()}/${toDownload.size} file(s) for '${downloaderInfo.key}'",
-        )
-        if (exceptions.isNotEmpty()) {
-            Logger.e("Downloader", "${exceptions.size} file(s) failed to download for '${downloaderInfo.key}'")
-            exceptions.forEach {
-                Logger.e("Downloader", "Download failed", it)
-            }
-            throw exceptions.first()
-        }
-
-        if (lastChangeTimestamp <= 0) {
-            return
-        }
-        ConfigHelper.writeToConfig {
-            val downloadedInfo = modpackDownloadedInfo[downloaderInfo.key] ?: DownloadedInfo()
-            downloadedInfo.lastUpdateFromChangeLog = lastChangeTimestamp
-            modpackDownloadedInfo[downloaderInfo.key] = downloadedInfo
-        }
-
+        persistTimestamp(info)
     }
 
     override fun shouldDownload(minecraft: MinecraftContext) = true
 
+    private fun persistTimestamp(info: IncrementalDownloaderInfo) {
+        if (lastChangeTimestamp <= 0) {
+            return
+        }
+        ConfigHelper.writeToConfig {
+            val downloadedInfo = modpackDownloadedInfo[info.key] ?: DownloadedInfo()
+            downloadedInfo.lastUpdateFromChangeLog = lastChangeTimestamp
+            modpackDownloadedInfo[info.key] = downloadedInfo
+        }
+    }
+
     abstract fun getDownloaderInfo(minecraft: MinecraftContext): IncrementalDownloaderInfo
+
+    private companion object {
+        // Keep concurrent connections modest: a burst of dozens of simultaneous TLS handshakes to
+        // the Cloudflare-fronted host caused widespread connect timeouts. With HTTP keep-alive the
+        // client reuses this small pool of connections across all files, so throughput stays high.
+        const val DOWNLOAD_PARALLELISM = 8
+    }
 }
 
 data class IncrementalDownloaderInfo(
@@ -162,10 +171,10 @@ data class IncrementalDownloaderInfo(
     val modpackDirectory: File? = null
 )
 
-enum class Action(code: Int) {
+enum class Action {
     @SerializedName("0")
-    REMOVE(0),
+    REMOVE,
 
     @SerializedName("1")
-    ADD(1)
+    ADD
 }

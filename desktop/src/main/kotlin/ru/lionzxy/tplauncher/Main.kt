@@ -1,5 +1,6 @@
 package ru.lionzxy.tplauncher
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -8,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -35,6 +37,9 @@ import ru.lionzxy.tplauncher.utils.LogoUtils
 import ru.lionzxy.tplauncher.utils.configureHttpUserAgent
 import java.awt.Desktop
 import java.net.URI
+
+/** Design width of both windows in dp at scale x1; the window grows by [uiScale]. */
+private const val BASE_WIDTH_DP = 592f
 
 fun main() {
     // 1. UA first — must be before any HTTP connection
@@ -70,31 +75,45 @@ fun main() {
         var showSettings by remember { mutableStateOf(false) }
         var selectedModpack by remember { mutableStateOf(ConfigHelper.config.currentModpack) }
 
+        // Whole-UI scale factor (x0.5 .. x16), chosen in Settings. Applied by overriding
+        // LocalDensity below so layout AND text scale together; persisted in Config.
+        var uiScale by remember { mutableStateOf(ConfigHelper.config.uiScale) }
+
         // ── Main window ───────────────────────────────────────────────────────
-        val mainWindowState = rememberWindowState(size = DpSize(592.dp, Dp.Unspecified))
+        val mainWindowState = rememberWindowState(size = DpSize((BASE_WIDTH_DP * uiScale).dp, Dp.Unspecified))
         Window(
             onCloseRequest = ::exitApplication,
             undecorated = true,
-            resizable = true,
+            resizable = false,
             state = mainWindowState,
             icon = painterResource("icon/logo.png"),
             title = "TechnoparkLauncher",
         ) {
-            val density = LocalDensity.current
+            // The window's true (OS) density, before our UI-scale override — used to convert
+            // the measured content px back into window dp.
+            val systemDensity = LocalDensity.current
             // Drag layer wraps the window background; interactive widgets consume their
             // own pointer events so their clicks aren't swallowed.
             WindowDraggableArea {
-                TpTheme {
-                    // Fit the window HEIGHT to the current state's content (states differ in
-                    // height — the sizeToScene() equivalent — so a shorter state leaves no gap).
-                    Box(
-                        modifier = Modifier.onSizeChanged { size ->
-                            val h = with(density) { size.height.toDp() }
-                            if (h > 0.dp && mainWindowState.size.height != h) {
-                                mainWindowState.size = mainWindowState.size.copy(height = h)
-                            }
-                        },
-                    ) {
+                // Scale the WHOLE UI (layout + text) by overriding the density.
+                CompositionLocalProvider(
+                    LocalDensity provides Density(systemDensity.density * uiScale, systemDensity.fontScale),
+                ) {
+                    TpTheme {
+                        // Fit the window to the (scaled) content: width = design·scale, height =
+                        // measured content height. States differ in height — this is the
+                        // sizeToScene() equivalent, so a shorter state leaves no gap.
+                        Box(
+                            modifier = Modifier.onSizeChanged { size ->
+                                val target = DpSize(
+                                    (BASE_WIDTH_DP * uiScale).dp,
+                                    with(systemDensity) { size.height.toDp() },
+                                )
+                                if (target.height > 0.dp && mainWindowState.size != target) {
+                                    mainWindowState.size = target
+                                }
+                            },
+                        ) {
                         MainWindowContent(
                             state = state,
                             progress = progress,
@@ -122,6 +141,7 @@ fun main() {
                             ),
                             avatar = { Avatar() },
                         )
+                        }
                     }
                 }
             }
@@ -129,35 +149,47 @@ fun main() {
 
         // ── Settings window (state-driven) ────────────────────────────────────
         if (showSettings) {
-            val settingsWindowState = rememberWindowState(size = DpSize(592.dp, Dp.Unspecified))
+            val settingsWindowState = rememberWindowState(size = DpSize((BASE_WIDTH_DP * uiScale).dp, Dp.Unspecified))
             Window(
                 onCloseRequest = { showSettings = false },
                 undecorated = true,
-                resizable = true,
+                resizable = false,
                 state = settingsWindowState,
                 icon = painterResource("icon/logo.png"),
                 title = "TechnoparkLauncher — Settings",
             ) {
-                val density = LocalDensity.current
-                TpTheme {
-                    Box(
-                        modifier = Modifier.onSizeChanged { size ->
-                            val h = with(density) { size.height.toDp() }
-                            if (h > 0.dp && settingsWindowState.size.height != h) {
-                                settingsWindowState.size = settingsWindowState.size.copy(height = h)
-                            }
-                        },
-                    ) {
-                        SettingsWindowContent(
-                            vm = remember {
-                                SettingsViewModel(
-                                    settings = Settings(ConfigHelper.config.settings),
-                                    persist = { s -> ConfigHelper.writeToConfig { settings = s } },
-                                    onClose = { showSettings = false },
-                                    onExitApp = ::exitApplication,
+                val systemDensity = LocalDensity.current
+                CompositionLocalProvider(
+                    LocalDensity provides Density(systemDensity.density * uiScale, systemDensity.fontScale),
+                ) {
+                    TpTheme {
+                        Box(
+                            modifier = Modifier.onSizeChanged { size ->
+                                val target = DpSize(
+                                    (BASE_WIDTH_DP * uiScale).dp,
+                                    with(systemDensity) { size.height.toDp() },
                                 )
+                                if (target.height > 0.dp && settingsWindowState.size != target) {
+                                    settingsWindowState.size = target
+                                }
                             },
-                        )
+                        ) {
+                            SettingsWindowContent(
+                                vm = remember {
+                                    SettingsViewModel(
+                                        settings = Settings(ConfigHelper.config.settings),
+                                        persist = { s -> ConfigHelper.writeToConfig { settings = s } },
+                                        onClose = { showSettings = false },
+                                        onExitApp = ::exitApplication,
+                                    )
+                                },
+                                currentScale = uiScale,
+                                onScaleChange = { newScale ->
+                                    uiScale = newScale
+                                    ConfigHelper.writeToConfig { uiScale = newScale }
+                                },
+                            )
+                        }
                     }
                 }
             }

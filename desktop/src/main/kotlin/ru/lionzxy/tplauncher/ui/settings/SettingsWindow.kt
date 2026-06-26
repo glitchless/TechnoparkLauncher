@@ -33,6 +33,7 @@ import ru.lionzxy.tplauncher.ui.components.Title
 import ru.lionzxy.tplauncher.ui.components.TpButton
 import ru.lionzxy.tplauncher.ui.components.TpCheckBox
 import ru.lionzxy.tplauncher.ui.components.TpField
+import ru.lionzxy.tplauncher.ui.components.TpServerCombo
 import ru.lionzxy.tplauncher.ui.components.TpTextField
 import ru.lionzxy.tplauncher.ui.theme.TpColors
 import ru.lionzxy.tplauncher.ui.theme.TpDimens
@@ -43,6 +44,11 @@ private val SETTINGS_LABEL_WIDTH = 170.dp
 
 // Vertical spacing between field rows in Settings (compact to fit all in ~776px)
 private val SETTINGS_ROW_GAP = 12.dp
+
+// UI-scale options offered in Settings. Values multiply the whole-UI density;
+// labels are the user-facing "x.." captions shown in the dropdown.
+val UI_SCALE_OPTIONS = listOf(0.5f, 1f, 2f, 4f, 8f, 16f)
+val UI_SCALE_LABELS = listOf("x0.5", "x1", "x2", "x4", "x8", "x16")
 
 /**
  * Settings window content composable.
@@ -58,9 +64,14 @@ private val SETTINGS_ROW_GAP = 12.dp
  *   - Bottom bar (backgroundDark): "Вернуться" ghost button + "Применить" accent button
  */
 @Composable
-fun SettingsWindowContent(vm: SettingsViewModel) {
+fun SettingsWindowContent(
+    vm: SettingsViewModel,
+    currentScale: Float = 1f,
+    onScaleChange: (Float) -> Unit = {},
+) {
     val heapError by vm.heapError.collectAsState()
     val titleColor = if (heapError != null) TpColors.error else TpColors.accent
+    val scaleIndex = UI_SCALE_OPTIONS.indexOf(currentScale).let { if (it < 0) 1 else it }
 
     Box(
         modifier = Modifier
@@ -127,6 +138,15 @@ fun SettingsWindowContent(vm: SettingsViewModel) {
                     checked = vm.autoJoin,
                     onChange = vm::onAutoJoinChange,
                 )
+
+                // ── Масштаб интерфейса — scales the whole UI (applies live) ──
+                TpField(label = Strings.uiScale, labelWidth = SETTINGS_LABEL_WIDTH) {
+                    TpServerCombo(
+                        items = UI_SCALE_LABELS,
+                        selectedIndex = scaleIndex,
+                        onSelect = { onScaleChange(UI_SCALE_OPTIONS[it]) },
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(TpDimens.margin))

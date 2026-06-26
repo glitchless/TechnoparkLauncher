@@ -23,6 +23,7 @@ object Strings {
     const val javaPath = "Путь до Java"
     const val debugMode = "Дебаг-режим"
     const val autoJoinServer = "Авто-заход на сервер"
+    const val uiScale = "Масштаб интерфейса"
     const val goToGameDirectory = "Перейти в директорию игры"
     const val logout = "Выйти из аккаунта"
     const val deleteGameAndReset = "Удалить игру и сбросить настройки лаунчера"

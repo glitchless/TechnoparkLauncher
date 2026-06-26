@@ -2,7 +2,7 @@ name: Publish
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ ci/publish_v2, master ]
   workflow_dispatch:
 
 # Required so the build-number action can manage its git tags and softprops can create the release.

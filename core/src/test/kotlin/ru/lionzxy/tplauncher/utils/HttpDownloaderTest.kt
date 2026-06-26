@@ -6,14 +6,18 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
-import java.io.IOException
 import java.nio.file.Files
 
 class HttpDownloaderTest {
@@ -45,7 +49,10 @@ class HttpDownloaderTest {
         downloaderReturning(HttpStatusCode.OK, payload).downloadToFile("https://h/a.jar", dest)
 
         assertArrayEquals(payload, dest.readBytes())
-        assertFalse("temp .part must be gone after success", File(dir, "mods/a.jar.part").exists())
+        assertTrue(
+            "no temp file must remain after success",
+            dest.parentFile.listFiles()!!.none { it.name.contains(".part") },
+        )
     }
 
     @Test
@@ -73,20 +80,16 @@ class HttpDownloaderTest {
     }
 
     @Test
-    fun downloadToFileRejectsEmptyResponse() = runTest {
+    fun downloadToFileWritesEmptyFileForEmptyResponse() = runTest {
+        // A 0-byte 200 response is a legitimately empty file (marker/config files), not a failure.
         val dir = tempDir()
-        val dest = File(dir, "empty.bin")
+        val dest = File(dir, "marker")
 
-        var threw = false
-        try {
-            downloaderReturning(HttpStatusCode.OK, ByteArray(0)).downloadToFile("https://h/empty", dest)
-        } catch (e: IOException) {
-            threw = true
-        }
+        downloaderReturning(HttpStatusCode.OK, ByteArray(0)).downloadToFile("https://h/marker", dest)
 
-        assertTrue("empty download must throw", threw)
-        assertFalse(dest.exists())
-        assertFalse(File(dir, "empty.bin.part").exists())
+        assertTrue("empty file must be created", dest.exists())
+        assertEquals(0L, dest.length())
+        assertTrue("no temp file must remain", dir.listFiles()!!.none { it.name.contains(".part") })
     }
 
     @Test
@@ -104,7 +107,7 @@ class HttpDownloaderTest {
 
         assertTrue("404 must throw", threw)
         assertFalse(dest.exists())
-        assertFalse(File(dir, "missing.bin.part").exists())
+        assertTrue("no temp file must remain", dir.listFiles()!!.none { it.name.contains(".part") })
     }
 
     @Test
@@ -134,5 +137,36 @@ class HttpDownloaderTest {
     fun getBytesReturnsBody() = runTest {
         val payload = byteArrayOf(9, 8, 7, 6, 5)
         assertArrayEquals(payload, downloaderReturning(HttpStatusCode.OK, payload).getBytes("https://h/b"))
+    }
+
+    @Test
+    fun concurrentDownloadsToSameDestinationDoNotRace() = runBlocking {
+        // Two case-variant changelog keys (e.g. [...Books] vs [...books]) resolve to the SAME file on a
+        // case-insensitive filesystem. Downloading them in parallel must not corrupt each other's temp
+        // file (the NoSuchFileException seen in the field) — each download needs a unique temp name.
+        val payload = ByteArray(50_000) { (it % 251).toByte() }
+        val dl = downloaderReturning(HttpStatusCode.OK, payload)
+        val dir = tempDir()
+        val dest = File(dir, "lang/zh_CN.lang")
+
+        val failures = (1..16).map {
+            async(Dispatchers.IO) {
+                runCatching { dl.downloadToFile("https://h/zh_CN.lang", dest) }.exceptionOrNull()
+            }
+        }.awaitAll().filterNotNull()
+
+        assertTrue("no concurrent download should fail: $failures", failures.isEmpty())
+        assertArrayEquals(payload, dest.readBytes())
+    }
+
+    @Test
+    fun downloadTempFileNamesAreUnique() {
+        val dir = tempDir()
+        val dest = File(dir, "zh_CN.lang")
+        val a = nextDownloadTempFile(dest)
+        val b = nextDownloadTempFile(dest)
+        assertNotEquals(a.path, b.path)
+        // Must stay in the destination's directory so the final move is an atomic same-filesystem rename.
+        assertEquals(dir.canonicalPath, a.parentFile.canonicalPath)
     }
 }

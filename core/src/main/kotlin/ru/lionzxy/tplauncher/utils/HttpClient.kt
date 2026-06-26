@@ -15,12 +15,22 @@ import io.ktor.client.statement.readRawBytes
 import io.ktor.http.contentLength
 import io.ktor.utils.io.readAvailable
 import java.io.File
-import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.concurrent.atomic.AtomicLong
 
 /** Progress callback for streamed downloads: (bytesReadSoFar, totalBytesOrNullIfUnknown). */
 typealias DownloadProgress = (read: Long, total: Long?) -> Unit
+
+private val tempFileCounter = AtomicLong()
+
+/**
+ * A unique sibling temp file for [dest]. The changelog can contain case-variant duplicate paths
+ * (e.g. `[...Books]` and `[...books]`) that resolve to the SAME file on a case-insensitive
+ * filesystem; a per-download unique name keeps their concurrent `.part` writes from colliding.
+ */
+internal fun nextDownloadTempFile(dest: File): File =
+    File(dest.parentFile, dest.name + ".part." + tempFileCounter.incrementAndGet())
 
 /**
  * Thin Ktor-backed HTTP facade for the launcher. Backed by a single, reused [HttpClient]
@@ -40,7 +50,7 @@ class HttpDownloader(val client: HttpClient) {
      */
     suspend fun downloadToFile(url: String, dest: File, onProgress: DownloadProgress = { _, _ -> }) {
         dest.parentFile?.mkdirs()
-        val tmp = File(dest.parentFile, dest.name + ".part")
+        val tmp = nextDownloadTempFile(dest)
         try {
             var total = 0L
             client.prepareGet(url).execute { response ->
@@ -59,9 +69,8 @@ class HttpDownloader(val client: HttpClient) {
                     }
                 }
             }
-            if (total == 0L) {
-                throw IOException("Empty download (0 bytes) for $url")
-            }
+            // A 0-byte body is a legitimately empty file (markers/config). Ktor streams to EOF and
+            // throws on a truncated body when Content-Length is known, so we don't reject empties.
             moveAtomically(tmp, dest)
         } finally {
             tmp.delete()

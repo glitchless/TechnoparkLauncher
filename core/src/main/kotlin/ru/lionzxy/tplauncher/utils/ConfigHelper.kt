@@ -65,6 +65,12 @@ object ConfigHelper {
         return dir
     }
 
+    fun getLogsDirectory(): File {
+        val dir = File(getDefaultDirectory(), "logs")
+        dir.mkdirs()
+        return dir
+    }
+
     fun getJavaDirectory(): File {
         val dir = File(getDefaultDirectory(), "jre")
         dir.mkdirs()

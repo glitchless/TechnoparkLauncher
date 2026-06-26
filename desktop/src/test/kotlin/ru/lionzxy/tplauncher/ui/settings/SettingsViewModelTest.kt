@@ -1,6 +1,7 @@
 package ru.lionzxy.tplauncher.ui.settings
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -110,6 +111,27 @@ class SettingsViewModelTest {
         vm.onHeapChange("2G")
 
         assertNull("heapError must be cleared after onHeapChange", vm.heapError.value)
+    }
+
+    // -------------------------------------------------------------------------
+    // enableLogView round-trips through the VM and is persisted by apply()
+    // -------------------------------------------------------------------------
+    @Test
+    fun apply_persistsEnableLogView() {
+        val captured = mutableListOf<Settings>()
+        val vm = SettingsViewModel(
+            settings = freshSettings(),
+            persist = { s: Settings -> captured.add(s) },
+            onClose = {},
+            backupSizeProvider = { "" },
+        )
+
+        assertFalse("enableLogView must initialize from settings (false)", vm.enableLogView)
+        vm.onEnableLogViewChange(true)
+        assertTrue("toggling updates VM state", vm.enableLogView)
+
+        vm.apply()
+        assertTrue("apply must persist enableLogView", captured.first().enableLogView)
     }
 
     // -------------------------------------------------------------------------

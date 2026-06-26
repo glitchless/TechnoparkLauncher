@@ -1,5 +1,6 @@
 package ru.lionzxy.tplauncher
 
+import ru.lionzxy.tplauncher.log.Logger
 import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.prepare.ComposePrepare
@@ -96,7 +97,7 @@ fun main(args: Array<String>) {
         println("Minecraft process started (see mcout.log / mcerr.log in the game dir).")
     } catch (e: Exception) {
         System.err.println("PREPARE/LAUNCH FAILED: ${e.javaClass.name}: ${e.message}")
-        e.printStackTrace()
+        Logger.e("Cli", "Prepare/launch failed", e)
         exitProcess(1)
     }
 }

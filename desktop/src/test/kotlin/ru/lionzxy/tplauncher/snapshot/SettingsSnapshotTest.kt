@@ -22,7 +22,7 @@ class SettingsSnapshotTest {
      */
     private fun buildPreviewVm(): SettingsViewModel {
         val settings = Settings()
-        settings.setHeapSize("3G")
+        settings.heapSize = "3G"
         settings.customJavaParameter =
             "-XX:+UseG1GC -XX:ConcGCThreads=1 -XX:ParallelGCThreads=1 -XX:MaxGCPauseMillis=50"
         settings.commandPrefix = "cmd.exe /C start"

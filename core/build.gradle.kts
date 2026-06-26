@@ -6,12 +6,6 @@ kotlin {
     jvmToolchain(21)
 }
 
-// REQUIRED (not optional): the Kotlin source set does NOT compile .java files. This adds the
-// colocated Settings.java / UriEncodeUtils.java to the JAVA source set so compileJava (joint-compiled
-// with Kotlin) builds them. Without it they silently vanish and surface as a runtime
-// NoClassDefFoundError in Task 7. `withJava()` is NOT needed — kotlin("jvm") already applies the java plugin.
-sourceSets["main"].java.srcDir("src/main/kotlin")
-
 dependencies {
     implementation(libs.gson)
     implementation(libs.coroutines.core)

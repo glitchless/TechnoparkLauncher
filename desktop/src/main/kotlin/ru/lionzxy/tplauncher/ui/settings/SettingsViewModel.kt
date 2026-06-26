@@ -95,7 +95,7 @@ class SettingsViewModel(
      */
     fun apply() {
         try {
-            settings.setHeapSize(heap)
+            settings.heapSize = heap
         } catch (e: HeapSizeInvalidException) {
             _heapError.value = e.message
             // NO return — fall through intentionally (the save-bug)

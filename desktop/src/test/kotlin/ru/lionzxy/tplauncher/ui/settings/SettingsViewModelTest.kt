@@ -24,7 +24,7 @@ class SettingsViewModelTest {
     /** Create a fresh Settings with a valid starting heap (avoids NPE in copy-ctor). */
     private fun freshSettings(): Settings {
         val s = Settings()
-        s.setHeapSize("1G")
+        s.heapSize = "1G"
         return s
     }
 

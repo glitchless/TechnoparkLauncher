@@ -1,6 +1,9 @@
 ./minecraft
 .minecraft
 
+# Module build output
+core/build/
+
 
 
 

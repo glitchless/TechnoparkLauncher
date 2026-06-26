@@ -2,17 +2,17 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Stand up a Gradle 9 / Kotlin 2.4 / JDK 17 multi-module build with a `:core` library holding all framework-free launcher logic (all dependencies upgraded to latest, Sentry migrated to 8.x), with the headless CLI logging in and launching the game — no GUI yet.
+**Goal:** Stand up a Gradle 9 / Kotlin 2.4 / JDK 21 multi-module build with a `:core` library holding all framework-free launcher logic (all dependencies upgraded to latest, Sentry migrated to 8.x), with the headless CLI logging in and launching the game — no GUI yet.
 
 **Architecture:** Extract the 53 framework-free Kotlin/Java files into a new `:core` Gradle module on the upgraded toolchain. The JavaFX/TornadoFX UI is quarantined (not deleted) into `legacy-javafx-ui/` as a reference for Plan 2. The two surgical couplings — the Sentry 1.x API and `IncrementalDownloader`'s `Dispatchers.Main` hop — are fixed so `:core` depends on no UI framework. The existing headless `MainCli` becomes `:core`'s end-to-end regression harness.
 
-**Tech Stack:** Kotlin 2.4.0, Gradle 9.6.0 (Kotlin DSL + version catalog), JDK 17 toolchain, kotlinx-coroutines 1.11.0, Gson 2.14.0, JNA 5.19.1, Sentry 8.46.0, JUnit 4.13.2, `mclauncher-api`/`oslib` via JitPack.
+**Tech Stack:** Kotlin 2.4.0, Gradle 9.6.0 (Kotlin DSL + version catalog), JDK 21 toolchain, kotlinx-coroutines 1.11.0, Gson 2.14.0, JNA 5.19.1, Sentry 8.46.0, JUnit 4.13.2, `mclauncher-api`/`oslib` via JitPack.
 
 ## Global Constraints
 
-- **Toolchain triple (use together):** Kotlin `2.4.0` + Gradle `9.6.0` + JDK `17`. The Compose plugins are NOT used in Plan 1 (Plan 2 adds `org.jetbrains.compose 1.11.1` + `org.jetbrains.kotlin.plugin.compose` = Kotlin version).
+- **Toolchain triple (use together):** Kotlin `2.4.0` + Gradle `9.6.0` + JDK `21`. The Compose plugins are NOT used in Plan 1 (Plan 2 adds `org.jetbrains.compose 1.11.1` + `org.jetbrains.kotlin.plugin.compose` = Kotlin version).
 - **`:core` MUST NOT depend on JavaFX, TornadoFX, `kotlinx-coroutines-javafx`, or any Compose/Skiko artifact.** This is the load-bearing invariant of the whole migration.
-- **Gradle 9.6.0 requires JDK 17 to *run*.** Set `JAVA_HOME` to a JDK 17 before any `./gradlew` command. Do NOT run `gradlew wrapper` on the old JDK 8 — bump the wrapper by editing `gradle-wrapper.properties` directly (Task 1).
+- **Gradle 9.6.0 requires JDK 17+ to *run* — this project uses JDK 21.** Set `JAVA_HOME` to a JDK 21 (e.g. `/usr/lib/jvm/java-21-openjdk-amd64`) before any `./gradlew` command. Do NOT run `gradlew wrapper` on the old JDK 8 — bump the wrapper by editing `gradle-wrapper.properties` directly (Task 1).
 - **Faithful behavior — no bug fixes in this migration.** Preserve current behavior exactly, including the `sleep(60s)` launch heuristic and the four known bugs (they are deferred to follow-up PRs).
 - **Dependency pins (verified 2026-06-26):** Gson 2.14.0 · coroutines-core 1.11.0 · JNA 5.19.1 · commons-codec 1.22.0 · Sentry 8.46.0 · jarchivelib 1.2.0 · zt-zip 1.17 · JUnit 4.13.2. JitPack: `mclauncher-api` KEEP `37e0f29fc7`, `oslib` BUMP `4a529cbef2`. **Drop** `net.minidev:json-smart` (single site `Avatar.kt` → Plan 2 uses Gson).
 - **Kotlin↔coroutines tension:** coroutines 1.11.0 was built against Kotlin ~2.2.x. This is expected to be a *warning*, not an error, on Kotlin 2.4.0. If the first compile escalates it to an error, fall back to Kotlin `2.2.x` in the version catalog (still valid for Plan 2's Compose floor) — see spec §13.2.
@@ -26,7 +26,7 @@
 - `gradle/libs.versions.toml` — version catalog (single source of dependency versions).
 - `settings.gradle.kts` — replaces `settings.gradle`; declares `:core`, repos, pluginManagement.
 - `build.gradle.kts` — replaces `build.gradle`; root config (group/version), plugins declared `apply false`.
-- `core/build.gradle.kts` — the `:core` module: `kotlin("jvm")`, JDK 17 toolchain, all deps, the `runCli` task.
+- `core/build.gradle.kts` — the `:core` module: `kotlin("jvm")`, JDK 21 toolchain, all deps, the `runCli` task.
 
 **`:core` module (`core/src/main/...`):** receives — verbatim via `git mv` — `minecraft/` (incl. `workarounds/`, `delegates/`), `prepare/` (incl. `downloader/`, `sync/`, `processing/`), `config/`, `data/`, `exceptions/`, `MainCli.kt`, and the framework-free `utils/` files (`ConfigHelper`, `WindowsPathHelper`, `SystemMemoryHelper`, `UrlDownloader`, `HttpUserAgent`, `TextProgressMonitor`, `EmptyMonitoring`, `DebugMonitoring`, `UriEncodeUtils.java`). Resources: `jres.json`, `icon/logo.png`, `icon/logo_16x16.png`, `icon/logo_32x32.png`. Tests: all four existing tests.
 
@@ -59,7 +59,7 @@ Prove the exact toolchain triple + every dependency resolves *before* moving any
 - Delete: `settings.gradle`, `build.gradle` (replaced by `.kts`)
 
 **Interfaces:**
-- Produces: a `:core` Gradle module that compiles, tests, and resolves all dependencies on Kotlin 2.4.0 / Gradle 9.6.0 / JDK 17.
+- Produces: a `:core` Gradle module that compiles, tests, and resolves all dependencies on Kotlin 2.4.0 / Gradle 9.6.0 / JDK 21.
 
 - [ ] **Step 1: Point the wrapper at Gradle 9.6.0**
 
@@ -69,7 +69,7 @@ Edit `gradle/wrapper/gradle-wrapper.properties` — change only the `distributio
 distributionUrl=https\://services.gradle.org/distributions/gradle-9.6.0-all.zip
 ```
 
-(Do not run `./gradlew wrapper` — the current JDK-8-era wrapper can't run on JDK 17. Editing the URL makes the next `./gradlew` download 9.6.0.)
+(Do not run `./gradlew wrapper` — the current JDK-8-era wrapper can't run on JDK 21. Editing the URL makes the next `./gradlew` download 9.6.0.)
 
 - [ ] **Step 2: Write the version catalog**
 
@@ -171,7 +171,7 @@ plugins {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
 
 // REQUIRED (not optional): the Kotlin source set does NOT compile .java files. This adds the
@@ -237,13 +237,13 @@ class CoreMarkerTest {
 
 - [ ] **Step 7: Verify the toolchain + full dependency resolution**
 
-Run (with `JAVA_HOME` pointing at a JDK 17):
+Run (with `JAVA_HOME` pointing at a JDK 21):
 
 ```bash
 ./gradlew :core:build
 ```
 
-Expected: `BUILD SUCCESSFUL`. Gradle downloads 9.6.0, applies the Kotlin 2.4.0 plugin, provisions JDK 17, resolves every dependency (incl. the JitPack `mclauncher-api`/`oslib` SHAs and Sentry 8.46.0), compiles `CoreMarker`, and runs `CoreMarkerTest` green.
+Expected: `BUILD SUCCESSFUL`. Gradle downloads 9.6.0, applies the Kotlin 2.4.0 plugin, provisions JDK 21, resolves every dependency (incl. the JitPack `mclauncher-api`/`oslib` SHAs and Sentry 8.46.0), compiles `CoreMarker`, and runs `CoreMarkerTest` green.
 
 If you see *"was compiled with an incompatible version of Kotlin"* escalated to an **error** (not just a warning) from coroutines: set `kotlin = "2.2.20"` in `libs.versions.toml` and re-run (per Global Constraints).
 
@@ -251,7 +251,7 @@ If you see *"was compiled with an incompatible version of Kotlin"* escalated to 
 
 ```bash
 git add -A   # stages the new build files + the Step 3/4 deletions of settings.gradle & build.gradle
-git commit -m "build: multi-module Gradle 9.6 / Kotlin 2.4 / JDK 17 scaffold with :core"
+git commit -m "build: multi-module Gradle 9.6 / Kotlin 2.4 / JDK 21 scaffold with :core"
 ```
 
 ---
@@ -808,7 +808,7 @@ The `runCli` task (defined in Task 1) runs `MainCli`, which mirrors the GUI logi
 ./gradlew :core:runCli -Pemail="$TPL_EMAIL" -Ppassword="$TPL_PASSWORD" -Pcli='--no-launch'
 ```
 
-Expected: prints `Modpack:`/`MC dir:`, then `=== AUTH ===`, then `LOGIN OK: username=… uuid=…`, then stops at `--no-launch given; stopping after auth.` (Confirms `configureHttpUserAgent()`, the custom Yggdrasil auth, Gson config I/O, and Sentry-without-init all work on JDK 17.)
+Expected: prints `Modpack:`/`MC dir:`, then `=== AUTH ===`, then `LOGIN OK: username=… uuid=…`, then stops at `--no-launch given; stopping after auth.` (Confirms `configureHttpUserAgent()`, the custom Yggdrasil auth, Gson config I/O, and Sentry-without-init all work on JDK 21.)
 
 If login fails, the CLI prints the full exception chain (`dumpChain`) — read it: a 403/UA issue vs. a real network error is distinguishable there.
 

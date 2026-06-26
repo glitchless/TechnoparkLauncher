@@ -33,10 +33,10 @@ JavaFX-coupled, plus **exactly one line** of business logic.
 
 | # | Decision | Choice |
 |---|----------|--------|
-| 1 | Repo/toolchain strategy | **Multi-module:** extract `:core` (reused logic), new `:desktop` Compose UI; CLI keeps using `:core`. Big-bang toolchain bump (Kotlin 2.x / JDK 17 / Gradle 8). |
+| 1 | Repo/toolchain strategy | **Multi-module:** extract `:core` (reused logic), new `:desktop` Compose UI; CLI keeps using `:core`. Big-bang toolchain bump (Kotlin 2.4 / JDK 21 / Gradle 9). |
 | 2 | Visual fidelity | **Faithful pixel-clone** of the current UI. |
 | 3 | Theming | **Bespoke composables** — custom theme, no Material. |
-| 4 | Distribution & self-update | **Cross-platform fat jar** (all Skiko natives bundled) + bundled launcher JRE 17; keep `upload.sh` / `launcher.json` self-update unchanged. |
+| 4 | Distribution & self-update | **Cross-platform fat jar** (all Skiko natives bundled) + bundled launcher JRE 21; keep `upload.sh` / `launcher.json` self-update unchanged. |
 | 5 | Known bugs | **Faithful port now**, fix in follow-up PRs. |
 | — | Localization (default) | Keep hardcoded **Russian** literals, centralized into one `Strings` object in `:desktop`; drop the out-of-sync `strings_en_US.properties`. |
 
@@ -45,7 +45,7 @@ JavaFX-coupled, plus **exactly one line** of business logic.
 ## 3. Target architecture
 
 ```
-settings.gradle.kts            Kotlin 2.4.0 · JDK 17 · Gradle 9.6.0 · Compose MP 1.11.1
+settings.gradle.kts            Kotlin 2.4.0 · JDK 21 · Gradle 9.6.0 · Compose MP 1.11.1
 │
 ├── :core    (id "org.jetbrains.kotlin.jvm")  — pure JVM library, no UI framework
 │     • all framework-free business logic (auth, download, sync, launch chain,
@@ -241,11 +241,11 @@ oslib), regenerates `launcher.json`, and uploads.
   runnable jar, so `upload.sh` + `launcher.json` self-update **work unchanged**.
 - **Coordination item (out of repo, not a code change here):** the external
   bootstrapper currently launches the jar with Java 8; post-migration it must
-  provide/bundle a **JRE 17** for the launcher jar. (Optionally, a later jlink/
-  `jpackage` step can bundle JRE 17 alongside the jar.)
+  provide/bundle a **JRE 21** for the launcher jar. (Optionally, a later jlink/
+  `jpackage` step can bundle JRE 21 alongside the jar.)
 - The **game's** JRE-8 mechanism (`jres.json` → download/extract →
   `jrepath.txt` → `LauncherSettings.getJavaLocation()`) is preserved verbatim in
-  `:core`. Two bundled runtimes total: **17 for the launcher, 8 for the game.**
+  `:core`. Two bundled runtimes total: **21 for the launcher, 8 for the game.**
 
 ---
 
@@ -289,7 +289,7 @@ lands, keeping the migration diff a pure framework swap.
 | `IncrementalDownloader.kt:102` `Dispatchers.Main` throws at runtime once JavaFX is gone | Critical | Fixed early (§6) — thread-safe monitor, drop the UI hop. |
 | Drag-anywhere chrome swallowing widget clicks | Medium | Scope `WindowDraggableArea` to background regions only; verify each interactive control. |
 | SVG → vector re-tint fidelity | Medium | Convert to `ImageVector`, tint at runtime; visually diff against current icons. |
-| External bootstrapper still launches with Java 8 | Medium | Coordination item flagged (§8); JRE 17 delivery handled in the bootstrapper project. |
+| External bootstrapper still launches with Java 8 | Medium | Coordination item flagged (§8); JRE 21 delivery handled in the bootstrapper project. |
 | Skiko native bundling for a cross-platform jar | Low–Medium | Explicitly add all four `skiko-awt-runtime-*` artifacts; test on each OS. |
 
 ---
@@ -307,7 +307,7 @@ lands, keeping the migration diff a pure framework swap.
 All dependencies upgrade to their latest stable versions (user request),
 verified on Maven Central (`maven-metadata.xml` timestamps) / JitPack on
 2026-06-26. This is a **coordinated toolchain rewrite**, not independent bumps:
-Gradle 9 requires JDK 17 to run, Compose Desktop targets JDK 11+, and the build
+Gradle 9 requires JDK 21 to run, Compose Desktop targets JDK 11+, and the build
 moves from the Groovy `buildscript{}`/`apply plugin` style to the `plugins{}`
 DSL + version catalog, dropping the dead `jcenter`/`bintray` repos.
 
@@ -319,7 +319,7 @@ DSL + version catalog, dropping the dead `jcenter`/`bintray` repos.
 | `org.jetbrains.kotlin.jvm` | 1.3.61 | **2.4.0** | major | K2 default since 2.0 — stricter nullability/smart-cast/overload resolution. `kotlinOptions{}` → `compilerOptions{}`. |
 | `org.jetbrains.compose` | — | **1.11.1** | major | New. Replaces the JavaFX/TornadoFX UI. CMP 1.11.1 ↔ Jetpack Compose 1.11.2; requires Kotlin ≥ 2.1.0. |
 | `org.jetbrains.kotlin.plugin.compose` | — | **= Kotlin (2.4.0)** | minor | Compose compiler ships inside Kotlin since 2.0 — **version always equals the Kotlin version**, never pinned independently. |
-| Gradle wrapper | 5.6.4 | **9.6.0** | major | `compile`/`testCompile`/`runtime` → `implementation`/`testImplementation`; `Jar.baseName` → `archiveBaseName`; needs JDK 17 to run. |
+| Gradle wrapper | 5.6.4 | **9.6.0** | major | `compile`/`testCompile`/`runtime` → `implementation`/`testImplementation`; `Jar.baseName` → `archiveBaseName`; needs JDK 21 to run. |
 | `kotlin-stdlib-jdk8` | (via plugin) | **REMOVE** | minor | Since Kotlin 1.8, `-jdk7/-jdk8` merged into `kotlin-stdlib` (added automatically). |
 | **Libraries** | | | | |
 | `com.google.code.gson:gson` | 2.8.5 | **2.14.0** | none | API used is stable. 2.14.0 rejects duplicate JSON keys — smoke-test config/asset parsing. |
@@ -343,13 +343,13 @@ DSL + version catalog, dropping the dead `jcenter`/`bintray` repos.
 
 ### 13.2 Compatibility triple (must be used together)
 
-> **Kotlin `2.4.0` + `org.jetbrains.compose` `1.11.1` + `org.jetbrains.kotlin.plugin.compose` `2.4.0`, on Gradle `9.6.0`, targeting JDK `17`.**
+> **Kotlin `2.4.0` + `org.jetbrains.compose` `1.11.1` + `org.jetbrains.kotlin.plugin.compose` `2.4.0`, on Gradle `9.6.0`, targeting JDK `21`.**
 
 Hard rules: (1) the Compose-compiler plugin version **always equals** the Kotlin
 version (`version.ref = kotlin`); (2) JetBrains guarantees latest CMP ↔ latest
 Kotlin, so 1.11.1 + 2.4.0 needs no manual alignment (CMP's higher Kotlin minimums
 apply only to iOS/web, irrelevant here); (3) raise `sourceCompatibility`/
-`jvmTarget`/toolchain to 17.
+`jvmTarget`/toolchain to 21.
 
 > **⚠ Tension to resolve at build time (medium confidence):** toolchain research
 > says Kotlin 2.4.0; coroutines research says `coroutines-core:1.11.0` was built
@@ -385,7 +385,7 @@ CVEs, but adds `accessor-smart` + ASM transitives.)
 
 ### 13.5 Verification ordering
 
-Set `JAVA_HOME` to a JDK 17. Land the **zero-impact bumps first** (gson, jna,
+Set `JAVA_HOME` to a JDK 21. Land the **zero-impact bumps first** (gson, jna,
 commons-codec, jarchivelib, zt-zip, junit, oslib SHA) to confirm a green
 baseline, *then* the major toolchain + Sentry + UI changes — so a regression is
 attributable to the risky change, not a safe one.
@@ -398,7 +398,7 @@ attributable to the risky change, not a safe one.
 3. **Smoke behavior:** config load/save + incremental download (Gson 2.14.0
    duplicate-key behavior); avatar fetch (Gson-replacement path); Windows short
    paths (JNA 5.19.1); JRE archive extraction (jarchivelib/zt-zip).
-4. **Run + Sentry:** launch the app on JDK 17; confirm `Sentry.init` runs once,
+4. **Run + Sentry:** launch the app on JDK 21; confirm `Sentry.init` runs once,
    force a captured exception (reaches the DSN with `version` tag + serverName),
    and confirm the user is attached after login (validates the `setUser`
    rewrite). Confirm `runCli` still drives the `:core` login→launch flow.

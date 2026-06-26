@@ -1,14 +1,15 @@
 package ru.lionzxy.tplauncher.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
@@ -22,6 +23,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
@@ -29,7 +32,6 @@ import ru.lionzxy.tplauncher.ui.icons.TpIcons
 import ru.lionzxy.tplauncher.ui.theme.TpColors
 import ru.lionzxy.tplauncher.ui.theme.TpDimens
 import ru.lionzxy.tplauncher.ui.theme.TpTypography
-import androidx.compose.foundation.Image
 
 @Composable
 fun TpServerCombo(
@@ -39,12 +41,14 @@ fun TpServerCombo(
     enabled: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var anchorWidthPx by remember { mutableStateOf(0) }
 
     Box(modifier = Modifier.fillMaxWidth()) {
         // The trigger row
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .onGloballyPositioned { anchorWidthPx = it.size.width }
                 .clip(RoundedCornerShape(TpDimens.fieldRadius))
                 .background(TpColors.input)
                 .clickable(enabled = enabled) { expanded = !expanded }
@@ -58,7 +62,7 @@ fun TpServerCombo(
                 BasicText(
                     text = if (items.isNotEmpty()) items.getOrElse(selectedIndex) { items[0] } else "",
                     style = TpTypography.body.copy(
-                        color = if (enabled) TpColors.text else TpColors.textDisable,
+                        color = if (enabled) TpColors.text else TpColors.disable,
                     ),
                     modifier = Modifier.weight(1f),
                 )
@@ -71,7 +75,7 @@ fun TpServerCombo(
             }
         }
 
-        // Dropdown popup
+        // Dropdown popup — sized to the anchor (combo) width, not the window width.
         if (expanded) {
             Popup(
                 onDismissRequest = { expanded = false },
@@ -79,7 +83,7 @@ fun TpServerCombo(
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .width(with(LocalDensity.current) { anchorWidthPx.toDp() })
                         .clip(RoundedCornerShape(TpDimens.fieldRadius))
                         .background(TpColors.input),
                 ) {

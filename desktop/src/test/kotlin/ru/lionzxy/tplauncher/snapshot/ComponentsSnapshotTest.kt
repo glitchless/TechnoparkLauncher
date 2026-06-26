@@ -25,7 +25,7 @@ class ComponentsSnapshotTest {
 
     @Test
     fun componentsSnapshot() {
-        val f = snapshot("components_snapshot", 960, 700) {
+        val f = snapshot("components_snapshot", 960, 920) {
             TpTheme {
                 Column(
                     modifier = Modifier
@@ -78,6 +78,25 @@ class ComponentsSnapshotTest {
                         text = Strings.enterGame,
                         enabled = false,
                         onClick = {},
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Disabled field + combo — verify the disabled color-swap (not alpha)
+                    TpTextField(
+                        value = "disabled",
+                        onValueChange = {},
+                        label = Strings.login,
+                        enabled = false,
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    TpServerCombo(
+                        items = listOf("Vanilla"),
+                        selectedIndex = 0,
+                        onSelect = {},
+                        enabled = false,
                     )
                 }
             }

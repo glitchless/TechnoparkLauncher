@@ -32,7 +32,9 @@ fun TpTextField(
     Column(modifier = Modifier.fillMaxWidth()) {
         BasicText(
             text = label,
-            style = TpTypography.body,
+            style = TpTypography.body.copy(
+                color = if (enabled) TpColors.text else TpColors.textDisable,
+            ),
         )
         Spacer(modifier = Modifier.height(6.dp))
         Box(

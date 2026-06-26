@@ -137,6 +137,8 @@ fun MainWindowContent(
                                 BasicText(
                                     text = flags.successLoginText,
                                     style = TpTypography.body,
+                                    softWrap = false,
+                                    maxLines = 1,
                                 )
                                 BasicText(
                                     text = Strings.loggedIn,

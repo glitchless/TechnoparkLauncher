@@ -27,10 +27,13 @@ object TpColors {
 private val Gugi = FontFamily(Font("fonts/Gugi-Regular.ttf", FontWeight.Normal))
 private val Roboto = FontFamily(Font("fonts/Roboto-Regular.ttf", FontWeight.Normal))
 
+// The legacy JavaFX fonts were sized in POINTS (Font.loadFont(.., 30.0) == 30pt). At 96 DPI a
+// point is 4/3 px, so the on-screen sizes were 30pt→40, 14pt→18.67, 16pt→21.33, 9pt→12. Compose
+// sp ≈ px at scale 1, so the faithful sizes are the point values × 4/3 (matches the img/ mockups).
 object TpTypography {
-    val title = TextStyle(fontFamily = Gugi, fontSize = 30.sp, color = TpColors.accent)
-    val body = TextStyle(fontFamily = Roboto, fontSize = 14.sp, color = TpColors.text)
-    val button = TextStyle(fontFamily = Roboto, fontSize = 16.sp, color = TpColors.text)
+    val title = TextStyle(fontFamily = Gugi, fontSize = 36.sp, color = TpColors.accent)
+    val body = TextStyle(fontFamily = Roboto, fontSize = 18.67.sp, color = TpColors.text)
+    val button = TextStyle(fontFamily = Roboto, fontSize = 21.33.sp, color = TpColors.text)
     val caption = TextStyle(fontFamily = Roboto, fontSize = 12.sp, color = TpColors.textDisable)
 }
 

@@ -39,8 +39,9 @@ import ru.lionzxy.tplauncher.ui.theme.TpColors
 import ru.lionzxy.tplauncher.ui.theme.TpDimens
 import ru.lionzxy.tplauncher.ui.theme.TpTypography
 
-// Label column wide enough for "Параметры java" (the longest label in Settings)
-private val SETTINGS_LABEL_WIDTH = 170.dp
+// Label column wide enough for the longest label ("Авто-заход на сервер") at the
+// 18.67sp body size — the legacy TornadoFX form auto-sized the column to the longest label.
+private val SETTINGS_LABEL_WIDTH = 225.dp
 
 // Vertical spacing between field rows in Settings (compact to fit all in ~776px)
 private val SETTINGS_ROW_GAP = 12.dp

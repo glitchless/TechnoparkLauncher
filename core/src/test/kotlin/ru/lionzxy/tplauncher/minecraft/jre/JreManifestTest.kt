@@ -5,12 +5,16 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import ru.lionzxy.tplauncher.config.generateSHA256
 import java.io.File
-import java.nio.file.Files
 
 class JreManifestTest {
+
+    @get:Rule
+    val tmp = TemporaryFolder()
 
     private val sampleJson = """
         [
@@ -66,7 +70,7 @@ class JreManifestTest {
 
     @Test
     fun isJavaBinaryValidMatchesOwnHashAndRejectsMismatchOrMissing() {
-        val dir = Files.createTempDirectory("jrebin").toFile()
+        val dir = tmp.newFolder()
         val bin = File(dir, "java").apply { writeBytes("#!/bin/sh\necho 21".toByteArray()) }
         val good = bin.generateSHA256()!!
         assertTrue(isJavaBinaryValid(bin, good))

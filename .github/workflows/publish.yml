@@ -120,7 +120,7 @@ jobs:
           pattern: asset-*
           merge-multiple: true
 
-      # files[] = one entry per built arch; downloadFullPath/SHA-256 = the Linux x86_64 fallback;
+      # files[] = one entry per built arch (the bootstrapper picks its OS/arch);
       # jre = .github/jres.json embedded verbatim.
       - name: Assemble launcher.json
         shell: bash
@@ -130,16 +130,11 @@ jobs:
           COUNT=$(jq 'length' <<<"$FILES")
           if [ "$COUNT" -lt 1 ]; then echo "No platform entries found"; exit 1; fi
           echo "Assembling launcher.json for ${COUNT} platform(s)"
-          DEFAULT=$(jq -c '(map(select(.type == "Linux" and .arch == "x86_64"))[0]) // .[0]' <<<"$FILES")
-          DEF_URL=$(jq -r '.downloadUrl' <<<"$DEFAULT")
-          DEF_SHA=$(jq -r '.["SHA-256"]' <<<"$DEFAULT")
           jq -n \
             --arg version "$VERSION" \
-            --arg url "$DEF_URL" \
-            --arg sha "$DEF_SHA" \
             --argjson files "$FILES" \
             --slurpfile jre .github/jres.json \
-            '{version: $version, downloadFullPath: $url, "SHA-256": $sha, files: $files, jre: $jre[0]}' \
+            '{version: $version, files: $files, jre: $jre[0]}' \
             > launcher.json
           echo "----- launcher.json -----"; cat launcher.json
 

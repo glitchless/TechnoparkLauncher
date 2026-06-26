@@ -148,3 +148,10 @@ fabric.properties
 
 !Hasher.jar
 /scratchpad/
+
+# Compose/Skiko resource dirs extracted to CWD by desktop tasks (regenerable)
+/META-INF/
+/commonMain/
+/desktopMain/
+/jvmAndAndroidMain/
+/skikoMain/

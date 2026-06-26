@@ -56,7 +56,7 @@ DEFAULT_MARGIN `16.dp`; column gap `32.dp`; left gutter `23.dp`; title top `11.5
 | check-solid | 512×512 | `#00DB9D` | checkbox tick 16dp / avatar placeholder 42dp |
 | chevron | ~17×19 | `#FFFFFF` (disabled `#7F8185`) | combobox arrow |
 
-### 9-state × 15-flag matrix (blank = inherits default)
+### 8-state × 15-flag matrix (blank = inherits default; `BaseState` supplies the defaults and is not a rendered variant)
 Defaults: titleColor=accent, loginPasswordVisible=true, successLoginVisible=false, disableProgressBar=true, disableInputField=false, progressTextColor=`#DDDDDE`, progressTextContent=null, buttonDisable=false, buttonText="Войти в игру", successLoginText="example@example.com", isOpen=true, registerFieldIsVisible=false, registerFieldColor=accent, settingsFieldIsClickable=true, disableSelectModpack=false.
 
 | flag | Initial | ErrInitial | LoginProg | Logged | GameLoad | MCRunning | MCLaunched | ErrLaunch |
@@ -159,13 +159,15 @@ Create `desktop/src/main/kotlin/ru/lionzxy/tplauncher/Main.kt`:
 ```kotlin
 package ru.lionzxy.tplauncher
 
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 
+// NOTE: compose.desktop.currentOs bundles Material 2 + foundation + ui, NOT material3.
+// Use foundation's BasicText (matches the bespoke no-Material mandate). Do not add material3.
 fun main() = application {
     Window(onCloseRequest = ::exitApplication, title = "TechnoparkLauncher") {
-        Text("TechnoparkLauncher :desktop bring-up")
+        BasicText("TechnoparkLauncher :desktop bring-up")
     }
 }
 ```
@@ -448,7 +450,7 @@ data class AvatarData(@SerializedName("avatar_url") val avatarUrl: String)
 ```
 - [ ] **Step 2: `AvatarLoader`** — `suspend` fn: read `<defaultDir>/avatar.png` cache (emit if present); GET `https://games.glitchless.ru/api/minecraft/users/profiles/$login/avatar/`, parse with Gson → `avatar_url`, GET image bytes → write `avatar.png` → decode to `ImageBitmap`. Serialize with a `Mutex`. (Use `:core`'s `ConfigHelper.getDefaultDirectory()` and the existing UA-configured HTTP.)
 - [ ] **Step 3: `TpCheckBox`** — `Box(28.dp, bg=input, radius 2.5.dp).clickable{onChange(!checked)}` with `if(checked) Icon(TpIcons.Check, 16.dp, tint=accent)` centered. Derive visibility purely from `checked` (no init flash).
-- [ ] **Step 4: `Avatar`** — `Box(84.dp.clip(CircleShape), center)`: placeholder = `background(backgroundCircle)` + `Icon(TpIcons.Check, 42.dp, tint=accent)`; loaded = `Image(bitmap, contentScale=Crop, Modifier.size(84.dp).clip(CircleShape))`. Collect `loadAvatar` via `produceState`.
+- [ ] **Step 4: `Avatar`** — `Box(84.dp.clip(CircleShape), center)`: placeholder = `background(backgroundCircle)` + `Icon(TpIcons.Check, 42.dp, tint=accent)`; loaded = `Image(bitmap, contentScale=Crop, Modifier.size(84.dp).clip(CircleShape))`. `Avatar` reads the nickname from `ConfigHelper.config.profile?.login` **internally** (the player login, NOT the typed email) — if null, stay on the placeholder and do not fetch. Collect `loadAvatar(login)` via `produceState`.
 - [ ] **Step 5: `TpProgressBar`** — track `RoundedCornerShape(5.dp)` height 12.dp bg=`if(enabled) progressTrack else input`; determinate fill `Box(fillMaxWidth(value.coerceIn(0f,1f))).background(accent)`; `value==-1f` → indeterminate animated bar (InfiniteTransition sweeping an accent segment). Disabled → fill 0, track `#484C51`.
 - [ ] **Step 6: `ProgressPanel`** — `Column(bg=backgroundDark, padding 16.dp, spacing 16.dp, centered){ BasicText(text, body.copy(color=textColor)); TpProgressBar(value, enabled) }`.
 - [ ] **Step 7: Chrome** — `CloseX` (TpIcons.Times 20.dp, clickable, hand), `Title` (Strings.title, TpTypography.title, color param), `RegisterLink` (underlined accent/error, clickable→browser), `GearRow` (TpIcons.Cogs 34.dp + Strings.settings body, clickable when enabled).
@@ -494,10 +496,28 @@ data class AvatarData(@SerializedName("avatar_url") val avatarUrl: String)
 - Consumes: `:core` `MinecraftContext`, `MinecraftAccountManager`, `ComposePrepare`, `ConfigHelper`, `MinecraftModpack`, `LogoUtils.setLogoForMinecraft`, `IProgressMonitor`.
 - Produces: `class LauncherViewModel(scope: CoroutineScope)` with `val state: StateFlow<LauncherState>`, `val progress: StateFlow<ProgressUiState>`, `fun onInitView()`, `onButtonClick(email, password)`, `onChangeModpack(pack)`, `onPasswordOrLoginChange()`.
 
-- [ ] **Step 1: `ProgressMonitorBridge`** (full code from spec §5 — `IProgressMonitor` writing into `MutableStateFlow<ProgressUiState>`; `-1` → indeterminate; `setStatus(null)` no-op).
+- [ ] **Step 1: `ProgressMonitorBridge`** — adapts `:core`'s `sk.tomsik68.mclauncher.api.ui.IProgressMonitor` (4 methods: `setProgress(Int)`, `setMax(Int)`, `incrementProgress(Int)`, `setStatus(String?)`) onto the progress `StateFlow`. Full code:
+```kotlin
+package ru.lionzxy.tplauncher.ui
+
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
+import ru.lionzxy.tplauncher.ui.state.ProgressUiState
+import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
+
+class ProgressMonitorBridge(private val flow: MutableStateFlow<ProgressUiState>) : IProgressMonitor {
+    private var max = 1
+    private var cur = 0
+    override fun setMax(len: Int) { max = if (len <= 0) 1 else len }
+    override fun setProgress(progress: Int) { cur = progress; emit() }
+    override fun incrementProgress(amount: Int) { setProgress(cur + amount) }
+    override fun setStatus(status: String?) { if (status != null) flow.update { it.copy(status = status) } } // null = no-op
+    private fun emit() = flow.update { it.copy(value = if (cur == -1) -1f else cur.toFloat() / max) }
+}
+```
 - [ ] **Step 2: Failing tests** — with a fake account manager / injected seams: `onInitView` logged→`Logged`, else `Initial`; `onLogin` invalid email→`InitialError("Введите валидную почту")`; empty password→`InitialError("Пароль не может быть пустым")`; `onPasswordOrLoginChange` resets `InitialError`→`Initial`. (Mirror `MainController.kt`; reuse its messages.)
 - [ ] **Step 3: Run → fails.**
-- [ ] **Step 4: Implement** `LauncherViewModel` mirroring `MainController` transitions (§5), running login/launch on `Dispatchers.IO`, emitting state via `StateFlow`, bridging progress. Keep the faithful `delay(60_000)`→`MinecraftLaunched` and the `UnknownHostException`→`InitialError` routing.
+- [ ] **Step 4: Implement** `LauncherViewModel` by porting the transitions in `legacy-javafx-ui/view/main/MainController.kt` (read it — `onInitView`/`onButtonClick`/`onLogin`/`onGameStart`/`onChangeModpack`/`onPasswordOrLoginChange`), running login/launch on `Dispatchers.IO`, emitting state via `StateFlow`, bridging progress through `ProgressMonitorBridge`. **Reuse MainController's exact error strings verbatim** ("Введите валидную почту", "Пароль не может быть пустым", "Проверьте подключение к интернету", "Внутреняя ошибка, мы уже исправляем это"). Keep the faithful `delay(60_000)`→`MinecraftLaunched` and the `UnknownHostException`→`InitialError` routing.
 - [ ] **Step 5: Run → passes.**
 - [ ] **Step 6: Commit** `feat(desktop): LauncherViewModel + progress bridge`
 
@@ -511,13 +531,14 @@ data class AvatarData(@SerializedName("avatar_url") val avatarUrl: String)
 - Consumes: theme, components, `LauncherState.flags`, `ProgressUiState`.
 - Produces: `@Composable fun MainWindowContent(state: LauncherState, progress: ProgressUiState, callbacks: MainCallbacks)` rendering the layout tree (§6) — the 592dp content used both in the real window and in snapshots.
 
-- [ ] **Step 1: Implement `MainWindowContent`** per the §6 layout tree: `Box(widthIn max=592.dp)` → `Column{ Title; Form(grid 2×2 + overlaid loginComplete block toggled by successLoginVisible/loginPasswordVisible); RegisterLink(if registerFieldIsVisible); TpButton; ProgressPanel } + CloseX(TopEnd)`. Drive every widget from `state.flags` (visibility, colors, disabled, button text) + `progress`. (Drag/window wiring is Task 11; this is pure content.)
+- [ ] **Step 1: Implement `MainWindowContent`** with this layout tree (self-contained; corroborate spacing against `legacy-javafx-ui/view/main/MainWindow.kt`): root `Box(Modifier.fillMaxWidth())` — **`fillMaxWidth`, NOT `widthIn(max=592.dp)`**: the 592dp cap comes from the window width, and `fillMaxWidth` makes the content fill the render scene so snapshots aren't left-aligned in transparent dead space — → `Column{ Title; Form(grid 2×2 + overlaid loginComplete block toggled by successLoginVisible/loginPasswordVisible); RegisterLink(if registerFieldIsVisible); TpButton; ProgressPanel } + CloseX(TopEnd)`. Drive every widget from `state.flags` (visibility, colors, disabled, button text) + `progress`. (Drag/window wiring is Task 11; this is pure content.)
 - [ ] **Step 2: Snapshot the 4 main states** (deterministic preview state, fonts from test resources, density 960/592):
 ```kotlin
-@Test fun screen1_login()     = snap("login",        612, LauncherState.Initial)
-@Test fun screen3_loginBtn()  = snap("loginButton",  540, LauncherState.Logged("st3althtech@mail.ru")) // logged layout w/ button
-@Test fun screen2_loggedIn()  = snap("loggedIn",     540, LauncherState.Logged("st3althtech@mail.ru"))
-@Test fun screen4_error()     = snap("error",        540, LauncherState.InitialError("Введите правильные логин и пароль"))
+// Four DISTINCT states, each chosen so its 15 flags match the mockup's visible layout:
+@Test fun screen1_login()      = snap("login",      612, LauncherState.Initial)                       // idle form + register + button + default progress text
+@Test fun screen2_loggedIn()   = snap("loggedIn",   540, LauncherState.Logged("st3althtech@mail.ru"))  // avatar + "Вход осуществлен"
+@Test fun screen3_loginProg()  = snap("loginProg",  540, LauncherState.LoginProgress)                  // form visible, inputs+combo disabled, active progress bar
+@Test fun screen4_error()      = snap("error",      540, LauncherState.InitialError("Введите валидную почту")) // a REAL MainController error string (not the mockup's placeholder)
 ```
 (`snap` wraps `snapshot(name, 960, h){ TpTheme { MainWindowContent(state, fixedProgress, noopCallbacks) } }`.) Gate: `:desktop:test --tests "*MainWindowSnapshotTest"` green + 4 PNGs in `build/snapshots/`.
 - [ ] **Step 3: Fidelity check (Track A)** — compare each `build/snapshots/*.png` to the matching `img/Screen N.{png,jpg}` visually (the controller/human reviews; see Task 13 for composite strips). Adjust component spacing/sizes until faithful. This iterative visual match is the real gate for the clone.
@@ -535,7 +556,7 @@ data class AvatarData(@SerializedName("avatar_url") val avatarUrl: String)
 
 - [ ] **Step 1: Failing test for the heap save-bug** — `apply()` with invalid heap (e.g. "3GB") sets `heapError != null` AND still persists the other fields AND signals close (replicate exactly: validate, set error, but do NOT return — fall through to save+close). Valid heap ("3G") persists heap too. (Heap regex full-match `[0-9]*[G|g|M|m]` per spec.)
 - [ ] **Step 2: Run → fails.**
-- [ ] **Step 3: Implement `SettingsViewModel`** loading from `Settings(ConfigHelper.config.settings)`; the 4 actions (open game dir via `Desktop.browse`/OS open, logout=clear profile+exit, clear backup=delete `technomine/backup`+refresh size, wipe=delete default dir except `jrepath.txt`/`jre/`+exit) calling `:core`; the live RAM-field listener clearing the error. `SettingsWindowContent` per §7 layout (6 controls + 4 action labels + back/apply buttons, exact Russian labels, title doubles as error indicator turning `#D75379`).
+- [ ] **Step 3: Implement `SettingsViewModel`** loading from `Settings(ConfigHelper.config.settings)`; the 4 actions (open game dir via `Desktop.browse`/OS open, logout=clear profile+exit, clear backup=delete `technomine/backup`+refresh size, wipe=delete default dir except `jrepath.txt`/`jre/`+exit) calling `:core`; the live RAM-field listener clearing the error. `SettingsWindowContent` layout (corroborate against `legacy-javafx-ui/view/settings/SettingsWindow.kt`): the title row + a close-X (reuse `CloseX` from Task 6, top-right 20dp, wired in Task 11 to close the settings window), 6 controls (4 fields + 2 checkboxes), 4 action labels, and the back/apply button row — exact Russian labels; the title doubles as the heap-error indicator (turns `#D75379`).
 - [ ] **Step 4: Run → passes.**
 - [ ] **Step 5: Settings snapshot** — `snapshot("settings", 960, 776){ TpTheme { SettingsWindowContent(previewVm) } }`; gate green + PNG; fidelity vs `img/Screen 5`.
 - [ ] **Step 6: Commit** `feat(desktop): settings window + faithful heap save-bug`
@@ -584,7 +605,15 @@ fun main() {
 }
 ```
 - [ ] **Step 3: Drag scoping** — wrap only title/background dead-space in `WindowDraggableArea`; fields/combo/button/close-X/gear/register must sit outside it or consume pointer events (§6).
-- [ ] **Step 4: Wire controls** — close→exit; register/title→`Desktop.browse`; gear→`showSettings=true` (disabled when `!settingsFieldIsClickable`); button→`vm.onButtonClick`; combo→`vm.onChangeModpack`; field edits→`vm.onPasswordOrLoginChange`.
+- [ ] **Step 4: Wire controls** — close→exit; register/title→`Desktop.browse`; gear→`showSettings=true` (disabled when `!settingsFieldIsClickable`); button→`vm.onButtonClick(email, password)`; field edits→`vm.onPasswordOrLoginChange`. Combo (index↔enum by declaration order):
+```kotlin
+TpServerCombo(
+    items = MinecraftModpack.values().map { it.modpackName },
+    selectedIndex = MinecraftModpack.values().indexOf(ConfigHelper.config.currentModpack),
+    onSelect = { i -> vm.onChangeModpack(MinecraftModpack.values()[i]) },
+    enabled = !state.flags.disableSelectModpack,
+)
+```
 - [ ] **Step 5: Move desktop halves of `LogoUtils`/`ResourceHelper`** if still needed (window icon via `painterResource`); ensure `icon/logo.png` resolves from `:core` resources on the classpath.
 - [ ] **Step 6: Run the real app**
 ```bash
@@ -600,8 +629,26 @@ Expected: undecorated 592dp window, draggable, login form matches Screen 1; gear
 
 **Files:** `desktop/build.gradle.kts` (fatJar task + all-OS Skiko deps)
 
-- [ ] **Step 1: Bundle all Skiko OS natives** so one jar runs everywhere — add the per-OS skiko runtime artifacts (linux-x64, macos-x64, macos-arm64, windows-x64) at the version Compose 1.11.1 resolves, as `runtimeOnly`. (Determine the exact skiko version from `./gradlew :desktop:dependencies | grep skiko`.)
-- [ ] **Step 2: Register `fatJar`** (root or `:desktop`) producing exactly one `build/libs/<name>-<version>.jar` with `Main-Class: ru.lionzxy.tplauncher.MainKt`, bundling `:core` + `:desktop` + all deps + all Skiko natives. Clean stale jars first so `ls build/libs | head -1` is unambiguous.
+- [ ] **Step 1: Bundle all Skiko OS natives** so one jar runs everywhere. Compose 1.11.1 resolves Skiko **0.144.6** (verify with `./gradlew :desktop:dependencies | grep skiko`; bump the version below if it differs). Add all five per-OS runtimes as `runtimeOnly`:
+```kotlin
+val skiko = "0.144.6"
+runtimeOnly("org.jetbrains.skiko:skiko-awt-runtime-linux-x64:$skiko")
+runtimeOnly("org.jetbrains.skiko:skiko-awt-runtime-linux-arm64:$skiko")
+runtimeOnly("org.jetbrains.skiko:skiko-awt-runtime-windows-x64:$skiko")
+runtimeOnly("org.jetbrains.skiko:skiko-awt-runtime-macos-x64:$skiko")
+runtimeOnly("org.jetbrains.skiko:skiko-awt-runtime-macos-arm64:$skiko")
+```
+- [ ] **Step 2: Register `fatJar`** in `:desktop` producing exactly one `build/libs/<name>-<version>.jar`, bundling `:core` + `:desktop` + all deps + all 5 Skiko natives. Do NOT use `packageUberJarForCurrentOS` (it bundles only the current OS's Skiko → single-platform). Use a `Jar` task with duplicate-merge (the 5 skiko jars share `META-INF` service entries):
+```kotlin
+tasks.register<Jar>("fatJar") {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest { attributes["Main-Class"] = "ru.lionzxy.tplauncher.MainKt" }
+    archiveBaseName.set("TechnoparkLauncher")   // -> TechnoparkLauncher-<version>.jar
+    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+    with(tasks.jar.get())
+}
+```
+Clean stale jars first (`build/libs` must hold exactly one jar so `scripts/upload.sh`'s `<name>-<version>.jar` pattern matches).
 - [ ] **Step 3: Verify** `./gradlew fatJar` → one jar; `java -jar build/libs/*.jar` launches (on a display); confirm `scripts/upload.sh`'s `JARPATH`/`VERSION` parsing still matches the name pattern.
 - [ ] **Step 4: Commit** `build(desktop): cross-platform Skiko uber jar (upload.sh-compatible)`
 
@@ -611,11 +658,29 @@ Expected: undecorated 592dp window, draggable, login form matches Screen 1; gear
 
 **Files:** `desktop/src/test/resources/golden/*.png` (committed), `desktop/.../snapshot/FidelityComposite.kt`, Roborazzi config
 
-- [ ] **Step 1: Roborazzi smoke** — wire one state through `captureRoboImage` (imports: `io.github.takahirom.roborazzi.captureRoboImage`; options from `com.github.takahirom.roborazzi.*`) and run `./gradlew :desktop:recordRoborazziJvm`. If Roborazzi fights the toolchain, fall back to the `ImageComposeScene` + `javax.imageio` per-pixel diff (~40 lines) and drop the roborazzi plugin/dep — note which path you took.
-- [ ] **Step 2: Record goldens** for all 5 states into `src/test/resources/golden/`, commit them. Configure the tolerant comparator (`changeThreshold ≈ 0.001`, `SimpleImageComparator(maxDistance ≈ 0.007, hShift=vShift=1)`).
+- [ ] **Step 1: Roborazzi smoke (go/no-go gate)** — `captureRoboImage` has NO `skia.Image`/composable overload on desktop; it only extends `ImageBitmap`. Bridge the harness output (`renderComposeScene` returns `org.jetbrains.skia.Image`) via `.toComposeImageBitmap()`:
+```kotlin
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import io.github.takahirom.roborazzi.captureRoboImage
+import io.github.takahirom.roborazzi.RoborazziOptions
+import com.dropbox.differ.SimpleImageComparator   // NOTE: SimpleImageComparator lives in com.dropbox.differ (transitive), NOT roborazzi
+import androidx.compose.ui.renderComposeScene
+import androidx.compose.ui.unit.Density
+import java.io.File
+
+val opts = RoborazziOptions(compareOptions = RoborazziOptions.CompareOptions(
+    changeThreshold = 0.001f,
+    imageComparator = SimpleImageComparator(maxDistance = 0.007f, hShift = 1, vShift = 1),
+))
+renderComposeScene(960, 612, Density(960f / 592f)) { TpTheme { MainWindowContent(/* Initial */) } }
+    .toComposeImageBitmap()
+    .captureRoboImage(file = File("src/test/resources/golden/login.png"), roborazziOptions = opts)
+```
+Run `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 && ./gradlew :desktop:recordRoborazziJvm`. **If Roborazzi fights the Kotlin-2.4/CMP-1.11.1/Gradle-9.6 stack** (it's built upstream against older versions), fall back to the dependency-free `renderComposeScene` + `javax.imageio` per-pixel diff (~40 lines: decode golden + actual, compare with a tolerance) and drop the roborazzi plugin/dep. **Note which path you took in the report.** (Task names use the `Jvm` suffix because `:desktop` is a plain `kotlin-jvm` module; if a task isn't found, run `./gradlew :desktop:tasks --all | grep -i roborazzi`.)
+- [ ] **Step 2: Record goldens** for all 5 states into `src/test/resources/golden/`, commit them (record on **Linux** only — Skia rendering is OS-dependent). Reuse the `opts`/comparator from Step 1 (`com.dropbox.differ.SimpleImageComparator(maxDistance=0.007f, hShift=1, vShift=1)`, `changeThreshold=0.001f`).
 - [ ] **Step 3: Regression gate** — `./gradlew :desktop:verifyRoborazziJvm` green against the committed goldens.
 - [ ] **Step 4: Fidelity composites (Track A, advisory)** — a test that writes `[mockup | ours | abs-diff]` strips to `build/fidelity/<name>_composite.png` for the 5 states (read `img/Screen*.{png,jpg}`, scale to match, side-by-side). NOT a CI hard-fail.
-- [ ] **Step 5: Human fidelity sign-off** — the controller reads each composite + the raw `build/snapshots/*` vs `img/Screen*` and confirms the clone is faithful (or files targeted spacing/color fixes back into Tasks 9/10).
+- [ ] **Step 5: Human fidelity sign-off** — the controller reads each composite + the raw `build/snapshots/*` vs `img/Screen*` and confirms the clone is faithful (or files targeted spacing/color fixes back into Tasks 9/10). **Ignore mockup-only placeholder text** ("Альфа Центавра", "Попытка авторизации…", "Приветики") — those are non-production; the authoritative content is `MinecraftModpack.modpackName` (Vanilla/NewHorizon/Nomifactory) + the state matrix's progress strings. Judge layout, palette, typography, spacing — not literal text.
 - [ ] **Step 6: Commit** `test(desktop): committed snapshot goldens + fidelity composites`
 
 ---

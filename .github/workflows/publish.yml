@@ -91,8 +91,10 @@ jobs:
           cp "$SRC" "dist/${OUT}"
           SHA=$(openssl dgst -sha256 -binary "dist/${OUT}" | openssl base64 -A)
           URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${OUT}"
-          jq -n --arg type "$TYPE" --arg arch "$ARCH" --arg url "$URL" --arg sha "$SHA" \
-            '{type: $type, arch: $arch, downloadUrl: $url, "SHA-256": $sha}' \
+          # Pass values via env (not argv): a base64 SHA can start with '/', and Git Bash on
+          # Windows would otherwise rewrite that leading slash into 'C:/Program Files/Git/...'.
+          SHA="$SHA" URL="$URL" jq -n \
+            '{type: env.TYPE, arch: env.ARCH, downloadUrl: env.URL, "SHA-256": env.SHA}' \
             > "dist/${TYPE}-${ARCH}.entry.json"
           echo "Staged ${OUT}"; cat "dist/${TYPE}-${ARCH}.entry.json"
 

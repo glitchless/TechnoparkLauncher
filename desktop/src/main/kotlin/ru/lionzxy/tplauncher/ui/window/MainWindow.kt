@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
@@ -22,6 +22,7 @@ import ru.lionzxy.tplauncher.ui.components.ProgressPanel
 import ru.lionzxy.tplauncher.ui.components.RegisterLink
 import ru.lionzxy.tplauncher.ui.components.Title
 import ru.lionzxy.tplauncher.ui.components.TpButton
+import ru.lionzxy.tplauncher.ui.components.TpField
 import ru.lionzxy.tplauncher.ui.components.TpServerCombo
 import ru.lionzxy.tplauncher.ui.components.TpTextField
 import ru.lionzxy.tplauncher.ui.state.LauncherState
@@ -30,6 +31,12 @@ import ru.lionzxy.tplauncher.ui.state.flags
 import ru.lionzxy.tplauncher.ui.theme.TpColors
 import ru.lionzxy.tplauncher.ui.theme.TpDimens
 import ru.lionzxy.tplauncher.ui.theme.TpTypography
+
+// Label column width for main-window form rows ("Логин", "Пароль", "Сервер" all fit in 90dp)
+private val MAIN_LABEL_WIDTH = 90.dp
+
+// Row-to-row vertical gap inside the form (matches legacy ~16dp field padding)
+private val FIELD_ROW_GAP = 16.dp
 
 /**
  * All event callbacks for [MainWindowContent].
@@ -50,6 +57,11 @@ data class MainCallbacks(
  *
  * Every widget is driven declaratively from [state].flags + [progress].
  * Window chrome (drag, decoration) is handled by Task 11; this is pure content.
+ *
+ * Layout matches Screen 1/2/4:
+ *   Two-column grid:
+ *     LEFT  — [Логин label | field] over [Пароль label | field]   (or avatar block)
+ *     RIGHT — [Сервер label | combo] over [gear icon | Настройки запуска]
  *
  * @param avatar  Production: [ru.lionzxy.tplauncher.ui.components.Avatar] (reads config/net).
  *                Snapshots: [AvatarContent](null) for deterministic rendering.
@@ -76,7 +88,7 @@ fun MainWindowContent(
         Column(modifier = Modifier.fillMaxWidth()) {
 
             // ── Title ──────────────────────────────────────────────────────────
-            // top=11.5dp, left=23dp  (no explicit bottom/right padding here)
+            // top=11.5dp, left=23dp
             Title(
                 color = flags.titleColor,
                 modifier = Modifier.padding(top = TpDimens.titleTop, start = TpDimens.gutter),
@@ -93,20 +105,30 @@ fun MainWindowContent(
                 // LEFT column: login+password OR avatar+name ─────────────────
                 Column(modifier = Modifier.weight(1f)) {
                     if (flags.loginPasswordVisible) {
-                        TpTextField(
-                            value = email,
-                            onValueChange = callbacks.onEmailChange,
+                        TpField(
                             label = Strings.login,
+                            labelWidth = MAIN_LABEL_WIDTH,
                             enabled = !disableInputField,
-                        )
-                        Spacer(modifier = Modifier.size(TpDimens.margin))
-                        TpTextField(
-                            value = password,
-                            onValueChange = callbacks.onPasswordChange,
+                        ) {
+                            TpTextField(
+                                value = email,
+                                onValueChange = callbacks.onEmailChange,
+                                enabled = !disableInputField,
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(FIELD_ROW_GAP))
+                        TpField(
                             label = Strings.password,
-                            password = true,
+                            labelWidth = MAIN_LABEL_WIDTH,
                             enabled = !disableInputField,
-                        )
+                        ) {
+                            TpTextField(
+                                value = password,
+                                onValueChange = callbacks.onPasswordChange,
+                                password = true,
+                                enabled = !disableInputField,
+                            )
+                        }
                     } else if (flags.successLoginVisible) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             avatar()
@@ -128,20 +150,20 @@ fun MainWindowContent(
                 // Column gap
                 Spacer(modifier = Modifier.width(TpDimens.columnGap))
 
-                // RIGHT column: Server label + combo + GearRow ────────────────
+                // RIGHT column: Server (label-left) + GearRow ────────────────
                 Column(modifier = Modifier.weight(1f)) {
-                    BasicText(
-                        text = Strings.server,
-                        style = TpTypography.body,
-                    )
-                    Spacer(modifier = Modifier.size(6.dp))
-                    TpServerCombo(
-                        items = serverItems,
-                        selectedIndex = selectedServer,
-                        onSelect = callbacks.onModpackSelect,
-                        enabled = !flags.disableSelectModpack,
-                    )
-                    Spacer(modifier = Modifier.size(TpDimens.margin))
+                    TpField(
+                        label = Strings.server,
+                        labelWidth = MAIN_LABEL_WIDTH,
+                    ) {
+                        TpServerCombo(
+                            items = serverItems,
+                            selectedIndex = selectedServer,
+                            onSelect = callbacks.onModpackSelect,
+                            enabled = !flags.disableSelectModpack,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(FIELD_ROW_GAP))
                     GearRow(
                         enabled = flags.settingsFieldIsClickable,
                         onClick = callbacks.onSettingsClick,

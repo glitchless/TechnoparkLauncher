@@ -16,6 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.lionzxy.tplauncher.ui.Strings
 import ru.lionzxy.tplauncher.ui.components.TpButton
+import ru.lionzxy.tplauncher.ui.components.TpField
 import ru.lionzxy.tplauncher.ui.components.TpServerCombo
 import ru.lionzxy.tplauncher.ui.components.TpTextField
 import ru.lionzxy.tplauncher.ui.theme.TpColors
@@ -33,24 +34,26 @@ class ComponentsSnapshotTest {
                         .background(TpColors.background)
                         .padding(24.dp),
                 ) {
-                    // Login text field with value
+                    // Login text field with value — label-left via TpField
                     var loginValue by remember { mutableStateOf("user@example.com") }
-                    TpTextField(
-                        value = loginValue,
-                        onValueChange = { loginValue = it },
-                        label = Strings.login,
-                    )
+                    TpField(label = Strings.login, labelWidth = 90.dp) {
+                        TpTextField(
+                            value = loginValue,
+                            onValueChange = { loginValue = it },
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Password field
                     var passwordValue by remember { mutableStateOf("secret123") }
-                    TpTextField(
-                        value = passwordValue,
-                        onValueChange = { passwordValue = it },
-                        label = Strings.password,
-                        password = true,
-                    )
+                    TpField(label = Strings.password, labelWidth = 90.dp) {
+                        TpTextField(
+                            value = passwordValue,
+                            onValueChange = { passwordValue = it },
+                            password = true,
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -83,12 +86,13 @@ class ComponentsSnapshotTest {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Disabled field + combo — verify the disabled color-swap (not alpha)
-                    TpTextField(
-                        value = "disabled",
-                        onValueChange = {},
-                        label = Strings.login,
-                        enabled = false,
-                    )
+                    TpField(label = Strings.login, labelWidth = 90.dp, enabled = false) {
+                        TpTextField(
+                            value = "disabled",
+                            onValueChange = {},
+                            enabled = false,
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 

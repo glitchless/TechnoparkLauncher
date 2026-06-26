@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -31,10 +32,17 @@ import ru.lionzxy.tplauncher.ui.components.CloseX
 import ru.lionzxy.tplauncher.ui.components.Title
 import ru.lionzxy.tplauncher.ui.components.TpButton
 import ru.lionzxy.tplauncher.ui.components.TpCheckBox
+import ru.lionzxy.tplauncher.ui.components.TpField
 import ru.lionzxy.tplauncher.ui.components.TpTextField
 import ru.lionzxy.tplauncher.ui.theme.TpColors
 import ru.lionzxy.tplauncher.ui.theme.TpDimens
 import ru.lionzxy.tplauncher.ui.theme.TpTypography
+
+// Label column wide enough for "Параметры java" (the longest label in Settings)
+private val SETTINGS_LABEL_WIDTH = 170.dp
+
+// Vertical spacing between field rows in Settings (compact to fit all in ~776px)
+private val SETTINGS_ROW_GAP = 12.dp
 
 /**
  * Settings window content composable.
@@ -44,8 +52,8 @@ import ru.lionzxy.tplauncher.ui.theme.TpTypography
  *
  * Layout (matches Screen 5):
  *   - Title row (accent, or error-red when heapError != null) + CloseX overlay top-right
- *   - 4 TpTextField rows: Объем памяти, Параметры java, Prefix, Путь до Java
- *   - 2 TpCheckBox rows: Дебаг-режим, Авто-заход на сервер
+ *   - 4 TpField rows (label-left): Объем памяти, Параметры java, Prefix, Путь до Java
+ *   - 2 checkbox rows (label-left): Дебаг-режим, Авто-заход на сервер
  *   - 4 action links (last one in muted textDisable)
  *   - Bottom bar (backgroundDark): "Вернуться" ghost button + "Применить" accent button
  */
@@ -69,40 +77,45 @@ fun SettingsWindowContent(vm: SettingsViewModel) {
 
             Spacer(modifier = Modifier.height(TpDimens.margin))
 
-            // ── Form fields ─────────────────────────────────────────────────
+            // ── Form fields (label-left) ─────────────────────────────────────
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = TpDimens.gutter, end = TpDimens.margin),
-                verticalArrangement = Arrangement.spacedBy(TpDimens.margin),
+                verticalArrangement = Arrangement.spacedBy(SETTINGS_ROW_GAP),
             ) {
-                TpTextField(
-                    value = vm.heap,
-                    onValueChange = vm::onHeapChange,
-                    label = Strings.memorySize,
-                )
+                TpField(label = Strings.memorySize, labelWidth = SETTINGS_LABEL_WIDTH) {
+                    TpTextField(
+                        value = vm.heap,
+                        onValueChange = vm::onHeapChange,
+                    )
+                }
 
-                TpTextField(
-                    value = vm.javaArgs,
-                    onValueChange = vm::onJavaArgsChange,
-                    label = Strings.javaParams,
-                )
+                TpField(label = Strings.javaParams, labelWidth = SETTINGS_LABEL_WIDTH) {
+                    TpTextField(
+                        value = vm.javaArgs,
+                        onValueChange = vm::onJavaArgsChange,
+                    )
+                }
 
-                TpTextField(
-                    value = vm.prefix,
-                    onValueChange = vm::onPrefixChange,
-                    label = Strings.prefix,
-                )
+                TpField(label = Strings.prefix, labelWidth = SETTINGS_LABEL_WIDTH) {
+                    TpTextField(
+                        value = vm.prefix,
+                        onValueChange = vm::onPrefixChange,
+                    )
+                }
 
-                TpTextField(
-                    value = vm.javaPath,
-                    onValueChange = vm::onJavaPathChange,
-                    label = Strings.javaPath,
-                )
+                TpField(label = Strings.javaPath, labelWidth = SETTINGS_LABEL_WIDTH) {
+                    TpTextField(
+                        value = vm.javaPath,
+                        onValueChange = vm::onJavaPathChange,
+                    )
+                }
 
                 // ── Дебаг-режим ──────────────────────────────────────────────
                 SettingsCheckBoxRow(
                     label = Strings.debugMode,
+                    labelWidth = SETTINGS_LABEL_WIDTH,
                     checked = vm.debug,
                     onChange = vm::onDebugChange,
                 )
@@ -110,6 +123,7 @@ fun SettingsWindowContent(vm: SettingsViewModel) {
                 // ── Авто-заход на сервер ─────────────────────────────────────
                 SettingsCheckBoxRow(
                     label = Strings.autoJoinServer,
+                    labelWidth = SETTINGS_LABEL_WIDTH,
                     checked = vm.autoJoin,
                     onChange = vm::onAutoJoinChange,
                 )
@@ -183,11 +197,13 @@ fun SettingsWindowContent(vm: SettingsViewModel) {
 // ── Private helpers ───────────────────────────────────────────────────────────
 
 /**
- * A labeled row with label on the left and a [TpCheckBox] on the right side.
+ * A labeled row with label on the left (fixed width) and a [TpCheckBox] on the right side.
+ * Matches Screen 5: [label]  [checkbox].
  */
 @Composable
 private fun SettingsCheckBoxRow(
     label: String,
+    labelWidth: Dp,
     checked: Boolean,
     onChange: (Boolean) -> Unit,
 ) {
@@ -198,7 +214,7 @@ private fun SettingsCheckBoxRow(
         BasicText(
             text = label,
             style = TpTypography.body,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.width(labelWidth),
         )
         TpCheckBox(
             checked = checked,

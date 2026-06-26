@@ -141,7 +141,10 @@ abstract class IncrementalDownloader : IDownloader {
     abstract fun getDownloaderInfo(minecraft: MinecraftContext): IncrementalDownloaderInfo
 
     private companion object {
-        const val DOWNLOAD_PARALLELISM = 64
+        // Keep concurrent connections modest: a burst of dozens of simultaneous TLS handshakes to
+        // the Cloudflare-fronted host caused widespread connect timeouts. With HTTP keep-alive the
+        // client reuses this small pool of connections across all files, so throughput stays high.
+        const val DOWNLOAD_PARALLELISM = 8
     }
 }
 

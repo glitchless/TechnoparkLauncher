@@ -83,7 +83,15 @@ class HttpDownloader(val client: HttpClient) {
         /** Shared application-lifetime instance. Ktor clients are designed to be created once and reused. */
         val instance: HttpDownloader by lazy { HttpDownloader(createDefaultClient()) }
 
-        fun createDefaultClient(): HttpClient = HttpClient(CIO) { applyDefaults() }
+        fun createDefaultClient(): HttpClient = HttpClient(CIO) {
+            applyDefaults()
+            engine {
+                // CIO tries to connect only once by default; retry a transient TCP/TLS connect
+                // failure at the engine level instead of failing the whole file (the retry plugin
+                // does not retry timeouts).
+                endpoint.connectAttempts = 3
+            }
+        }
     }
 }
 
@@ -97,7 +105,9 @@ internal fun HttpClientConfig<*>.applyDefaults() {
         agent = HTTP_USER_AGENT
     }
     install(HttpTimeout) {
-        connectTimeoutMillis = 15_000
+        // Generous connect window: many small files are fetched concurrently against a
+        // Cloudflare-fronted host, so a TLS handshake can take a while under load.
+        connectTimeoutMillis = 30_000
         // Kills a stalled connection instead of hanging a download forever (the old fork bug).
         socketTimeoutMillis = 30_000
         // requestTimeoutMillis is intentionally left unset (no overall cap): large modpack files

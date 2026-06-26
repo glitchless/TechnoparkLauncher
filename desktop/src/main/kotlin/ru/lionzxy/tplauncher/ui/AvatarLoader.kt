@@ -8,7 +8,7 @@ import kotlinx.coroutines.sync.withLock
 import org.jetbrains.skia.Image
 import ru.lionzxy.tplauncher.data.AvatarResponse
 import ru.lionzxy.tplauncher.utils.ConfigHelper
-import ru.lionzxy.tplauncher.utils.UrlDownloader
+import ru.lionzxy.tplauncher.utils.HttpDownloader
 import java.io.File
 
 private val avatarMutex = Mutex()
@@ -34,11 +34,11 @@ suspend fun loadAvatar(login: String): ImageBitmap? = avatarMutex.withLock {
 
     return@withLock try {
         val apiUrl = "https://games.glitchless.ru/api/minecraft/users/profiles/$login/avatar/"
-        val json = UrlDownloader.downloadToString(apiUrl)
+        val json = HttpDownloader.instance.getString(apiUrl)
         val response = gson.fromJson(json, AvatarResponse::class.java)
         val avatarUrl = response.data.avatarUrl
 
-        val imageBytes = UrlDownloader.downloadBytes(avatarUrl).bodyBytes
+        val imageBytes = HttpDownloader.instance.getBytes(avatarUrl)
         cacheFile.parentFile?.mkdirs()
         cacheFile.writeBytes(imageBytes)
 

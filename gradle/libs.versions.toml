@@ -2,6 +2,7 @@
 kotlin = "2.4.0"
 compose = "1.11.1"            # used in Plan 2
 coroutines = "1.11.0"
+ktor = "3.5.1"
 gson = "2.14.0"
 jna = "5.19.1"
 commonsCodec = "1.22.0"
@@ -17,6 +18,10 @@ oslib = "4a529cbef2"          # BUMP — master HEAD
 [libraries]
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 commons-codec = { module = "commons-codec:commons-codec", version.ref = "commonsCodec" }
 sentry = { module = "io.sentry:sentry", version.ref = "sentry" }

@@ -9,6 +9,8 @@ kotlin {
 dependencies {
     implementation(libs.gson)
     implementation(libs.coroutines.core)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
     implementation(libs.jna)
     implementation(libs.commons.codec)
     implementation(libs.sentry)
@@ -17,6 +19,8 @@ dependencies {
     implementation(libs.mclauncher.api)
     implementation(libs.oslib)
     testImplementation(libs.junit)
+    testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.coroutines.test)
 }
 
 // Headless login/launch harness (replaces the old root-project `runCli`).

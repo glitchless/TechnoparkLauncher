@@ -140,7 +140,7 @@ class JreManager(
             }
 
             monitor.setStatus("Распаковка Java...")
-            monitor.setProgress(-1)
+            monitor.setProgress(-1) // -1 = indeterminate progress (no byte total during extraction)
             installDir.deleteDirectoryRecursionJava6()
             extract(tmp, file.extension, installDir)
         } finally {
@@ -169,7 +169,7 @@ class JreManager(
         }.getOrNull() ?: return null
         val file = manifest.findByCode(code)?.selectFile(osName, platform.archAliases) ?: return null
         val binary = binaryPath(installDirFor(code), file)
-        return if (binary.exists()) binary.also { resolved[code] = it } else null
+        return if (isJavaBinaryValid(binary, file.javaSha256)) binary.also { resolved[code] = it } else null
     }
 
     /** The java binary inside [installDir]; on Windows the GUI `javaw.exe` sibling of `java.exe`. */

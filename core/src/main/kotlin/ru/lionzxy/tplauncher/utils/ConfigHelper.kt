@@ -87,16 +87,7 @@ object ConfigHelper {
         return File(getJavaDirectory(), "jres2.json")
     }
 
-    fun getJREPathFile(): File {
-        return File(getDefaultDirectory(), "jrepath.txt")
-    }
-
     fun getLogoFile(): File {
         return File(getDefaultDirectory(), "logo.png");
-    }
-
-    fun writeJREConfig(path: String) {
-        val jreFile = File(getDefaultDirectory(), "jrepath.txt")
-        jreFile.createWithMkDirs(path)
     }
 }

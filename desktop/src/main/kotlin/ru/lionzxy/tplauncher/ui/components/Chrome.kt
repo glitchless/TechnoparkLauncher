@@ -26,11 +26,14 @@ import ru.lionzxy.tplauncher.ui.theme.TpTypography
  * Uses [TpIcons.Times] (20dp), tinted with [TpColors.disable].
  */
 @Composable
-fun CloseX(onClick: () -> Unit) {
+fun CloseX(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Image(
         imageVector = TpIcons.Times,
         contentDescription = null,
-        modifier = Modifier
+        modifier = modifier
             .size(TpDimens.closeX)
             .clickable { onClick() }
             .pointerHoverIcon(PointerIcon.Hand),
@@ -43,10 +46,14 @@ fun CloseX(onClick: () -> Unit) {
  * Uses [TpTypography.title] with the supplied [color].
  */
 @Composable
-fun Title(color: Color = TpColors.accent) {
+fun Title(
+    color: Color = TpColors.accent,
+    modifier: Modifier = Modifier,
+) {
     BasicText(
         text = Strings.serverAddress,
         style = TpTypography.title.copy(color = color),
+        modifier = modifier,
     )
 }
 
@@ -58,6 +65,7 @@ fun Title(color: Color = TpColors.accent) {
 fun RegisterLink(
     color: Color = TpColors.accent,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     BasicText(
         text = Strings.registerOnSite,
@@ -65,7 +73,7 @@ fun RegisterLink(
             color = color,
             textDecoration = TextDecoration.Underline,
         ),
-        modifier = Modifier
+        modifier = modifier
             .clickable { onClick() }
             .pointerHoverIcon(PointerIcon.Hand),
     )

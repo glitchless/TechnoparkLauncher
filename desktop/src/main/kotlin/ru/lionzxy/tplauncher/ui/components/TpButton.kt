@@ -24,9 +24,10 @@ fun TpButton(
     text: String,
     enabled: Boolean = true,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .heightIn(min = TpDimens.buttonMinHeight)
             .clip(RoundedCornerShape(TpDimens.fieldRadius))

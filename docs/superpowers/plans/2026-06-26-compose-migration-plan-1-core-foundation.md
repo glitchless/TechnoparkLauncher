@@ -340,10 +340,11 @@ SRC=src/main/kotlin/ru/lionzxy/tplauncher
 git mv $SRC/view              legacy-javafx-ui/view
 git mv $SRC/Main.kt           legacy-javafx-ui/Main.kt
 git mv $SRC/MainApplication.kt legacy-javafx-ui/MainApplication.kt
-git mv $SRC/utils/Constants.kt      legacy-javafx-ui/utils/Constants.kt
-git mv $SRC/utils/Extensions.kt     legacy-javafx-ui/utils/Extensions.kt
-git mv $SRC/utils/LogoUtils.kt      legacy-javafx-ui/utils/LogoUtils.kt
-git mv $SRC/utils/ResourceHelper.kt legacy-javafx-ui/utils/ResourceHelper.kt
+git mv $SRC/utils/Constants.kt          legacy-javafx-ui/utils/Constants.kt
+git mv $SRC/utils/Extensions.kt         legacy-javafx-ui/utils/Extensions.kt
+git mv $SRC/utils/LogoUtils.kt          legacy-javafx-ui/utils/LogoUtils.kt
+git mv $SRC/utils/ResourceHelper.kt     legacy-javafx-ui/utils/ResourceHelper.kt
+git mv $SRC/utils/LocalizationHelper.kt legacy-javafx-ui/utils/LocalizationHelper.kt   # dropped per spec §4
 # remaining UI resources (kept for Plan 2 reference)
 mkdir -p legacy-javafx-ui/resources
 git mv src/main/resources legacy-javafx-ui/resources/main

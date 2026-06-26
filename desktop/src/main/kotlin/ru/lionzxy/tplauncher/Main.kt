@@ -11,6 +11,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -67,73 +71,94 @@ fun main() {
         var selectedModpack by remember { mutableStateOf(ConfigHelper.config.currentModpack) }
 
         // ── Main window ───────────────────────────────────────────────────────
+        val mainWindowState = rememberWindowState(size = DpSize(592.dp, Dp.Unspecified))
         Window(
             onCloseRequest = ::exitApplication,
             undecorated = true,
-            resizable = false,
-            state = rememberWindowState(size = DpSize(592.dp, Dp.Unspecified)),
+            resizable = true,
+            state = mainWindowState,
             icon = painterResource("icon/logo.png"),
             title = "TechnoparkLauncher",
         ) {
-            // Drag layer: wraps the entire window background so dead-space is draggable.
-            // Interactive widgets (fields, combo, buttons, close-X) consume pointer
-            // events themselves and are laid out on top via Box z-order in
-            // MainWindowContent — they are NOT inside a separate WindowDraggableArea
-            // call, so their clicks are not swallowed.
+            val density = LocalDensity.current
+            // Drag layer wraps the window background; interactive widgets consume their
+            // own pointer events so their clicks aren't swallowed.
             WindowDraggableArea {
                 TpTheme {
-                    MainWindowContent(
-                        state = state,
-                        progress = progress,
-                        email = email,
-                        password = password,
-                        serverItems = MinecraftModpack.values().map { it.modpackName },
-                        selectedServer = MinecraftModpack.values().indexOf(selectedModpack),
-                        callbacks = MainCallbacks(
-                            onButtonClick = { e, p -> vm.onButtonClick(e, p) },
-                            onEmailChange = { email = it; vm.onPasswordOrLoginChange() },
-                            onPasswordChange = { password = it; vm.onPasswordOrLoginChange() },
-                            onModpackSelect = { i ->
-                                selectedModpack = MinecraftModpack.values()[i]
-                                vm.onChangeModpack(selectedModpack)
-                            },
-                            onRegisterClick = {
-                                if (Desktop.isDesktopSupported() &&
-                                    Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)
-                                ) {
-                                    Desktop.getDesktop().browse(URI("https://games.glitchless.ru/register/"))
-                                }
-                            },
-                            onSettingsClick = { showSettings = true },
-                            onCloseClick = ::exitApplication,
-                        ),
-                        avatar = { Avatar() },
-                    )
+                    // Fit the window HEIGHT to the current state's content (states differ in
+                    // height — the sizeToScene() equivalent — so a shorter state leaves no gap).
+                    Box(
+                        modifier = Modifier.onSizeChanged { size ->
+                            val h = with(density) { size.height.toDp() }
+                            if (h > 0.dp && mainWindowState.size.height != h) {
+                                mainWindowState.size = mainWindowState.size.copy(height = h)
+                            }
+                        },
+                    ) {
+                        MainWindowContent(
+                            state = state,
+                            progress = progress,
+                            email = email,
+                            password = password,
+                            serverItems = MinecraftModpack.values().map { it.modpackName },
+                            selectedServer = MinecraftModpack.values().indexOf(selectedModpack),
+                            callbacks = MainCallbacks(
+                                onButtonClick = { e, p -> vm.onButtonClick(e, p) },
+                                onEmailChange = { email = it; vm.onPasswordOrLoginChange() },
+                                onPasswordChange = { password = it; vm.onPasswordOrLoginChange() },
+                                onModpackSelect = { i ->
+                                    selectedModpack = MinecraftModpack.values()[i]
+                                    vm.onChangeModpack(selectedModpack)
+                                },
+                                onRegisterClick = {
+                                    if (Desktop.isDesktopSupported() &&
+                                        Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)
+                                    ) {
+                                        Desktop.getDesktop().browse(URI("https://games.glitchless.ru/register/"))
+                                    }
+                                },
+                                onSettingsClick = { showSettings = true },
+                                onCloseClick = ::exitApplication,
+                            ),
+                            avatar = { Avatar() },
+                        )
+                    }
                 }
             }
         }
 
         // ── Settings window (state-driven) ────────────────────────────────────
         if (showSettings) {
+            val settingsWindowState = rememberWindowState(size = DpSize(592.dp, Dp.Unspecified))
             Window(
                 onCloseRequest = { showSettings = false },
                 undecorated = true,
-                resizable = false,
-                state = rememberWindowState(size = DpSize(592.dp, Dp.Unspecified)),
+                resizable = true,
+                state = settingsWindowState,
                 icon = painterResource("icon/logo.png"),
                 title = "TechnoparkLauncher — Settings",
             ) {
+                val density = LocalDensity.current
                 TpTheme {
-                    SettingsWindowContent(
-                        vm = remember {
-                            SettingsViewModel(
-                                settings = Settings(ConfigHelper.config.settings),
-                                persist = { s -> ConfigHelper.writeToConfig { settings = s } },
-                                onClose = { showSettings = false },
-                                onExitApp = ::exitApplication,
-                            )
+                    Box(
+                        modifier = Modifier.onSizeChanged { size ->
+                            val h = with(density) { size.height.toDp() }
+                            if (h > 0.dp && settingsWindowState.size.height != h) {
+                                settingsWindowState.size = settingsWindowState.size.copy(height = h)
+                            }
                         },
-                    )
+                    ) {
+                        SettingsWindowContent(
+                            vm = remember {
+                                SettingsViewModel(
+                                    settings = Settings(ConfigHelper.config.settings),
+                                    persist = { s -> ConfigHelper.writeToConfig { settings = s } },
+                                    onClose = { showSettings = false },
+                                    onExitApp = ::exitApplication,
+                                )
+                            },
+                        )
+                    }
                 }
             }
         }

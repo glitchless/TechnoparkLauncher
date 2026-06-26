@@ -182,21 +182,26 @@ fun MainWindowContent(
                     modifier = Modifier.padding(
                         start = TpDimens.gutter,
                         end = TpDimens.margin,
-                        bottom = TpDimens.margin,
                         top = TpDimens.margin,
                     ),
                 )
             }
 
             // ── Launch button ──────────────────────────────────────────────────
-            // left=16dp, right=16dp, bottom=16dp
+            // top margin is always present so the button keeps a consistent gap below the
+            // form in EVERY state (when the register link is hidden it used to hug the gear row).
             TpButton(
                 text = flags.buttonText,
                 enabled = !flags.buttonDisable,
                 onClick = { callbacks.onButtonClick(email, password) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = TpDimens.margin, end = TpDimens.margin, bottom = TpDimens.margin),
+                    .padding(
+                        start = TpDimens.margin,
+                        end = TpDimens.margin,
+                        top = TpDimens.margin,
+                        bottom = TpDimens.margin,
+                    ),
             )
 
             // ── Progress panel ─────────────────────────────────────────────────

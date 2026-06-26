@@ -77,6 +77,16 @@ object ConfigHelper {
         return dir
     }
 
+    fun getJreInstallDirectory(code: String): File {
+        val dir = File(getJavaDirectory(), code)
+        dir.mkdirs()
+        return dir
+    }
+
+    fun getJreManifestCacheFile(): File {
+        return File(getJavaDirectory(), "jres2.json")
+    }
+
     fun getJREPathFile(): File {
         return File(getDefaultDirectory(), "jrepath.txt")
     }

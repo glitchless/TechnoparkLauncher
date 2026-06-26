@@ -54,7 +54,7 @@ jobs:
           - { os: ubuntu-latest,    type: Linux,   arch: x86_64 }
           - { os: ubuntu-24.04-arm, type: Linux,   arch: arm64 }
           - { os: windows-latest,   type: Windows, arch: x86_64 }
-          - { os: macos-13,         type: macOS,   arch: x86_64 }
+          #- { os: macos-13,         type: macOS,   arch: x86_64 }
           - { os: macos-14,         type: macOS,   arch: arm64 }
     runs-on: ${{ matrix.os }}
     env:

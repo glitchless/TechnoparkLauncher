@@ -40,6 +40,7 @@ class SettingsViewModelTest {
             settings = freshSettings(),
             persist = { s: Settings -> captured.add(s) },
             onClose = { closeCalled = true },
+            backupSizeProvider = { "" },
         )
 
         // Set invalid heap in the VM state
@@ -68,6 +69,7 @@ class SettingsViewModelTest {
             settings = freshSettings(),
             persist = { s: Settings -> captured.add(s) },
             onClose = { closeCalled = true },
+            backupSizeProvider = { "" },
         )
 
         vm.onHeapChange("3G")
@@ -96,6 +98,7 @@ class SettingsViewModelTest {
             settings = freshSettings(),
             persist = {},
             onClose = {},
+            backupSizeProvider = { "" },
         )
 
         // Seed an error via apply with bad heap
@@ -119,6 +122,7 @@ class SettingsViewModelTest {
             settings = freshSettings(),
             persist = {},
             onClose = { closeCalled = true },
+            backupSizeProvider = { "" },
         )
 
         vm.back()

@@ -12,6 +12,7 @@ import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.deleteDirectoryRecursionJava6
 import ru.lionzxy.tplauncher.utils.folderSize
 import ru.lionzxy.tplauncher.utils.humanReadableByteCountBin
+import ru.lionzxy.tplauncher.ui.Strings
 import java.awt.Desktop
 
 /**
@@ -37,6 +38,8 @@ class SettingsViewModel(
     private val persist: (Settings) -> Unit,
     private val onClose: () -> Unit,
     private val onExitApp: () -> Unit = {},
+    // Injected so tests/snapshots don't trigger ConfigHelper (its init block is destructive). Prod default reads the real size.
+    private val backupSizeProvider: () -> String = ::computeBackupLabel,
 ) {
     // ---- Editable fields (Compose state) ------------------------------------
 
@@ -65,7 +68,7 @@ class SettingsViewModel(
 
     // ---- Backup size label (refreshed on clearBackup) -----------------------
 
-    var backupSizeLabel by mutableStateOf(computeBackupLabel())
+    var backupSizeLabel by mutableStateOf(backupSizeProvider())
         private set
 
     // ---- Field change callbacks --------------------------------------------
@@ -126,7 +129,7 @@ class SettingsViewModel(
     /** Delete the backup folder and refresh [backupSizeLabel]. */
     fun clearBackup() {
         ConfigHelper.getBackupFolder().deleteDirectoryRecursionJava6()
-        backupSizeLabel = computeBackupLabel()
+        backupSizeLabel = backupSizeProvider()
     }
 
     /**
@@ -145,8 +148,10 @@ class SettingsViewModel(
 
     // ---- Helpers ------------------------------------------------------------
 
-    private fun computeBackupLabel(): String {
-        val size = ConfigHelper.getBackupFolder().folderSize().humanReadableByteCountBin()
-        return "Очистить папку с бекапом ($size)"
-    }
+}
+
+/** Top-level (no instance state) so it can be the [SettingsViewModel.backupSizeProvider] default. */
+private fun computeBackupLabel(): String {
+    val size = ConfigHelper.getBackupFolder().folderSize().humanReadableByteCountBin()
+    return Strings.clearBackup(size ?: "0 B")
 }

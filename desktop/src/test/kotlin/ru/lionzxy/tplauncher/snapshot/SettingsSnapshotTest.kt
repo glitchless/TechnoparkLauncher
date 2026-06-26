@@ -35,6 +35,7 @@ class SettingsSnapshotTest {
             persist = { /* no-op in preview */ },
             onClose = { /* no-op in preview */ },
             onExitApp = { /* no-op in preview */ },
+            backupSizeProvider = { "Очистить папку с бекапом (0 B)" }, // hermetic: no ConfigHelper
         )
     }
 

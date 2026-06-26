@@ -28,6 +28,7 @@ import ru.lionzxy.tplauncher.config.Settings
 import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
 import ru.lionzxy.tplauncher.ui.LauncherViewModel
 import ru.lionzxy.tplauncher.ui.components.Avatar
+import ru.lionzxy.tplauncher.ui.components.LogPanel
 import ru.lionzxy.tplauncher.ui.settings.SettingsViewModel
 import ru.lionzxy.tplauncher.ui.settings.SettingsWindowContent
 import ru.lionzxy.tplauncher.ui.state.flags
@@ -80,6 +81,13 @@ fun main() {
         // Whole-UI scale factor (x0.5 .. x16), chosen in Settings. Applied by overriding
         // LocalDensity below so layout AND text scale together; persisted in Config.
         var uiScale by remember { mutableStateOf(ConfigHelper.config.uiScale) }
+
+        // Whether the in-window log panel is shown. Mirrors Settings.enableLogView and is
+        // re-read whenever the settings window closes (apply() persists the new value first).
+        var showLogView by remember { mutableStateOf(ConfigHelper.config.settings.enableLogView) }
+        LaunchedEffect(showSettings) {
+            if (!showSettings) showLogView = ConfigHelper.config.settings.enableLogView
+        }
 
         // ── Main window ───────────────────────────────────────────────────────
         val mainWindowState = rememberWindowState(size = DpSize((BASE_WIDTH_DP * uiScale).dp, Dp.Unspecified))
@@ -146,6 +154,7 @@ fun main() {
                                 onCloseClick = ::exitApplication,
                             ),
                             avatar = { Avatar() },
+                            logView = { if (showLogView) LogPanel(window) },
                         )
                         }
                     }

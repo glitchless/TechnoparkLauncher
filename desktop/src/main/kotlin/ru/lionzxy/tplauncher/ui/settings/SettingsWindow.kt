@@ -140,6 +140,14 @@ fun SettingsWindowContent(
                     onChange = vm::onAutoJoinChange,
                 )
 
+                // ── Показать логи ────────────────────────────────────────────
+                SettingsCheckBoxRow(
+                    label = Strings.showLogs,
+                    labelWidth = SETTINGS_LABEL_WIDTH,
+                    checked = vm.enableLogView,
+                    onChange = vm::onEnableLogViewChange,
+                )
+
                 // ── Масштаб интерфейса — scales the whole UI (applies live) ──
                 TpField(label = Strings.uiScale, labelWidth = SETTINGS_LABEL_WIDTH) {
                     TpServerCombo(

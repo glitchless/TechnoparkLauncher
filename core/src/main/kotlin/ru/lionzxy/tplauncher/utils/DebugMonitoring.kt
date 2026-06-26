@@ -1,5 +1,6 @@
 package ru.lionzxy.tplauncher.utils
 
+import ru.lionzxy.tplauncher.log.Logger
 import sk.tomsik68.mclauncher.api.ui.IProgressMonitor
 
 class DebugMonitoring : IProgressMonitor {
@@ -8,11 +9,11 @@ class DebugMonitoring : IProgressMonitor {
 
     override fun setProgress(progress: Int) {
         currentProgress = progress
-        println("#setProgress $progress/$maxLen")
+        Logger.d("Monitor", "progress $progress/$maxLen")
     }
 
     override fun setMax(len: Int) {
-        println("#max $len")
+        Logger.d("Monitor", "max $len")
         maxLen = len
     }
 
@@ -21,7 +22,7 @@ class DebugMonitoring : IProgressMonitor {
     }
 
     override fun setStatus(status: String?) {
-        println("#setStatus $status")
+        Logger.d("Monitor", "status $status")
     }
 
 }

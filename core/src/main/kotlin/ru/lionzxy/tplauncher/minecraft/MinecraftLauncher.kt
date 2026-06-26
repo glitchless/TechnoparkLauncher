@@ -1,6 +1,7 @@
 package ru.lionzxy.tplauncher.minecraft
 
 import nu.redpois0n.oslib.OperatingSystem
+import ru.lionzxy.tplauncher.log.Logger
 import ru.lionzxy.tplauncher.minecraft.delegates.AuthDelegate
 import ru.lionzxy.tplauncher.minecraft.workarounds.*
 import ru.lionzxy.tplauncher.utils.ConfigHelper
@@ -31,7 +32,7 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
         }
         val instance = minecraft.getMinecraftInstance()
         val version = getVersion()
-        println("Minecraft Location: ${minecraft.getDirectory()}")
+        Logger.i("Launcher", "Minecraft location: ${minecraft.getDirectory()}")
 
         val additionalJavaArguments =
             workarounds.map { it.getAdditionalJavaArguments() }.flatten()
@@ -57,7 +58,7 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
             launchCommands = workaround.processLaunchCommands(launchCommands)
         }
 
-        launchCommands.forEach { print("${it.replace(" ", "\\ ")} ") }
+        Logger.i("Launcher", "Launch command: " + launchCommands.joinToString(" ") { it.replace(" ", "\\ ") })
         if (os.type == OperatingSystem.WINDOWS && ConfigHelper.config.settings.isDebug) {
             launchCommands.plus("&").plus("PAUSE")
         }
@@ -80,8 +81,9 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
         val short = WindowsPathHelper.toShortPath(directory)
         if (WindowsPathHelper.isAscii(short.absolutePath)) return short
         if (!WindowsPathHelper.isRepresentableInSystemEncoding(path)) {
-            System.err.println(
-                "WARNING: launch directory '$path' contains characters that are not representable in " +
+            Logger.w(
+                "Launcher",
+                "Launch directory '$path' contains characters that are not representable in " +
                     "the system encoding (${System.getProperty("sun.jnu.encoding")}) and has no 8.3 short " +
                     "path. The game may fail to load native libraries. Move the launcher data to an " +
                     "ASCII-only path (e.g. C:\\TechnoMine)."
@@ -98,7 +100,7 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
         try {
             versionList.startDownload()
         } catch (ex: UnknownHostException) {
-            ex.printStackTrace()
+            Logger.w("Launcher", "Failed to fetch version list (no network?)", ex)
         }
         cacheVersion = versionList.retrieveVersionInfo(minecraft.modpack.version)
         return cacheVersion!!

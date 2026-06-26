@@ -76,6 +76,7 @@ fun MainWindowContent(
     selectedServer: Int = 0,
     callbacks: MainCallbacks = MainCallbacks(),
     avatar: @Composable () -> Unit = { AvatarContent(null) },
+    logView: @Composable () -> Unit = {},
 ) {
     val flags = state.flags
     val disableInputField = flags.disableInputField
@@ -211,6 +212,9 @@ fun MainWindowContent(
                 value = progress.value,
                 enabled = !flags.disableProgressBar,
             )
+
+            // ── Log view (optional; gated on Settings.enableLogView, injected by Main) ──
+            logView()
         }
 
         // ── Close X (TopEnd overlay) ───────────────────────────────────────────

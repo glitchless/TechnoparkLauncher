@@ -61,6 +61,9 @@ class SettingsViewModel(
     var autoJoin by mutableStateOf(settings.isAutoLoginMinecraft)
         private set
 
+    var enableLogView by mutableStateOf(settings.enableLogView)
+        private set
+
     // ---- Heap error indicator -----------------------------------------------
 
     private val _heapError = MutableStateFlow<String?>(null)
@@ -83,6 +86,7 @@ class SettingsViewModel(
     fun onJavaPathChange(s: String) { javaPath = s }
     fun onDebugChange(v: Boolean)   { debug = v }
     fun onAutoJoinChange(v: Boolean) { autoJoin = v }
+    fun onEnableLogViewChange(v: Boolean) { enableLogView = v }
 
     // ---- Primary actions ----------------------------------------------------
 
@@ -105,6 +109,7 @@ class SettingsViewModel(
         settings.javaLocation = javaPath.ifBlank { null }
         settings.isDebug = debug
         settings.isAutoLoginMinecraft = autoJoin
+        settings.enableLogView = enableLogView
 
         persist(settings)
         onClose()

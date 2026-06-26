@@ -7,6 +7,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import ru.lionzxy.tplauncher.config.DownloadedInfo
+import ru.lionzxy.tplauncher.log.Logger
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.prepare.downloader.IDownloader
 import ru.lionzxy.tplauncher.utils.ConfigHelper
@@ -33,7 +34,7 @@ abstract class IncrementalDownloader : IDownloader {
         try {
             internalInit(minecraft)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Logger.e("Downloader", "Failed to fetch update list", e)
         }
     }
 
@@ -44,8 +45,10 @@ abstract class IncrementalDownloader : IDownloader {
             ConfigHelper.config.modpackDownloadedInfo[downloaderInfo.key]?.lastUpdateFromChangeLog ?: 0
         val url = downloaderInfo.updateJsonLink
         if (url.isNullOrEmpty()) {
+            Logger.i("Downloader", "No update URL for '${downloaderInfo.key}', skipping update list")
             return
         }
+        Logger.i("Downloader", "Fetching update list for '${downloaderInfo.key}' from $url")
         val json = UrlDownloader.downloadToString(url)
         minecraft.progressMonitor.setStatus("Данные обновления получены, применяем их...")
         val type = object : TypeToken<Map<String, Map<String, Action>>>() {}.type
@@ -54,6 +57,10 @@ abstract class IncrementalDownloader : IDownloader {
             .filter { it.first > lastUpdateTimestamp }.sortedBy { it.first }
         lastChangeTimestamp = changeLog.lastOrNull()?.first ?: 0
         changeLog.forEach { changes.putAll(it.second) }
+        Logger.i(
+            "Downloader",
+            "Update list parsed: ${changes.size} changed file(s) since timestamp $lastUpdateTimestamp",
+        )
     }
 
     override fun download(minecraft: MinecraftContext) {
@@ -61,19 +68,24 @@ abstract class IncrementalDownloader : IDownloader {
         val downloaderInfo = getDownloaderInfo(minecraft)
         val base = downloaderInfo.modpackDirectory ?: minecraft.getDirectory()
         if (changes.isEmpty()) {
+            Logger.i("Downloader", "No changes to apply for '${downloaderInfo.key}'")
             return
         }
 
         minecraft.progressMonitor.setStatus("Удаляем не нужные файлы...")
         val toDelete = changes.filter { it.value == Action.REMOVE }
-        toDelete.forEach { File(base, it.key).delete() }
+        Logger.i("Downloader", "Removing ${toDelete.size} obsolete file(s) for '${downloaderInfo.key}'")
+        toDelete.forEach {
+            Logger.i("Downloader", "Deleting ${it.key}")
+            File(base, it.key).delete()
+        }
 
         val toDownload = changes.filter { it.value == Action.ADD }.map { it.key to File(base, it.key) }
+        Logger.i("Downloader", "Downloading ${toDownload.size} file(s) for '${downloaderInfo.key}'")
         minecraft.progressMonitor.setStatus("Загружаем модпак...")
         minecraft.progressMonitor.setMax(toDownload.size)
         minecraft.progressMonitor.setProgress(0)
         val downloadedFiles = AtomicInteger(0)
-        val debugCounter = AtomicInteger(0)
         var exceptions = emptyList<Throwable>()
         val downloadJob = coroutineScope.launch {
             // Create folders
@@ -89,7 +101,7 @@ abstract class IncrementalDownloader : IDownloader {
                         runCatching {
                             file.delete()
                             val url = downloaderInfo.updateHostLink + path
-                            println("Start download ${debugCounter.incrementAndGet()}")
+                            Logger.i("Downloader", "Downloading $path")
 
                             File(file.parent).mkdirs()
 
@@ -112,9 +124,14 @@ abstract class IncrementalDownloader : IDownloader {
         runBlocking {
             downloadJob.join()
         }
+        Logger.i(
+            "Downloader",
+            "Downloaded ${downloadedFiles.get()}/${toDownload.size} file(s) for '${downloaderInfo.key}'",
+        )
         if (exceptions.isNotEmpty()) {
+            Logger.e("Downloader", "${exceptions.size} file(s) failed to download for '${downloaderInfo.key}'")
             exceptions.forEach {
-                it.printStackTrace()
+                Logger.e("Downloader", "Download failed", it)
             }
             throw exceptions.first()
         }

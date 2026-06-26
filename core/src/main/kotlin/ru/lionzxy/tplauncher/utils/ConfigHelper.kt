@@ -48,7 +48,7 @@ object ConfigHelper {
     }
 
     fun getMinecraftDirectory(modpack: MinecraftModpack): File {
-        val file = File(getDefaultDirectory(), modpack.modpackName.toLowerCase())
+        val file = File(getDefaultDirectory(), modpack.modpackName.lowercase())
         file.mkdir()
         return file
     }

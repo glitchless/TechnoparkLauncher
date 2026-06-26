@@ -136,7 +136,7 @@ object UrlDownloader {
                     else -> conn.inputStream
                 }
 
-                val encoding = (conn.getHeaderField("Content-Encoding") ?: "").trim().toLowerCase()
+                val encoding = (conn.getHeaderField("Content-Encoding") ?: "").trim().lowercase()
                 val decodedStream = decodeStream(bodyStream, encoding)
 
                 val bytes = readAllBytesLimited(decodedStream, options.maxBytes)

@@ -25,6 +25,7 @@ abstract class IncrementalDownloader : IDownloader {
     private val gson = Gson()
     private var lastChangeTimestamp = 0L
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    @OptIn(DelicateCoroutinesApi::class)
     private val downloadDispatcher = newFixedThreadPoolContext(nThreads = 64, name = "minecraft_downloader")
     private val mutex = Mutex()
 
@@ -99,10 +100,8 @@ abstract class IncrementalDownloader : IDownloader {
                             )
                             val downloadedCount = downloadedFiles.incrementAndGet()
                             mutex.withLock {
-                                withContext(Dispatchers.Main) {
-                                    minecraft.progressMonitor.setStatus("Загружено $downloadedCount/${toDownload.size}")
-                                    minecraft.progressMonitor.setProgress(downloadedCount)
-                                }
+                                minecraft.progressMonitor.setStatus("Загружено $downloadedCount/${toDownload.size}")
+                                minecraft.progressMonitor.setProgress(downloadedCount)
                             }
                         }.exceptionOrNull()
                     }

@@ -1,0 +1,149 @@
+name: Publish
+
+on:
+  push:
+    branches: [ ci/publish_v2, master ]
+  workflow_dispatch:
+
+# Required so the build-number action can manage its git tags and softprops can create the release.
+permissions:
+  contents: write
+
+# Serialize releases per branch so two pushes can't race on the same tag / release.
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ── Resolve the version once, shared by every build leg and the release. ────────────────
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+      minor: ${{ steps.bn.outputs.build_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # MINOR_VERSION = monotonically increasing CI build number, stored as a git tag.
+      - name: Generate build number (MINOR_VERSION)
+        id: bn
+        uses: onyxmueller/build-tag-number@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Version = 1.<MAJOR_VERSION>.<MINOR_VERSION>; MAJOR comes from gradle.properties.
+      - name: Compute version
+        id: v
+        run: |
+          set -euo pipefail
+          MAJOR=$(grep -E '^MAJOR_VERSION=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          if [ -z "$MAJOR" ]; then echo "MAJOR_VERSION not found in gradle.properties"; exit 1; fi
+          VERSION="2.${MAJOR}.${{ steps.bn.outputs.build_number }}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VERSION"
+
+  # ── Build one self-contained uber jar per OS/arch (each bundles its own Skiko native). ──
+  build:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest,    type: Linux,   arch: x86_64 }
+          - { os: ubuntu-24.04-arm, type: Linux,   arch: arm64 }
+          - { os: windows-latest,   type: Windows, arch: x86_64 }
+          - { os: macos-14,         type: macOS,   arch: arm64 }
+    runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      TAG: ${{ needs.version.outputs.tag }}
+      MINOR_VERSION: ${{ needs.version.outputs.minor }}
+      TYPE: ${{ matrix.type }}
+      ARCH: ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      # packageUberJarForCurrentOS bundles the current OS/arch's Compose runtime + Skiko native.
+      - name: Build uber jar
+        shell: bash
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :desktop:packageUberJarForCurrentOS --no-daemon --console=plain
+
+      # Rename to a deterministic <version>-<type>-<arch>.jar, hash it (base64 SHA-256, matching the
+      # launcher's File.generateSHA256()), and emit a JSON entry the release job slurps into files[].
+      - name: Stage asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=$(find desktop/build/compose/jars -maxdepth 1 -name '*.jar' -print -quit)
+          if [ -z "$SRC" ]; then echo "No uber jar in desktop/build/compose/jars"; exit 1; fi
+          OUT="${VERSION}-${TYPE}-${ARCH}.jar"
+          mkdir -p dist
+          cp "$SRC" "dist/${OUT}"
+          SHA=$(openssl dgst -sha256 -binary "dist/${OUT}" | openssl base64 -A)
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${OUT}"
+          # Pass values via env (not argv): a base64 SHA can start with '/', and Git Bash on
+          # Windows would otherwise rewrite that leading slash into 'C:/Program Files/Git/...'.
+          SHA="$SHA" URL="$URL" jq -n \
+            '{type: env.TYPE, arch: env.ARCH, downloadUrl: env.URL, "SHA-256": env.SHA}' \
+            > "dist/${TYPE}-${ARCH}.entry.json"
+          echo "Staged ${OUT}"; cat "dist/${TYPE}-${ARCH}.entry.json"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asset-${{ matrix.type }}-${{ matrix.arch }}
+          path: dist/
+          if-no-files-found: error
+
+  # ── Assemble launcher.json (per-arch files[] + embedded jre block) and cut the release. ──
+  release:
+    needs: [ version, build ]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      TAG: ${{ needs.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: asset-*
+          merge-multiple: true
+
+      # files[] = one entry per built arch (the bootstrapper picks its OS/arch);
+      # jre = .github/jres.json embedded verbatim.
+      - name: Assemble launcher.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILES=$(jq -s '.' artifacts/*.entry.json)
+          COUNT=$(jq 'length' <<<"$FILES")
+          if [ "$COUNT" -lt 1 ]; then echo "No platform entries found"; exit 1; fi
+          echo "Assembling launcher.json for ${COUNT} platform(s)"
+          jq -n \
+            --arg version "$VERSION" \
+            --argjson files "$FILES" \
+            --slurpfile jre .github/jres.json \
+            '{version: $version, files: $files, jre: $jre[0]}' \
+            > launcher.json
+          echo "----- launcher.json -----"; cat launcher.json
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: ${{ needs.version.outputs.tag }}
+          files: |
+            artifacts/*.jar
+            launcher.json
+          fail_on_unmatched_files: true

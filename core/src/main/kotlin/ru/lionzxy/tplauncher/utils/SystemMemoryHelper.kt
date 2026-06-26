@@ -1,6 +1,7 @@
 package ru.lionzxy.tplauncher.utils
 
 import nu.redpois0n.oslib.OperatingSystem
+import ru.lionzxy.tplauncher.log.Logger
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
@@ -61,7 +62,7 @@ object SystemMemoryHelper {
                 return null
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Logger.w("Memory", "Failed to query system memory", e)
             return null
         }
         return sb.toString()

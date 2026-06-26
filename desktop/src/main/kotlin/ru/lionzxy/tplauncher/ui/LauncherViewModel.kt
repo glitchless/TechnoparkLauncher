@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import ru.lionzxy.tplauncher.log.Logger
 import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
@@ -84,13 +85,13 @@ class LauncherViewModel(private val scope: CoroutineScope) {
             try {
                 context.minecraftAccountManager.login(email, password)
             } catch (exp: YDServiceAuthenticationException) {
-                exp.printStackTrace()
+                Logger.e("Login", "Authentication failed", exp)
                 _state.value = LauncherState.InitialError(
                     exp.reason?.error ?: exp.localizedMessage ?: Strings.checkInternetConnection
                 )
                 return@launch
             } catch (ioExp: IOException) {
-                ioExp.printStackTrace()
+                Logger.e("Login", "Network error during login", ioExp)
                 _state.value = LauncherState.InitialError(Strings.checkInternetConnection)
                 return@launch
             }
@@ -107,13 +108,13 @@ class LauncherViewModel(private val scope: CoroutineScope) {
             LogoUtils.setLogoForMinecraft(context)
             context.launch()
         } catch (e: UnknownHostException) {
-            e.printStackTrace()
+            Logger.e("Launcher", "No network while preparing/launching Minecraft", e)
             _state.value = LauncherState.InitialError(Strings.checkInternetConnection)
             return
         } catch (e: Exception) {
             Sentry.captureException(e)
             _state.value = LauncherState.LaunchError(email, Strings.internalError)
-            e.printStackTrace()
+            Logger.e("Launcher", "Failed to prepare/launch Minecraft", e)
             return
         }
 

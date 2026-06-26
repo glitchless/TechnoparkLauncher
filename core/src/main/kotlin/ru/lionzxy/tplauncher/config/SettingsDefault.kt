@@ -2,6 +2,7 @@ package ru.lionzxy.tplauncher.config
 
 import nu.redpois0n.oslib.Arch
 import nu.redpois0n.oslib.OperatingSystem
+import ru.lionzxy.tplauncher.log.Logger
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.SystemMemoryHelper
 import java.io.File
@@ -23,7 +24,7 @@ object SettingsDefault {
         try {
             totalBytes = SystemMemoryHelper.getSystemTotalMemory()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Logger.w("Settings", "Failed to detect system memory; using default heap size", e)
         }
 
         if (totalBytes == null) {

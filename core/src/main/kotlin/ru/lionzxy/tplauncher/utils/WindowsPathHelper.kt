@@ -4,6 +4,7 @@ import com.sun.jna.Native
 import com.sun.jna.WString
 import com.sun.jna.win32.StdCallLibrary
 import nu.redpois0n.oslib.OperatingSystem
+import ru.lionzxy.tplauncher.log.Logger
 import java.io.File
 import java.nio.charset.Charset
 
@@ -29,7 +30,7 @@ object WindowsPathHelper {
         try {
             Native.load("kernel32", Kernel32::class.java)
         } catch (t: Throwable) {
-            t.printStackTrace()
+            Logger.w("WindowsPath", "Failed to load kernel32; short-path support unavailable", t)
             null
         }
     }
@@ -54,7 +55,7 @@ object WindowsPathHelper {
             val short = String(buffer, 0, len)
             if (short.isEmpty()) file else File(short)
         } catch (t: Throwable) {
-            t.printStackTrace()
+            Logger.w("WindowsPath", "Failed to resolve 8.3 short path for ${file.absolutePath}", t)
             file
         }
     }

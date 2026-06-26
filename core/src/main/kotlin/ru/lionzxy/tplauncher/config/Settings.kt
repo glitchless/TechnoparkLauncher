@@ -30,6 +30,9 @@ class Settings() {
 
     var isDebug: Boolean = false
 
+    /** Show the in-window log view on the main screen. Off by default; serialized as `enableLogView`. */
+    var enableLogView: Boolean = false
+
     /** Copy constructor — mirrors the legacy `Settings(Settings)` (copies raw fields). */
     constructor(other: Settings) : this() {
         heapSizeField = other.heapSizeField
@@ -38,6 +41,7 @@ class Settings() {
         javaLocationField = other.javaLocationField
         isDebug = other.isDebug
         autoLoginMinecraft = other.autoLoginMinecraft
+        enableLogView = other.enableLogView
     }
 
     var heapSize: String

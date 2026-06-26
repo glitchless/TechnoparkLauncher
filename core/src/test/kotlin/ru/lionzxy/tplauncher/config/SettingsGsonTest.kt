@@ -54,10 +54,29 @@ class SettingsGsonTest {
             heapSize = "5G"
             isDebug = true
             isAutoLoginMinecraft = false
+            enableLogView = true
         }
         val b = Settings(a)
         assertEquals("5G", b.heapSize)
         assertTrue(b.isDebug)
         assertFalse(b.isAutoLoginMinecraft)
+        assertTrue(b.enableLogView)
+    }
+
+    @Test
+    fun enableLogView_defaultsFalse_andRoundTripsUnderItsOwnKey() {
+        assertFalse("enableLogView must default to false", Settings().enableLogView)
+
+        val json = Gson().toJson(Settings().apply { enableLogView = true })
+        assertTrue(json, json.contains("\"enableLogView\""))
+
+        val back = Gson().fromJson(json, Settings::class.java)
+        assertTrue(back.enableLogView)
+    }
+
+    @Test
+    fun enableLogView_absentFromLegacyJson_staysFalse() {
+        val legacy = """{"heapSize":"2G","autoLoginMinecraft":true,"isDebug":false}"""
+        assertFalse(Gson().fromJson(legacy, Settings::class.java).enableLogView)
     }
 }

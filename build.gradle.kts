@@ -14,5 +14,5 @@ val minorVersion = System.getenv("MINOR_VERSION") ?: (findProperty("MINOR_VERSIO
 
 allprojects {
     group = "ru.lionzxy.tplauncher"
-    version = "1.$majorVersion.$minorVersion"
+    version = "2.$majorVersion.$minorVersion"
 }

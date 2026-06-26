@@ -39,7 +39,7 @@ jobs:
           set -euo pipefail
           MAJOR=$(grep -E '^MAJOR_VERSION=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
           if [ -z "$MAJOR" ]; then echo "MAJOR_VERSION not found in gradle.properties"; exit 1; fi
-          VERSION="1.${MAJOR}.${{ steps.bn.outputs.build_number }}"
+          VERSION="2.${MAJOR}.${{ steps.bn.outputs.build_number }}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
           echo "Resolved version: $VERSION"

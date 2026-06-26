@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -104,15 +106,19 @@ fun main() {
                         // measured content height. States differ in height — this is the
                         // sizeToScene() equivalent, so a shorter state leaves no gap.
                         Box(
-                            modifier = Modifier.onSizeChanged { size ->
-                                val target = DpSize(
-                                    (BASE_WIDTH_DP * uiScale).dp,
-                                    with(systemDensity) { size.height.toDp() },
-                                )
-                                if (target.height > 0.dp && mainWindowState.size != target) {
-                                    mainWindowState.size = target
-                                }
-                            },
+                            // unbounded=true: measure the content's TRUE height even when it
+                            // exceeds the current window, so scaling up actually grows the window.
+                            modifier = Modifier
+                                .wrapContentHeight(Alignment.Top, unbounded = true)
+                                .onSizeChanged { size ->
+                                    val target = DpSize(
+                                        (BASE_WIDTH_DP * uiScale).dp,
+                                        with(systemDensity) { size.height.toDp() },
+                                    )
+                                    if (target.height > 0.dp && mainWindowState.size != target) {
+                                        mainWindowState.size = target
+                                    }
+                                },
                         ) {
                         MainWindowContent(
                             state = state,
@@ -164,15 +170,17 @@ fun main() {
                 ) {
                     TpTheme {
                         Box(
-                            modifier = Modifier.onSizeChanged { size ->
-                                val target = DpSize(
-                                    (BASE_WIDTH_DP * uiScale).dp,
-                                    with(systemDensity) { size.height.toDp() },
-                                )
-                                if (target.height > 0.dp && settingsWindowState.size != target) {
-                                    settingsWindowState.size = target
-                                }
-                            },
+                            modifier = Modifier
+                                .wrapContentHeight(Alignment.Top, unbounded = true)
+                                .onSizeChanged { size ->
+                                    val target = DpSize(
+                                        (BASE_WIDTH_DP * uiScale).dp,
+                                        with(systemDensity) { size.height.toDp() },
+                                    )
+                                    if (target.height > 0.dp && settingsWindowState.size != target) {
+                                        settingsWindowState.size = target
+                                    }
+                                },
                         ) {
                             SettingsWindowContent(
                                 vm = remember {

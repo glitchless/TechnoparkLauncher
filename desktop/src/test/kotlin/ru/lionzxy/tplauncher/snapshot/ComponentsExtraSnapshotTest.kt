@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import ru.lionzxy.tplauncher.ui.components.Avatar
+import ru.lionzxy.tplauncher.ui.components.AvatarContent
 import ru.lionzxy.tplauncher.ui.components.CloseX
 import ru.lionzxy.tplauncher.ui.components.GearRow
 import ru.lionzxy.tplauncher.ui.components.ProgressPanel
@@ -58,11 +58,12 @@ class ComponentsExtraSnapshotTest {
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // ── Avatar placeholder ────────────────────────────────────
-                    // ConfigHelper.config.profile is null in the test environment
-                    // → Avatar renders the placeholder; no network call is made.
-                    BasicText("Avatar — placeholder (no profile in test)", style = TpTypography.caption)
+                    // Render the PURE AvatarContent(null) so the snapshot is deterministic —
+                    // the stateful Avatar() reads ConfigHelper.config.profile + disk/network,
+                    // which is machine-dependent and unfit for a golden snapshot.
+                    BasicText("Avatar — placeholder (mint check, matches Screen 2)", style = TpTypography.caption)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Avatar()
+                    AvatarContent(bitmap = null)
 
                     Spacer(modifier = Modifier.height(24.dp))
 

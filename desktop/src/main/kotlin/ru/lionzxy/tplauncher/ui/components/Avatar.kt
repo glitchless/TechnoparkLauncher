@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,37 +14,44 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import ru.lionzxy.tplauncher.ui.loadAvatar
 import ru.lionzxy.tplauncher.ui.icons.TpIcons
+import ru.lionzxy.tplauncher.ui.loadAvatar
 import ru.lionzxy.tplauncher.ui.theme.TpColors
 import ru.lionzxy.tplauncher.ui.theme.TpDimens
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 
 /**
- * Circular 84dp avatar.
+ * Circular 84dp avatar for the real app. Reads [ConfigHelper.config.profile]'s login internally:
+ * - login null  → placeholder (no network), shows the mint-check circle
+ * - login set   → loads via [loadAvatar]; placeholder until the bitmap arrives
  *
- * Reads [ConfigHelper.config.profile?.login] internally.
- * - If null → placeholder (backgroundCircle + check icon), no network call.
- * - If non-null → attempts to load via [loadAvatar]; shows placeholder until loaded.
+ * Rendering is delegated to the pure [AvatarContent] so snapshots stay deterministic
+ * (they render AvatarContent directly with a fixed bitmap, never touching config/disk/network).
  */
 @Composable
 fun Avatar(modifier: Modifier = Modifier) {
     val login = ConfigHelper.config.profile?.login
-
-    val bitmap = produceState<ImageBitmap?>(initialValue = null, key1 = login) {
+    val bitmap by produceState<ImageBitmap?>(initialValue = null, key1 = login) {
         value = login?.let { loadAvatar(it) }
     }
+    AvatarContent(bitmap = bitmap, modifier = modifier)
+}
 
+/**
+ * Pure, deterministic avatar rendering — no config/IO. [bitmap] null → mint-check placeholder
+ * (the look used by the logged-in mockup, Screen 2); non-null → the circle-clipped image.
+ */
+@Composable
+fun AvatarContent(bitmap: ImageBitmap?, modifier: Modifier = Modifier) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .size(TpDimens.avatar)
             .clip(CircleShape),
     ) {
-        val loaded = bitmap.value
-        if (loaded != null) {
+        if (bitmap != null) {
             Image(
-                bitmap = loaded,
+                bitmap = bitmap,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -51,7 +59,6 @@ fun Avatar(modifier: Modifier = Modifier) {
                     .clip(CircleShape),
             )
         } else {
-            // Placeholder
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier

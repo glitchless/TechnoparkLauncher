@@ -1,0 +1,94 @@
+name: Publish
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+# Required so the build-number action can manage its git tags and softprops can create the release.
+permissions:
+  contents: write
+
+# Serialize releases per branch so two pushes can't race on the same tag / release.
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # MINOR_VERSION = monotonically increasing CI build number, stored as a git tag.
+      - name: Generate build number (MINOR_VERSION)
+        id: buildnumber
+        uses: onyxmueller/build-tag-number@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Liberica "Full" bundles JavaFX (jdk+fx), matching the toolchain the project builds with locally.
+      - name: Set up JDK 8 (Liberica Full, with JavaFX)
+        uses: actions/setup-java@v4
+        with:
+          distribution: liberica
+          java-version: '8'
+          java-package: jdk+fx
+          cache: gradle
+
+      # Version = 1.<MAJOR_VERSION>.<MINOR_VERSION>; MAJOR comes from gradle.properties.
+      - name: Compute version
+        id: version
+        run: |
+          set -euo pipefail
+          MAJOR=$(grep -E '^MAJOR_VERSION=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          if [ -z "$MAJOR" ]; then echo "MAJOR_VERSION not found in gradle.properties"; exit 1; fi
+          MINOR="${{ steps.buildnumber.outputs.build_number }}"
+          VERSION="1.${MAJOR}.${MINOR}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VERSION"
+
+      - name: Build fat JAR
+        env:
+          MINOR_VERSION: ${{ steps.buildnumber.outputs.build_number }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon fatJar
+
+      # Rename the jar to <version>.jar (the direct download name), hash it (base64 SHA-256, matching
+      # the launcher's File.generateSHA256()), and build launcher.json with the JRE block embedded
+      # verbatim from .github/jres.json. downloadFullPath points straight at the release asset.
+      - name: Assemble release assets
+        id: assets
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          JAR_SRC=$(find build/libs -maxdepth 1 -name '*.jar' -print -quit)
+          if [ -z "$JAR_SRC" ]; then echo "No JAR produced in build/libs"; exit 1; fi
+          JAR="${VERSION}.jar"
+          cp "$JAR_SRC" "$JAR"
+          SHA256=$(openssl dgst -sha256 -binary "$JAR" | base64 -w0)
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/v${VERSION}/${JAR}"
+          jq -n \
+            --arg version "$VERSION" \
+            --arg url "$URL" \
+            --arg sha "$SHA256" \
+            --slurpfile jre .github/jres.json \
+            '{version: $version, downloadFullPath: $url, "SHA-256": $sha, jre: $jre[0]}' \
+            > launcher.json
+          echo "jar=$JAR" >> "$GITHUB_OUTPUT"
+          echo "----- launcher.json -----"
+          cat launcher.json
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          files: |
+            ${{ steps.assets.outputs.jar }}
+            launcher.json
+          fail_on_unmatched_files: true

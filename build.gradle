@@ -25,9 +25,14 @@ apply plugin: 'de.fuerstenau.buildconfig'
 apply plugin: 'javafx-gradle-plugin'
 //apply plugin: 'application'
 group 'ru.lionzxy.tplauncher'
-version '1.0-SNAPSHOT'
 
-version = "1.2." + getTime()
+// Version scheme: 1.<MAJOR_VERSION>.<MINOR_VERSION>
+//   MAJOR_VERSION — bumped manually in gradle.properties.
+//   MINOR_VERSION — the CI build number (onyxmueller/build-tag-number action), passed in via the
+//                   MINOR_VERSION env var (or -PMINOR_VERSION). Defaults to 0 for local builds.
+def majorVersion = (project.findProperty('MAJOR_VERSION') ?: '0').toString()
+def minorVersion = (System.getenv('MINOR_VERSION') ?: project.findProperty('MINOR_VERSION') ?: '0').toString()
+version = "1.${majorVersion}.${minorVersion}"
 sourceCompatibility = 1.8
 
 repositories {
@@ -127,8 +132,4 @@ task fatJar(type: Jar) {
         }
     }
     with jar
-}
-
-static def getTime() {
-    return new Date().format('MMddHHmm')
 }

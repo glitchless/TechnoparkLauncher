@@ -1,7 +1,7 @@
 # Per-modpack managed JREs from `jres2.json`
 
 **Date:** 2026-06-27
-**Status:** Approved design, ready for implementation plan
+**Status:** Implemented
 
 ## Problem
 

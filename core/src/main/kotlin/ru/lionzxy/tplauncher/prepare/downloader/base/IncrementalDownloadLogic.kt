@@ -1,7 +1,6 @@
 package ru.lionzxy.tplauncher.prepare.downloader.base
 
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -16,10 +15,15 @@ internal data class ParsedChangeLog(
     val changes: Map<String, Action>,
     /** Highest changelog timestamp seen (0 when nothing newer than [lastUpdate] exists). */
     val lastTimestamp: Long,
+    /** Optional server-provided SHA-256 (relpath -> lowercase hex) for changed files; empty if absent. */
+    val hashes: Map<String, String> = emptyMap(),
 )
 
-private val changeLogGson = Gson()
-private val changeLogType = object : TypeToken<Map<String, Map<String, Action>>>() {}.type
+private fun parseAction(code: String): Action? = when (code) {
+    "0" -> Action.REMOVE
+    "1" -> Action.ADD
+    else -> null
+}
 
 /**
  * Resolves [key] (a server-supplied relative path) against [base] and guarantees the result stays
@@ -37,20 +41,40 @@ internal fun resolveContained(base: File, key: String): File {
 }
 
 /**
- * Parses the changelog (a map of `timestamp -> (path -> action)`), keeps only buckets newer than
- * [lastUpdate], merges them in ascending timestamp order (later buckets win per path), and reports
- * the highest timestamp seen so it can be persisted even when a bucket carries no file operations.
- * A non-numeric timestamp key is skipped rather than aborting the whole changelog.
+ * Parses the changelog. Numeric top-level keys are timestamp buckets (`path -> "0"|"1"`); the
+ * optional non-numeric `"sha256"` key is a flat `path -> hex` map of hashes for changed files.
+ * Only buckets newer than [lastUpdate] are kept and merged in ascending order (later wins per path).
+ * Unknown/non-numeric keys other than `"sha256"`, and unparseable values, are skipped (not fatal).
  */
 internal fun parseChangeLog(json: String, lastUpdate: Long): ParsedChangeLog {
-    val raw: Map<String, Map<String, Action>> = changeLogGson.fromJson(json, changeLogType) ?: emptyMap()
-    val buckets = raw.entries
-        .mapNotNull { entry -> entry.key.toLongOrNull()?.let { ts -> ts to entry.value } }
-        .filter { (timestamp, _) -> timestamp > lastUpdate }
-        .sortedBy { (timestamp, _) -> timestamp }
+    val root = runCatching { JsonParser.parseString(json).asJsonObject }.getOrNull()
+        ?: return ParsedChangeLog(emptyMap(), 0L)
+
+    val hashes = LinkedHashMap<String, String>()
+    root.get("sha256")?.takeIf { it.isJsonObject }?.asJsonObject?.entrySet()?.forEach { (path, v) ->
+        if (v.isJsonPrimitive) hashes[path] = v.asString
+    }
+
+    val buckets = root.entrySet()
+        .mapNotNull { (key, value) ->
+            val ts = key.toLongOrNull() ?: return@mapNotNull null
+            if (!value.isJsonObject) return@mapNotNull null
+            ts to value.asJsonObject
+        }
+        .filter { (ts, _) -> ts > lastUpdate }
+        .sortedBy { (ts, _) -> ts }
+
     val merged = LinkedHashMap<String, Action>()
-    buckets.forEach { (_, ops) -> merged.putAll(ops) }
-    return ParsedChangeLog(changes = merged, lastTimestamp = buckets.lastOrNull()?.first ?: 0L)
+    buckets.forEach { (_, ops) ->
+        ops.entrySet().forEach { (path, code) ->
+            if (code.isJsonPrimitive) parseAction(code.asString)?.let { merged[path] = it }
+        }
+    }
+    return ParsedChangeLog(
+        changes = merged,
+        lastTimestamp = buckets.lastOrNull()?.first ?: 0L,
+        hashes = hashes,
+    )
 }
 
 /** Joins a host base URL and a relative key with exactly one `/`, regardless of stray slashes. */

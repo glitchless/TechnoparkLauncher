@@ -167,4 +167,35 @@ class IncrementalDownloadLogicTest {
         assertEquals(setOf(5, 10, 15, 20), failures.map { it.first }.toSet())
         assertTrue(failures.all { it.second is RuntimeException })
     }
+
+    // ---- changelog "sha256" optional map ----
+
+    @Test
+    fun parseChangeLogReadsOptionalSha256Map() {
+        val json = """
+            {"100": {"a.txt": "1", "old.txt": "0"},
+             "sha256": {"a.txt": "deadbeef"}}
+        """.trimIndent()
+        val parsed = parseChangeLog(json, lastUpdate = 0)
+        assertEquals(100L, parsed.lastTimestamp)
+        assertEquals(Action.ADD, parsed.changes["a.txt"])
+        assertEquals(Action.REMOVE, parsed.changes["old.txt"])
+        assertEquals("deadbeef", parsed.hashes["a.txt"])
+        // the "sha256" key is NOT treated as a timestamp bucket
+        assertNull(parsed.changes["sha256"])
+    }
+
+    @Test
+    fun parseChangeLogWithNoSha256MapYieldsEmptyHashes() {
+        val parsed = parseChangeLog("""{"100": {"a.txt": "1"}}""", lastUpdate = 0)
+        assertEquals(Action.ADD, parsed.changes["a.txt"])
+        assertTrue(parsed.hashes.isEmpty())
+    }
+
+    @Test
+    fun parseChangeLogToleratesIntActionValues() {
+        val parsed = parseChangeLog("""{"100": {"a.txt": 1, "b.txt": 0}}""", lastUpdate = 0)
+        assertEquals(Action.ADD, parsed.changes["a.txt"])
+        assertEquals(Action.REMOVE, parsed.changes["b.txt"])
+    }
 }

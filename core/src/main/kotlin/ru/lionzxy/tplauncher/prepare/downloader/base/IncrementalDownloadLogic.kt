@@ -141,7 +141,7 @@ internal suspend fun filterUpToDate(
  * Runs [block] over [items] with at most [parallelism] in flight; after each pass, the items that
  * threw are retried, up to [maxAttempts] total passes. Returns the items still failing after the
  * last pass paired with their most recent error. A successful item is never retried (so callers can
- * rely on hash-skip to avoid redundant work). [key] is only used to de-duplicate/identify items.
+ * rely on hash-skip to avoid redundant work).
  */
 internal suspend fun <T> downloadWithRetries(
     items: List<T>,

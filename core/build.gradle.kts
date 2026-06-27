@@ -11,6 +11,7 @@ dependencies {
     implementation(libs.coroutines.core)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.encoding)
     implementation(libs.jna)
     implementation(libs.commons.codec)
     implementation(libs.sentry)

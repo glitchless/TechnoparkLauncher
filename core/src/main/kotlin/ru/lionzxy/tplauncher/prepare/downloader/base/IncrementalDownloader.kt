@@ -37,12 +37,22 @@ abstract class IncrementalDownloader : IDownloader {
             Logger.i(LOG_TAG, "No update URL for '${info.key}', skipping update list")
             return
         }
-        val lastUpdate = ConfigHelper.config.modpackDownloadedInfo[info.key]?.lastUpdateFromChangeLog ?: 0
+        val info0 = ConfigHelper.config.modpackDownloadedInfo[info.key]
+        val lastUpdate = info0?.lastUpdateFromChangeLog ?: 0
+        val cacheFile = File(ConfigHelper.getCacheDirectory(), "${info.key}_changelog.json")
         minecraft.progressMonitor.setStatus("Получение списка обновлений с сервера...")
         Logger.i(LOG_TAG, "Fetching update list for '${info.key}' from $url")
         try {
-            val json = runBlocking { HttpDownloader.instance.getString(url) }
-            val parsed = parseChangeLog(json, lastUpdate)
+            val resp = runBlocking { HttpDownloader.instance.getStringConditional(url, info0?.changelogEtag) }
+            val body = if (resp.notModified && cacheFile.isFile) {
+                cacheFile.readText()
+            } else {
+                val fresh = resp.body ?: runBlocking { HttpDownloader.instance.getString(url) }
+                runCatching { cacheFile.writeText(fresh) }
+                if (resp.etag != null) persistChangelogEtag(info, resp.etag)
+                fresh
+            }
+            val parsed = parseChangeLog(body, lastUpdate)
             changes = parsed.changes
             lastChangeTimestamp = parsed.lastTimestamp
             changeHashes = parsed.hashes
@@ -168,6 +178,14 @@ abstract class IncrementalDownloader : IDownloader {
             val downloadedInfo = modpackDownloadedInfo[info.key] ?: DownloadedInfo()
             downloadedInfo.lastUpdateFromChangeLog = lastChangeTimestamp
             modpackDownloadedInfo[info.key] = downloadedInfo
+        }
+    }
+
+    private fun persistChangelogEtag(info: IncrementalDownloaderInfo, etag: String) {
+        ConfigHelper.writeToConfig {
+            val di = modpackDownloadedInfo[info.key] ?: DownloadedInfo()
+            di.changelogEtag = etag
+            modpackDownloadedInfo[info.key] = di
         }
     }
 

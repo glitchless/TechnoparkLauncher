@@ -53,6 +53,9 @@ object ConfigHelper {
         return file
     }
 
+    fun getCacheDirectory(): File =
+        File(getDefaultDirectory(), "cache").apply { mkdirs() }
+
     fun getTemporaryDirectory(): File {
         val dir = File(getDefaultDirectory(), "tmp")
         dir.mkdirs()

@@ -79,4 +79,26 @@ class SettingsGsonTest {
         val legacy = """{"heapSize":"2G","autoLoginMinecraft":true,"isDebug":false}"""
         assertFalse(Gson().fromJson(legacy, Settings::class.java).enableLogView)
     }
+
+    @Test
+    fun parallelDownloads_defaultsToClampedCoreCount_andRoundTrips() {
+        val expected = Runtime.getRuntime().availableProcessors().coerceIn(1, 32)
+        assertEquals(expected, Settings().parallelDownloads)
+        val json = Gson().toJson(Settings().apply { parallelDownloads = 5 })
+        assertTrue(json, json.contains("\"parallelDownloads\""))
+        assertEquals(5, Gson().fromJson(json, Settings::class.java).parallelDownloads)
+    }
+
+    @Test
+    fun parallelDownloads_absentFromLegacyJson_usesDefault() {
+        val expected = Runtime.getRuntime().availableProcessors().coerceIn(1, 32)
+        val legacy = """{"heapSize":"2G","isDebug":false}"""
+        assertEquals(expected, Gson().fromJson(legacy, Settings::class.java).parallelDownloads)
+    }
+
+    @Test
+    fun parallelDownloads_isClampedOnWrite() {
+        assertEquals(32, Settings().apply { parallelDownloads = 9999 }.parallelDownloads)
+        assertEquals(1, Settings().apply { parallelDownloads = 0 }.parallelDownloads)
+    }
 }

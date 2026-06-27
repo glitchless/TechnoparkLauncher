@@ -52,4 +52,7 @@ object SettingsDefault {
         }
         return jrePath.absolutePath
     }
+
+    fun getDefaultParallelDownloads(): Int =
+        Runtime.getRuntime().availableProcessors().coerceIn(1, 32)
 }

@@ -105,6 +105,38 @@ class JreManagerTest {
     }
 
     @Test
+    fun ensureInstalledValidatesJavaExeButReturnsJavawOnWindows() {
+        val tmp = Files.createTempDirectory("jrewin").toFile()
+        val installDirFor = { code: String -> File(tmp, "jre/$code") }
+        val javaExe = File(installDirFor("jre8"), "bin/java.exe").apply {
+            parentFile.mkdirs(); writeBytes("windows-java".toByteArray())
+        }
+        val javawExe = File(installDirFor("jre8"), "bin/javaw.exe").apply { writeBytes("windows-javaw".toByteArray()) }
+        val sha = javaExe.generateSHA256()!!
+        val manifest =
+            """[{"code":"jre8","files":[{"type":"Windows","arch":"x86_64","extension":"zip","downloadUrl":"http://no","javaRelativePath":"bin/java.exe","SHA-256":"arch","javaSHA-256":"$sha"}]}]"""
+        val mgr = JreManager(
+            http = okDownloader(manifest),
+            manifestUrl = "https://h/jres2.json",
+            manifestCacheFile = File(tmp, "cache.json"),
+            installDirFor = installDirFor,
+            platform = JrePlatform("Windows", listOf("x86_64"), isWindows = true),
+            extract = { _, _, _ -> throw IllegalStateException("must not extract when already installed") },
+        )
+        // Validation must hash java.exe (the javaRelativePath target), but the returned launch binary must be javaw.exe.
+        assertEquals(javawExe.absolutePath, mgr.ensureInstalled("jre8", NoopMonitor).absolutePath)
+    }
+
+    @Test
+    fun normalizeArchMapsAarch64AndAmd64() {
+        assertEquals(listOf("arm64", "aarch64"), normalizeArch("aarch64"))
+        assertEquals(listOf("arm64", "aarch64"), normalizeArch("arm64"))
+        assertEquals(listOf("x86_64", "amd64"), normalizeArch("amd64"))
+        assertEquals(listOf("x86_64", "amd64"), normalizeArch("x86_64"))
+        assertEquals(emptyList<String>(), normalizeArch(null))
+    }
+
+    @Test
     fun ensureInstalledThrowsOnUnsupportedOs() {
         val tmp = Files.createTempDirectory("jremgr4").toFile()
         val mgr = JreManager(

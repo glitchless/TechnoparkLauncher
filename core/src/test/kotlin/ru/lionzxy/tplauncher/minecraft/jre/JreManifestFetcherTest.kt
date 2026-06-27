@@ -62,4 +62,15 @@ class JreManifestFetcherTest {
             // expected
         }
     }
+
+    @Test
+    fun offlineWithCorruptCacheThrows() = runTest {
+        val cache = tempFile("jres2.json").apply { writeText("{ this is not valid json") }
+        try {
+            fetchJreManifest(offlineDownloader(), "https://h/jres2.json", cache)
+            fail("expected IOException for corrupt cache")
+        } catch (e: IOException) {
+            // expected
+        }
+    }
 }

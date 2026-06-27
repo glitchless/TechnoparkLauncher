@@ -2,6 +2,7 @@ package ru.lionzxy.tplauncher.minecraft.jre
 
 import io.sentry.Sentry
 import kotlinx.coroutines.runBlocking
+import nu.redpois0n.oslib.Arch
 import nu.redpois0n.oslib.OperatingSystem
 import org.rauschig.jarchivelib.ArchiveFormat
 import org.rauschig.jarchivelib.ArchiverFactory
@@ -46,11 +47,16 @@ internal suspend fun fetchJreManifest(
     }
 
     if (cacheFile.exists()) {
-        Logger.i(JRE_LOG_TAG, "Using cached JRE manifest at ${cacheFile.absolutePath}")
-        return parseJreManifest(cacheFile.readText())
+        val cached = runCatching { parseJreManifest(cacheFile.readText()) }
+            .onFailure { Logger.w(JRE_LOG_TAG, "Cached JRE manifest at ${cacheFile.absolutePath} is unreadable/corrupt", it) }
+            .getOrNull()
+        if (cached != null) {
+            Logger.i(JRE_LOG_TAG, "Using cached JRE manifest at ${cacheFile.absolutePath}")
+            return cached
+        }
     }
 
-    throw IOException("JRE manifest unavailable: network failed and no cache at ${cacheFile.absolutePath}")
+    throw IOException("JRE manifest unavailable: network failed and no usable cache at ${cacheFile.absolutePath}")
 }
 
 /** This machine's JRE selection criteria. [osName] is null on an unsupported OS. */
@@ -68,9 +74,23 @@ data class JrePlatform(
                 OperatingSystem.LINUX -> "Linux"
                 else -> null
             }
-            return JrePlatform(osName, os.arch.search.toList(), os.type == OperatingSystem.WINDOWS)
+            val archAliases = if (os.arch != Arch.UNKNOWN) {
+                os.arch.search.toList()
+            } else {
+                normalizeArch(System.getProperty("os.arch"))
+            }
+            return JrePlatform(osName, archAliases, os.type == OperatingSystem.WINDOWS)
         }
     }
+}
+
+/** Normalizes a raw `os.arch` value to jres2.json arch aliases when oslib's Arch table can't classify it
+ *  (notably Linux `uname -m` = "aarch64", which oslib maps to Arch.UNKNOWN). */
+internal fun normalizeArch(raw: String?): List<String> = when (raw?.lowercase()) {
+    "aarch64", "arm64" -> listOf("arm64", "aarch64")
+    "x86_64", "amd64", "x64" -> listOf("x86_64", "amd64")
+    null -> emptyList()
+    else -> listOf(raw)
 }
 
 /** Extracts [archive] ([extension] = "tar.gz" or "zip") into [dest], preserving entry file modes. */
@@ -115,12 +135,13 @@ class JreManager(
             ?: throw IOException("No JRE '$code' build for $osName/${platform.archAliases.firstOrNull()}")
 
         val installDir = installDirFor(code)
-        val binary = binaryPath(installDir, file)
+        val verified = verifiedBinary(installDir, file)
+        val launch = launchBinary(installDir, file)
 
-        if (isJavaBinaryValid(binary, file.javaSha256)) {
-            Logger.i(JRE_LOG_TAG, "JRE '$code' already installed at ${binary.absolutePath}")
-            resolved[code] = binary
-            return binary
+        if (isJavaBinaryValid(verified, file.javaSha256)) {
+            Logger.i(JRE_LOG_TAG, "JRE '$code' already installed at ${launch.absolutePath}")
+            resolved[code] = launch
+            return launch
         }
 
         Logger.i(JRE_LOG_TAG, "Installing JRE '$code' for $osName")
@@ -147,14 +168,14 @@ class JreManager(
             tmp.delete()
         }
 
-        if (!isJavaBinaryValid(binary, file.javaSha256)) {
-            throw IOException("JRE '$code' java binary missing or corrupt after extraction: ${binary.absolutePath}")
+        if (!isJavaBinaryValid(verified, file.javaSha256)) {
+            throw IOException("JRE '$code' java binary missing or corrupt after extraction: ${verified.absolutePath}")
         }
         if (!platform.isWindows) {
-            binary.setExecutable(true)
+            launch.setExecutable(true)
         }
-        resolved[code] = binary
-        return binary
+        resolved[code] = launch
+        return launch
     }
 
     /**
@@ -168,14 +189,20 @@ class JreManager(
             if (manifestCacheFile.exists()) parseJreManifest(manifestCacheFile.readText()) else null
         }.getOrNull() ?: return null
         val file = manifest.findByCode(code)?.selectFile(osName, platform.archAliases) ?: return null
-        val binary = binaryPath(installDirFor(code), file)
-        return if (isJavaBinaryValid(binary, file.javaSha256)) binary.also { resolved[code] = it } else null
+        val installDir = installDirFor(code)
+        val verified = verifiedBinary(installDir, file)
+        val launch = launchBinary(installDir, file)
+        return if (isJavaBinaryValid(verified, file.javaSha256)) launch.also { resolved[code] = it } else null
     }
 
-    /** The java binary inside [installDir]; on Windows the GUI `javaw.exe` sibling of `java.exe`. */
-    private fun binaryPath(installDir: File, file: JreFile): File {
-        val raw = File(installDir, file.javaRelativePath)
-        return if (platform.isWindows) File(raw.parentFile, "javaw.exe") else raw
+    /** The binary the manifest's javaSHA-256 hashes: exactly [JreFile.javaRelativePath] (e.g. .../bin/java.exe on Windows). */
+    private fun verifiedBinary(installDir: File, file: JreFile): File =
+        File(installDir, file.javaRelativePath)
+
+    /** The binary to launch: on Windows the GUI `javaw.exe` sibling (no console window); the verified binary elsewhere. */
+    private fun launchBinary(installDir: File, file: JreFile): File {
+        val verified = verifiedBinary(installDir, file)
+        return if (platform.isWindows) File(verified.parentFile, "javaw.exe") else verified
     }
 
     companion object {

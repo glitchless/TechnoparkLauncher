@@ -156,6 +156,13 @@ fun SettingsWindowContent(
                         onSelect = { onScaleChange(UI_SCALE_OPTIONS[it]) },
                     )
                 }
+
+                TpField(label = Strings.parallelDownloads, labelWidth = SETTINGS_LABEL_WIDTH) {
+                    TpTextField(
+                        value = vm.parallelDownloads,
+                        onValueChange = vm::onParallelDownloadsChange,
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(TpDimens.margin))

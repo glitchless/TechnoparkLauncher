@@ -25,6 +25,7 @@ object Strings {
     const val autoJoinServer = "Авто-заход на сервер"
     const val showLogs = "Показать логи"
     const val uiScale = "Масштаб интерфейса"
+    const val parallelDownloads = "Параллельных загрузок"
     const val logsTitle = "Логи"
     const val scrollToEnd = "В конец"
     const val copyLogs = "Копировать"

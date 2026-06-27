@@ -151,11 +151,12 @@ internal fun HttpClientConfig<*>.applyDefaults() {
         deflate()
     }
     install(HttpTimeout) {
-        // Generous connect window: many small files are fetched concurrently against a
-        // Cloudflare-fronted host, so a TLS handshake can take a while under load.
-        connectTimeoutMillis = 30_000
-        // Kills a stalled connection instead of hanging a download forever (the old fork bug).
-        socketTimeoutMillis = 30_000
+        // Generous 5-minute connect window: many files are fetched concurrently against a
+        // Cloudflare-fronted host on slow/throttled links, so a TLS handshake can take a while.
+        connectTimeoutMillis = 300_000
+        // 5-minute inactivity cap: kills a stalled connection instead of hanging forever, while
+        // tolerating long pauses on a poor connection before giving up.
+        socketTimeoutMillis = 300_000
         // requestTimeoutMillis is intentionally left unset (no overall cap): large modpack files
         // may legitimately take minutes; socket timeout already guards against a stalled stream.
     }

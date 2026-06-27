@@ -96,12 +96,13 @@ abstract class IncrementalDownloader : IDownloader {
         minecraft.progressMonitor.setMax(toDownload.size)
         minecraft.progressMonitor.setProgress(0)
 
+        val parallelism = ConfigHelper.config.settings.parallelDownloads
         val downloadedFiles = AtomicInteger(0)
         val failures = runBlocking {
             // Bound the truly-concurrent downloads (see mapWithBoundedConcurrency): a limited
             // dispatcher does NOT cap suspending network I/O, so the old code fired every file at
             // the host at once and the connection storm produced widespread connect timeouts.
-            mapWithBoundedConcurrency(toDownload, DOWNLOAD_PARALLELISM) { (key, file) ->
+            mapWithBoundedConcurrency(toDownload, parallelism) { (key, file) ->
                 Logger.d(LOG_TAG, "Downloading $key")
                 val url = UriEncodeUtils.encodePath(joinUrl(host, key), Charsets.UTF_8)
                 HttpDownloader.instance.downloadToFile(url, file)
@@ -148,12 +149,6 @@ abstract class IncrementalDownloader : IDownloader {
 
     abstract fun getDownloaderInfo(minecraft: MinecraftContext): IncrementalDownloaderInfo
 
-    private companion object {
-        // Keep concurrent connections modest: a burst of dozens of simultaneous TLS handshakes to
-        // the Cloudflare-fronted host caused widespread connect timeouts. With HTTP keep-alive the
-        // client reuses this small pool of connections across all files, so throughput stays high.
-        const val DOWNLOAD_PARALLELISM = 8
-    }
 }
 
 data class IncrementalDownloaderInfo(

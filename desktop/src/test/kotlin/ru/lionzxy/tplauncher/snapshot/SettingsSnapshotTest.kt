@@ -16,7 +16,6 @@ class SettingsSnapshotTest {
      *   heap     = "3G"
      *   javaArgs = "-XX:+UseG1GC -XX:ConcGCThreads=1 -XX:ParallelGCThreads=1 -XX:MaxGCPauseMillis=50"
      *   prefix   = "cmd.exe /C start"
-     *   javaPath = "C:\\Program Files\\Java\\java.exe"
      *   debug    = true (checked in mockup)
      *   autoJoin = false
      */
@@ -26,7 +25,6 @@ class SettingsSnapshotTest {
         settings.customJavaParameter =
             "-XX:+UseG1GC -XX:ConcGCThreads=1 -XX:ParallelGCThreads=1 -XX:MaxGCPauseMillis=50"
         settings.commandPrefix = "cmd.exe /C start"
-        settings.javaLocation = "C:\\Program Files\\Java\\java.exe"
         settings.isDebug = true
         settings.isAutoLoginMinecraft = false
 

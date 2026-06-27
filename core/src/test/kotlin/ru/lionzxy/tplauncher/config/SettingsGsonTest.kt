@@ -18,7 +18,6 @@ class SettingsGsonTest {
             heapSize = "3G"
             customJavaParameter = "-Xmx3G"
             commandPrefix = "pfx"
-            javaLocation = "/jre/bin/java"
             isDebug = true
             isAutoLoginMinecraft = false
         }
@@ -27,7 +26,6 @@ class SettingsGsonTest {
         assertTrue(json, json.contains("\"heapSize\""))
         assertTrue(json, json.contains("\"customJavaParameter\""))
         assertTrue(json, json.contains("\"commandPrefix\""))
-        assertTrue(json, json.contains("\"javaLocation\""))
         assertTrue(json, json.contains("\"autoLoginMinecraft\""))
         assertTrue(json, json.contains("\"isDebug\""))
         // Private backing-field names must NOT leak into the JSON.
@@ -36,6 +34,7 @@ class SettingsGsonTest {
 
     @Test
     fun deserializesLegacyJson() {
+        // The obsolete "javaLocation" key must be ignored without error on old on-disk configs.
         val legacy = """{"heapSize":"2G","customJavaParameter":"-Xss512k",""" +
             """"commandPrefix":"p","javaLocation":"/j","autoLoginMinecraft":false,"isDebug":true}"""
         val s = Gson().fromJson(legacy, Settings::class.java)
@@ -43,7 +42,6 @@ class SettingsGsonTest {
         assertEquals("2G", s.heapSize)
         assertEquals("-Xss512k", s.customJavaParameter)
         assertEquals("p", s.commandPrefix)
-        assertEquals("/j", s.javaLocation)
         assertFalse(s.isAutoLoginMinecraft)
         assertTrue(s.isDebug)
     }

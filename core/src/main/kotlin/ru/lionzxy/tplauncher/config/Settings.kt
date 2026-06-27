@@ -8,9 +8,10 @@ import ru.lionzxy.tplauncher.exceptions.HeapSizeInvalidException
  *
  * The private backing fields keep the EXACT legacy JSON key names that the old
  * Java version wrote (`heapSize`, `customJavaParameter`, `commandPrefix`,
- * `javaLocation`, `autoLoginMinecraft`, `isDebug`) so configs already on disk
+ * `autoLoginMinecraft`, `isDebug`) so configs already on disk
  * still deserialize. The public properties carry the lazy-default and validation
  * behavior the Java getters/setters had — including the quirky heap-size regex.
+ * Old on-disk JSON containing `"javaLocation"` is silently ignored by Gson.
  */
 class Settings() {
 
@@ -22,9 +23,6 @@ class Settings() {
 
     @SerializedName("commandPrefix")
     private var commandPrefixField: String? = null
-
-    @SerializedName("javaLocation")
-    private var javaLocationField: String? = null
 
     private var autoLoginMinecraft: Boolean = true
 
@@ -43,7 +41,6 @@ class Settings() {
         heapSizeField = other.heapSizeField
         customJavaParameterField = other.customJavaParameterField
         commandPrefixField = other.commandPrefixField
-        javaLocationField = other.javaLocationField
         isDebug = other.isDebug
         autoLoginMinecraft = other.autoLoginMinecraft
         enableLogView = other.enableLogView
@@ -93,17 +90,6 @@ class Settings() {
         }
         set(value) {
             commandPrefixField = value
-        }
-
-    var javaLocation: String?
-        get() {
-            if (javaLocationField == null) {
-                javaLocationField = SettingsDefault.getDefaultJavaLocation()
-            }
-            return javaLocationField
-        }
-        set(value) {
-            javaLocationField = value
         }
 
     var isAutoLoginMinecraft: Boolean

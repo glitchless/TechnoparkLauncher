@@ -20,7 +20,6 @@ object Strings {
     const val memorySize = "Объем памяти"
     const val javaParams = "Параметры java"
     const val prefix = "Prefix"
-    const val javaPath = "Путь до Java"
     const val debugMode = "Дебаг-режим"
     const val autoJoinServer = "Авто-заход на сервер"
     const val showLogs = "Показать логи"

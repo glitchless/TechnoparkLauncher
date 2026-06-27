@@ -9,6 +9,7 @@ import java.io.File
 const val BASE_URL = "https://minecraft.glitchless.ru"
 const val APPLE_SILICON_UPDATE_HOST_LINK = "$BASE_URL/incremental/asworkaround/"
 const val APPLE_SILICON_UPDATE_JSON_LINK = "$BASE_URL/incremental/asworkaround_changelog.json"
+const val JRES_JSON_LINK = "$BASE_URL/jres2.json"
 
 enum class MinecraftModpack(
     val modpackName: String,
@@ -16,7 +17,8 @@ enum class MinecraftModpack(
     val updateJsonLink: String?,
     val updateHostLink: String?,
     val defaultServer: ServerInfo?,
-    val version: String
+    val version: String,
+    val javaCode: String = "jre8",
 ) {
     VANILLA(
         modpackName = "Vanilla",

@@ -8,7 +8,8 @@ import java.io.File
 
 class LauncherSettings(
     val settings: Settings,
-    private val additionalJavaArguments: List<String> = listOf()
+    private val additionalJavaArguments: List<String> = listOf(),
+    private val javaLocation: File? = null,
 ) : ILaunchSettings {
     override fun isModifyAppletOptions() = false
 
@@ -33,12 +34,11 @@ class LauncherSettings(
     }
 
     override fun getJavaLocation(): File? {
-        val javaLocation = settings.javaLocation ?: return null
-        val javaFile = File(javaLocation)
+        val javaFile = javaLocation ?: return null
         // On Windows, use the JRE's 8.3 short (ASCII) path when it contains non-ASCII characters, so
         // javaw.exe can load jvm.dll despite a Cyrillic install path (JDK-8195129). No-op otherwise.
         val isWindows = OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS
-        return if (isWindows && !WindowsPathHelper.isAscii(javaLocation)) {
+        return if (isWindows && !WindowsPathHelper.isAscii(javaFile.absolutePath)) {
             WindowsPathHelper.toShortPath(javaFile)
         } else {
             javaFile

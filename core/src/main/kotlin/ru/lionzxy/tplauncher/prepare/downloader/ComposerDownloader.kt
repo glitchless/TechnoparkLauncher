@@ -7,6 +7,7 @@ import ru.lionzxy.tplauncher.utils.setWritableToFolder
 
 class ComposerDownloader() : IPrepareTask {
     val downloaders = listOf(
+        JreDownloader(),
         InitialDownloader(),
         UpdateDownloader(),
         NativeAppleSiliconDownloader(),

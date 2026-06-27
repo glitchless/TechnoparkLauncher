@@ -201,6 +201,32 @@ class IncrementalDownloadLogicTest {
         assertEquals(Action.REMOVE, parsed.changes["b.txt"])
     }
 
+    // ---- downloadWithRetries: bounded concurrency + retry the failed subset ----
+
+    @Test
+    fun downloadWithRetries_recoversTransientFailureWithinAttempts() = runBlocking {
+        val attemptsByItem = HashMap<Int, Int>()
+        val failures = downloadWithRetries(
+            items = (1..5).toList(), parallelism = 2, maxAttempts = 3,
+        ) { n ->
+            val a = (attemptsByItem[n] ?: 0) + 1
+            attemptsByItem[n] = a
+            if (n == 3 && a < 2) throw RuntimeException("transient $n") // succeeds on 2nd pass
+        }
+        assertTrue("transient item should recover", failures.isEmpty())
+        assertEquals(2, attemptsByItem[3])
+    }
+
+    @Test
+    fun downloadWithRetries_reportsPersistentFailureAfterAllAttempts() = runBlocking {
+        var calls = 0
+        val failures = downloadWithRetries(
+            items = listOf(7), parallelism = 1, maxAttempts = 3,
+        ) { calls++; throw RuntimeException("always") }
+        assertEquals(3, calls)                       // tried maxAttempts times
+        assertEquals(listOf(7), failures.map { it.first })
+    }
+
     // ---- filterUpToDate: hash-skip ----
 
     private fun writeFile(dir: File, name: String, content: String): File {

@@ -137,6 +137,30 @@ internal suspend fun filterUpToDate(
     return toDownload.filter { it.first in keep }
 }
 
+/**
+ * Runs [block] over [items] with at most [parallelism] in flight; after each pass, the items that
+ * threw are retried, up to [maxAttempts] total passes. Returns the items still failing after the
+ * last pass paired with their most recent error. A successful item is never retried (so callers can
+ * rely on hash-skip to avoid redundant work). [key] is only used to de-duplicate/identify items.
+ */
+internal suspend fun <T> downloadWithRetries(
+    items: List<T>,
+    parallelism: Int,
+    maxAttempts: Int,
+    block: suspend (T) -> Unit,
+): List<Pair<T, Throwable>> {
+    require(maxAttempts >= 1) { "maxAttempts must be >= 1, was $maxAttempts" }
+    var pending = items
+    var lastFailures: List<Pair<T, Throwable>> = emptyList()
+    var attempt = 0
+    while (attempt < maxAttempts && pending.isNotEmpty()) {
+        attempt++
+        lastFailures = mapWithBoundedConcurrency(pending, parallelism) { block(it) }
+        pending = lastFailures.map { it.first }
+    }
+    return lastFailures
+}
+
 /** A validated set of file operations to apply against the modpack directory. */
 internal data class DownloadPlan(
     val toDelete: List<File>,

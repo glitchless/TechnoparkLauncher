@@ -12,6 +12,7 @@ import ru.lionzxy.tplauncher.prepare.downloader.IDownloader
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.HttpDownloader
 import ru.lionzxy.tplauncher.utils.UriEncodeUtils
+import ru.lionzxy.tplauncher.utils.sha256Hex
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
@@ -20,6 +21,7 @@ private const val LOG_TAG = "Downloader"
 
 abstract class IncrementalDownloader : IDownloader {
     private var changes: Map<String, Action> = emptyMap()
+    private var changeHashes: Map<String, String> = emptyMap()
     private var lastChangeTimestamp = 0L
     private val progressMutex = Mutex()
 
@@ -43,6 +45,7 @@ abstract class IncrementalDownloader : IDownloader {
             val parsed = parseChangeLog(json, lastUpdate)
             changes = parsed.changes
             lastChangeTimestamp = parsed.lastTimestamp
+            changeHashes = parsed.hashes
             Logger.i(LOG_TAG, "Update list parsed: ${changes.size} changed file(s) since timestamp $lastUpdate")
             minecraft.progressMonitor.setStatus("Данные обновления получены, применяем их...")
         } catch (e: Exception) {
@@ -91,30 +94,51 @@ abstract class IncrementalDownloader : IDownloader {
             return
         }
 
-        Logger.i(LOG_TAG, "Downloading ${toDownload.size} file(s) for '${info.key}'")
+        val parallelism = ConfigHelper.config.settings.parallelDownloads
+
+        // Resume: drop files already correct on disk (verified by the server's SHA-256). Files with
+        // no expected hash are kept and downloaded as before (base files are validated at install).
+        minecraft.progressMonitor.setStatus("Проверка файлов...")
+        val pending = runBlocking { filterUpToDate(toDownload, changeHashes, parallelism) }
+        val skipped = toDownload.size - pending.size
+        if (skipped > 0) {
+            Logger.i(LOG_TAG, "Skipped $skipped already-current file(s) for '${info.key}'")
+        }
+        if (pending.isEmpty()) {
+            persistTimestamp(info)
+            return
+        }
+
+        Logger.i(LOG_TAG, "Downloading ${pending.size} file(s) for '${info.key}'")
         minecraft.progressMonitor.setStatus("Загружаем модпак...")
-        minecraft.progressMonitor.setMax(toDownload.size)
+        minecraft.progressMonitor.setMax(pending.size)
         minecraft.progressMonitor.setProgress(0)
 
-        val parallelism = ConfigHelper.config.settings.parallelDownloads
         val downloadedFiles = AtomicInteger(0)
         val failures = runBlocking {
-            // Bound the truly-concurrent downloads (see mapWithBoundedConcurrency): a limited
-            // dispatcher does NOT cap suspending network I/O, so the old code fired every file at
-            // the host at once and the connection storm produced widespread connect timeouts.
-            mapWithBoundedConcurrency(toDownload, parallelism) { (key, file) ->
-                Logger.d(LOG_TAG, "Downloading $key")
-                val url = UriEncodeUtils.encodePath(joinUrl(host, key), Charsets.UTF_8)
+            downloadWithRetries(
+                items = pending,
+                parallelism = parallelism,
+                maxAttempts = DOWNLOAD_ATTEMPTS,
+            ) { (k, file) ->
+                Logger.d(LOG_TAG, "Downloading $k")
+                val url = UriEncodeUtils.encodePath(joinUrl(host, k), Charsets.UTF_8)
                 HttpDownloader.instance.downloadToFile(url, file)
+                changeHashes[k]?.let { expected ->
+                    val actual = file.sha256Hex()
+                    if (!actual.equals(expected, ignoreCase = true)) {
+                        throw IOException("hash mismatch for $k: expected $expected got $actual")
+                    }
+                }
                 val done = downloadedFiles.incrementAndGet()
                 progressMutex.withLock {
-                    minecraft.progressMonitor.setStatus("Загружено $done/${toDownload.size}")
+                    minecraft.progressMonitor.setStatus("Загружено $done/${pending.size}")
                     minecraft.progressMonitor.setProgress(done)
                 }
             }.map { (item, error) -> item.first to error }
         }
 
-        Logger.i(LOG_TAG, "Downloaded ${downloadedFiles.get()}/${toDownload.size} file(s) for '${info.key}'")
+        Logger.i(LOG_TAG, "Downloaded ${downloadedFiles.get()}/${pending.size} file(s) for '${info.key}'")
 
         if (failures.isNotEmpty()) {
             Logger.e(LOG_TAG, "${failures.size} file(s) failed to download for '${info.key}'")
@@ -123,7 +147,7 @@ abstract class IncrementalDownloader : IDownloader {
             }
             val primary = failures.first().second
             val aggregated = IOException(
-                "Failed to download ${failures.size}/${toDownload.size} file(s): " +
+                "Failed to download ${failures.size}/${pending.size} file(s): " +
                     failures.joinToString(", ") { it.first },
                 primary,
             )
@@ -149,6 +173,10 @@ abstract class IncrementalDownloader : IDownloader {
 
     abstract fun getDownloaderInfo(minecraft: MinecraftContext): IncrementalDownloaderInfo
 
+    private companion object {
+        // 1 initial pass + 2 retries of the still-failing subset (hash-skip keeps retries cheap).
+        const val DOWNLOAD_ATTEMPTS = 3
+    }
 }
 
 data class IncrementalDownloaderInfo(

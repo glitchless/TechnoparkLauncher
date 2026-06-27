@@ -1,10 +1,13 @@
 package ru.lionzxy.tplauncher.prepare.downloader.base
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicInteger
 
 class IncrementalDownloadLogicTest {
 
@@ -128,5 +131,40 @@ class IncrementalDownloadLogicTest {
             "https://h/incremental/as/mods/a.jar",
             joinUrl("https://h/incremental/as/", "/mods/a.jar"),
         )
+    }
+
+    // ---- mapWithBoundedConcurrency: a REAL in-flight cap for suspending I/O ----
+
+    @Test
+    fun mapWithBoundedConcurrencyNeverExceedsTheLimitAcrossSuspension() = runBlocking {
+        // Reproduces the modpack-download bug: a dispatcher's limitedParallelism caps THREADS, not
+        // in-flight suspending operations, so suspending work (network I/O) sails past it and every
+        // request hits the server at once. The semaphore-based helper must hold the true concurrent
+        // count at or below the limit even though each unit suspends.
+        val inFlight = AtomicInteger(0)
+        val maxInFlight = AtomicInteger(0)
+        val failures = mapWithBoundedConcurrency((1..500).toList(), parallelism = 8) {
+            val now = inFlight.incrementAndGet()
+            maxInFlight.accumulateAndGet(now) { a, b -> maxOf(a, b) }
+            delay(5) // suspends, freeing the thread — exactly where limitedParallelism fails to bound
+            inFlight.decrementAndGet()
+            Unit
+        }
+        assertTrue(failures.isEmpty())
+        assertTrue("max in-flight ${maxInFlight.get()} exceeded the limit of 8", maxInFlight.get() <= 8)
+    }
+
+    @Test
+    fun mapWithBoundedConcurrencyCollectsFailuresAndStillRunsTheRest() = runBlocking {
+        val completed = AtomicInteger(0)
+        val failures = mapWithBoundedConcurrency((1..20).toList(), parallelism = 4) { n ->
+            if (n % 5 == 0) throw RuntimeException("boom $n") else completed.incrementAndGet()
+            Unit
+        }
+        // Every non-failing item ran — a single failure must not cancel its siblings…
+        assertEquals(16, completed.get())
+        // …and exactly the failing items are reported, each carrying its own error.
+        assertEquals(setOf(5, 10, 15, 20), failures.map { it.first }.toSet())
+        assertTrue(failures.all { it.second is RuntimeException })
     }
 }

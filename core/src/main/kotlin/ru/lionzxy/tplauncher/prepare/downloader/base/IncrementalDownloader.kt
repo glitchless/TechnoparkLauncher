@@ -2,9 +2,6 @@ package ru.lionzxy.tplauncher.prepare.downloader.base
 
 import com.google.gson.annotations.SerializedName
 import io.sentry.Sentry
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -101,21 +98,19 @@ abstract class IncrementalDownloader : IDownloader {
 
         val downloadedFiles = AtomicInteger(0)
         val failures = runBlocking {
-            val dispatcher = Dispatchers.IO.limitedParallelism(DOWNLOAD_PARALLELISM)
-            toDownload.map { (key, file) ->
-                async(dispatcher) {
-                    runCatching {
-                        Logger.d(LOG_TAG, "Downloading $key")
-                        val url = UriEncodeUtils.encodePath(joinUrl(host, key), Charsets.UTF_8)
-                        HttpDownloader.instance.downloadToFile(url, file)
-                        val done = downloadedFiles.incrementAndGet()
-                        progressMutex.withLock {
-                            minecraft.progressMonitor.setStatus("Загружено $done/${toDownload.size}")
-                            minecraft.progressMonitor.setProgress(done)
-                        }
-                    }.exceptionOrNull()?.let { key to it }
+            // Bound the truly-concurrent downloads (see mapWithBoundedConcurrency): a limited
+            // dispatcher does NOT cap suspending network I/O, so the old code fired every file at
+            // the host at once and the connection storm produced widespread connect timeouts.
+            mapWithBoundedConcurrency(toDownload, DOWNLOAD_PARALLELISM) { (key, file) ->
+                Logger.d(LOG_TAG, "Downloading $key")
+                val url = UriEncodeUtils.encodePath(joinUrl(host, key), Charsets.UTF_8)
+                HttpDownloader.instance.downloadToFile(url, file)
+                val done = downloadedFiles.incrementAndGet()
+                progressMutex.withLock {
+                    minecraft.progressMonitor.setStatus("Загружено $done/${toDownload.size}")
+                    minecraft.progressMonitor.setProgress(done)
                 }
-            }.awaitAll().filterNotNull()
+            }.map { (item, error) -> item.first to error }
         }
 
         Logger.i(LOG_TAG, "Downloaded ${downloadedFiles.get()}/${toDownload.size} file(s) for '${info.key}'")

@@ -3,9 +3,7 @@ package ru.lionzxy.tplauncher.config
 import nu.redpois0n.oslib.Arch
 import nu.redpois0n.oslib.OperatingSystem
 import ru.lionzxy.tplauncher.log.Logger
-import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.SystemMemoryHelper
-import java.io.File
 
 object SettingsDefault {
     private const val MEGABYTE = 1024L * 1024L
@@ -42,14 +40,4 @@ object SettingsDefault {
     fun getDefaultCommandPrefix() =
         if (OperatingSystem.getOperatingSystem().isUnix) "/usr/bin/nohup" else ""
 
-    fun getDefaultJavaLocation(): String? {
-        if (!ConfigHelper.getJREPathFile().exists()) {
-            return null
-        }
-        var jrePath = File(ConfigHelper.getJREPathFile().readText())
-        if (OperatingSystem.getOperatingSystem().type == OperatingSystem.WINDOWS) {
-            jrePath = File(jrePath.parent, "javaw.exe")
-        }
-        return jrePath.absolutePath
-    }
 }

@@ -3,6 +3,7 @@ package ru.lionzxy.tplauncher.minecraft
 import nu.redpois0n.oslib.OperatingSystem
 import ru.lionzxy.tplauncher.log.Logger
 import ru.lionzxy.tplauncher.minecraft.delegates.AuthDelegate
+import ru.lionzxy.tplauncher.minecraft.jre.JreManager
 import ru.lionzxy.tplauncher.minecraft.workarounds.*
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.WindowsPathHelper
@@ -41,6 +42,11 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
             minecraft.modpack.defaultServer
         } else null
 
+        val javaFile = JreManager.instance.resolveJavaBinary(minecraft.modpack.javaCode)
+            ?: throw IllegalStateException(
+                "Managed JRE '${minecraft.modpack.javaCode}' is not installed"
+            )
+
         var launchCommands =
             version.launcher.getLaunchCommand(
                 session,
@@ -49,7 +55,8 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
                 version,
                 LauncherSettings(
                     ConfigHelper.config.settings,
-                    additionalJavaArguments
+                    additionalJavaArguments,
+                    javaFile
                 ),
                 null
             ).filter { !it.isNullOrEmpty() }

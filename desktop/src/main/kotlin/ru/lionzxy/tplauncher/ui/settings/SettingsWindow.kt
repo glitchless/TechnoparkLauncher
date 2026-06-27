@@ -59,7 +59,7 @@ val UI_SCALE_LABELS = listOf("x0.5", "x1", "x2", "x4", "x8", "x16")
  *
  * Layout (matches Screen 5):
  *   - Title row (accent, or error-red when heapError != null) + CloseX overlay top-right
- *   - 4 TpField rows (label-left): Объем памяти, Параметры java, Prefix, Путь до Java
+ *   - 3 TpField rows (label-left): Объем памяти, Параметры java, Prefix
  *   - 2 checkbox rows (label-left): Дебаг-режим, Авто-заход на сервер
  *   - 4 action links (last one in muted textDisable)
  *   - Bottom bar (backgroundDark): "Вернуться" ghost button + "Применить" accent button
@@ -114,13 +114,6 @@ fun SettingsWindowContent(
                     TpTextField(
                         value = vm.prefix,
                         onValueChange = vm::onPrefixChange,
-                    )
-                }
-
-                TpField(label = Strings.javaPath, labelWidth = SETTINGS_LABEL_WIDTH) {
-                    TpTextField(
-                        value = vm.javaPath,
-                        onValueChange = vm::onJavaPathChange,
                     )
                 }
 

@@ -52,9 +52,6 @@ class SettingsViewModel(
     var prefix by mutableStateOf(settings.commandPrefix)
         private set
 
-    var javaPath by mutableStateOf(settings.javaLocation ?: "")
-        private set
-
     var debug by mutableStateOf(settings.isDebug)
         private set
 
@@ -83,7 +80,6 @@ class SettingsViewModel(
 
     fun onJavaArgsChange(s: String) { javaArgs = s }
     fun onPrefixChange(s: String)   { prefix = s }
-    fun onJavaPathChange(s: String) { javaPath = s }
     fun onDebugChange(v: Boolean)   { debug = v }
     fun onAutoJoinChange(v: Boolean) { autoJoin = v }
     fun onEnableLogViewChange(v: Boolean) { enableLogView = v }
@@ -106,7 +102,6 @@ class SettingsViewModel(
         }
         settings.customJavaParameter = javaArgs
         settings.commandPrefix = prefix
-        settings.javaLocation = javaPath.ifBlank { null }
         settings.isDebug = debug
         settings.isAutoLoginMinecraft = autoJoin
         settings.enableLogView = enableLogView
@@ -138,13 +133,12 @@ class SettingsViewModel(
     }
 
     /**
-     * Delete the game directory (except jrepath.txt and the jre/ folder)
+     * Delete the game directory (except the jre/ folder)
      * and exit the application.
      */
     fun wipe() {
         val defaultDir = ConfigHelper.getDefaultDirectory()
         defaultDir.listFiles()?.forEach { file ->
-            if (file.absolutePath == ConfigHelper.getJREPathFile().absolutePath) return@forEach
             if (file.absolutePath == ConfigHelper.getJavaDirectory().absolutePath) return@forEach
             file.deleteDirectoryRecursionJava6()
         }

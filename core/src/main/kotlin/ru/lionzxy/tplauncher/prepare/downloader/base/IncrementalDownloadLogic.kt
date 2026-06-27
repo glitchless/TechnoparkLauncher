@@ -7,6 +7,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import ru.lionzxy.tplauncher.utils.sha256Hex
 import java.io.File
 
 /** Result of interpreting a server changelog against the locally-applied timestamp. */
@@ -109,6 +110,31 @@ internal suspend fun <T> mapWithBoundedConcurrency(
             }
         }.awaitAll().filterNotNull()
     }
+}
+
+/**
+ * Drops entries from [toDownload] that are already correct on disk: an entry is removed only when
+ * [expectedHashes] has its key, the local file exists, and its SHA-256 matches. Entries with no
+ * expected hash (base files validated by the initial install, or old-format packs) are KEPT and
+ * never hashed. Hashing runs with at most [parallelism] in flight; [onChecked] fires once per item.
+ */
+internal suspend fun filterUpToDate(
+    toDownload: List<Pair<String, File>>,
+    expectedHashes: Map<String, String>,
+    parallelism: Int,
+    onChecked: () -> Unit = {},
+): List<Pair<String, File>> {
+    val keep = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    mapWithBoundedConcurrency(toDownload, parallelism) { (key, file) ->
+        val expected = expectedHashes[key]
+        // A read error while hashing means "couldn't verify" -> keep (re-download).
+        val upToDate = expected != null && file.isFile &&
+            runCatching { file.sha256Hex().equals(expected, ignoreCase = true) }.getOrDefault(false)
+        if (!upToDate) keep.add(key)
+        onChecked()
+    }
+    // Preserve input order; keep only the not-up-to-date entries.
+    return toDownload.filter { it.first in keep }
 }
 
 /** A validated set of file operations to apply against the modpack directory. */

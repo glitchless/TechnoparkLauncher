@@ -6,6 +6,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ru.lionzxy.tplauncher.utils.sha256Hex
+import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -197,5 +199,35 @@ class IncrementalDownloadLogicTest {
         val parsed = parseChangeLog("""{"100": {"a.txt": 1, "b.txt": 0}}""", lastUpdate = 0)
         assertEquals(Action.ADD, parsed.changes["a.txt"])
         assertEquals(Action.REMOVE, parsed.changes["b.txt"])
+    }
+
+    // ---- filterUpToDate: hash-skip ----
+
+    private fun writeFile(dir: File, name: String, content: String): File {
+        val f = File(dir, name); f.parentFile.mkdirs(); f.writeText(content); return f
+    }
+
+    @Test
+    fun filterUpToDateSkipsMatching_keepsMismatchedMissingAndUnhashed() = runBlocking {
+        val dir = tempBase()
+        val match = writeFile(dir, "match.txt", "same")
+        val mism = writeFile(dir, "mismatch.txt", "local-different")
+        val expected = mapOf(
+            "match.txt" to match.sha256Hex(),          // present + matches  -> skip
+            "mismatch.txt" to "0000",                  // present + differs  -> keep
+            "missing.txt" to "abcd",                   // absent             -> keep
+            // "nohash.txt" has no expected hash        // unhashed           -> keep
+        )
+        val toDownload = listOf(
+            "match.txt" to File(dir, "match.txt"),
+            "mismatch.txt" to File(dir, "mismatch.txt"),
+            "missing.txt" to File(dir, "missing.txt"),
+            "nohash.txt" to File(dir, "nohash.txt"),
+        )
+        val remaining = filterUpToDate(toDownload, expected, parallelism = 4)
+        assertEquals(
+            setOf("mismatch.txt", "missing.txt", "nohash.txt"),
+            remaining.map { it.first }.toSet(),
+        )
     }
 }

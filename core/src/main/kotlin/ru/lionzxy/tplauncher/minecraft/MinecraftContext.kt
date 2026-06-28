@@ -8,7 +8,7 @@ import java.io.File
 
 const val BASE_URL = "https://minecraft.glitchless.ru"
 const val APPLE_SILICON_UPDATE_HOST_LINK = "$BASE_URL/incremental/asworkaround/"
-const val APPLE_SILICON_UPDATE_JSON_LINK = "$BASE_URL/incremental/asworkaround_changelog.json"
+const val APPLE_SILICON_UPDATE_JSON_LINK = "$BASE_URL/incremental/asworkaround_changelogv2.json"
 const val JRES_JSON_LINK = "$BASE_URL/jres2.json"
 
 enum class MinecraftModpack(
@@ -23,7 +23,7 @@ enum class MinecraftModpack(
     VANILLA(
         modpackName = "Vanilla",
         initialDownloadLink = null,
-        updateJsonLink = "$BASE_URL/incremental/vanilla_changelog.json",
+        updateJsonLink = "$BASE_URL/incremental/vanilla_changelogv2.json",
         updateHostLink = "$BASE_URL/incremental/vanilla",
         defaultServer = ServerInfo("mc.glitchless.ru", "Vanilla Server", null, 25566),
         version = "1.16.5-forge-36.0.0"
@@ -31,7 +31,7 @@ enum class MinecraftModpack(
     GTNH(
         modpackName = "NewHorizon",
         initialDownloadLink = null,
-        updateJsonLink = "$BASE_URL/incremental/gtnh_changelog.json",
+        updateJsonLink = "$BASE_URL/incremental/gtnh_changelogv2.json",
         updateHostLink = "$BASE_URL/incremental/gtnh",
         defaultServer = null,
         version = "1.7.10-Forge10.13.4.1614-1.7.10"
@@ -39,7 +39,7 @@ enum class MinecraftModpack(
     NOMI(
         modpackName = "Nomifactory",
         initialDownloadLink = null,
-        updateJsonLink = "$BASE_URL/incremental/nomi_changelog.json",
+        updateJsonLink = "$BASE_URL/incremental/nomi_changelogv2.json",
         updateHostLink = "$BASE_URL/incremental/nomi",
         defaultServer = ServerInfo("mc.glitchless.ru", "Nomi Server", null, 25568),
         version = "1.12.2-forge-14.23.5.2860"

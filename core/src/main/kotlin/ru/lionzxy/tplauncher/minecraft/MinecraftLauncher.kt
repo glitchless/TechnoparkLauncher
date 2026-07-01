@@ -10,8 +10,8 @@ import ru.lionzxy.tplauncher.utils.WindowsPathHelper
 import sk.tomsik68.mclauncher.api.login.ISession
 import sk.tomsik68.mclauncher.api.versions.IVersion
 import sk.tomsik68.mclauncher.impl.versions.mcdownload.MCDownloadVersionList
+import ru.lionzxy.tplauncher.minecraft.connectivity.resolveVersionWithOfflineFallback
 import java.io.File
-import java.net.UnknownHostException
 
 class MinecraftLauncher(private val minecraft: MinecraftContext) {
     private var cacheVersion: IVersion? = null
@@ -100,17 +100,16 @@ class MinecraftLauncher(private val minecraft: MinecraftContext) {
     }
 
     fun getVersion(): IVersion {
-        if (cacheVersion != null) {
-            return cacheVersion!!
-        }
+        cacheVersion?.let { return it }
         val versionList = MCDownloadVersionList(minecraft.getMinecraftInstance())
-        try {
-            versionList.startDownload()
-        } catch (ex: UnknownHostException) {
-            Logger.w("Launcher", "Failed to fetch version list (no network?)", ex)
-        }
-        cacheVersion = versionList.retrieveVersionInfo(minecraft.modpack.version)
-        return cacheVersion!!
+        // A blocked/unreachable network (firewall/AV WSAEACCES, timeout, etc.) must not abort launch:
+        // the unified version list reads the on-disk version JSON local-first, so an already-installed
+        // modpack still resolves. Only when nothing is on disk do we surface a clear "not installed" error.
+        return resolveVersionWithOfflineFallback(
+            versionId = minecraft.modpack.version,
+            startDownload = { versionList.startDownload() },
+            retrieve = { versionList.retrieveVersionInfo(minecraft.modpack.version) },
+        ).also { cacheVersion = it }
     }
 }
 

@@ -12,6 +12,7 @@ import ru.lionzxy.tplauncher.log.Logger
 import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
+import ru.lionzxy.tplauncher.minecraft.connectivity.ConnectivityBlockClassifier
 import ru.lionzxy.tplauncher.prepare.ComposePrepare
 import ru.lionzxy.tplauncher.ui.state.LauncherState
 import ru.lionzxy.tplauncher.ui.state.ProgressUiState
@@ -19,7 +20,6 @@ import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.LogoUtils
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
 import java.io.IOException
-import java.net.UnknownHostException
 
 class LauncherViewModel(private val scope: CoroutineScope) {
 
@@ -92,7 +92,11 @@ class LauncherViewModel(private val scope: CoroutineScope) {
                 return@launch
             } catch (ioExp: IOException) {
                 Logger.e("Login", "Network error during login", ioExp)
-                _state.value = LauncherState.InitialError(Strings.checkInternetConnection)
+                _state.value = if (ConnectivityBlockClassifier.isPermissionDeniedSocket(ioExp)) {
+                    LauncherState.InitialError(Strings.connectionBlocked)
+                } else {
+                    LauncherState.InitialError(Strings.checkInternetConnection)
+                }
                 return@launch
             }
             onGameStart(email)
@@ -107,14 +111,11 @@ class LauncherViewModel(private val scope: CoroutineScope) {
             ComposePrepare().prepareMinecraft(context)
             LogoUtils.setLogoForMinecraft(context)
             context.launch()
-        } catch (e: UnknownHostException) {
-            Logger.e("Launcher", "No network while preparing/launching Minecraft", e)
-            _state.value = LauncherState.InitialError(Strings.checkInternetConnection)
-            return
         } catch (e: Exception) {
-            Sentry.captureException(e)
-            _state.value = LauncherState.LaunchError(email, Strings.internalError)
             Logger.e("Launcher", "Failed to prepare/launch Minecraft", e)
+            val mapping = mapLaunchError(email, e)
+            if (mapping.reportToSentry) Sentry.captureException(e)
+            _state.value = mapping.state
             return
         }
 

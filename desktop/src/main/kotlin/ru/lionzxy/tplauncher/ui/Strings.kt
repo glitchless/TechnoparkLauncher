@@ -17,6 +17,10 @@ object Strings {
     const val passwordCannotBeEmpty = "Пароль не может быть пустым"
     const val checkInternetConnection = "Проверьте подключение к интернету"
     const val internalError = "Внутреняя ошибка, мы уже исправляем это"
+    const val connectionBlocked =
+        "Похоже, антивирус, файрвол или VPN блокирует подключение лаунчера к сети. " +
+            "Разрешите доступ в интернет для java.exe и javaw.exe лаунчера в вашем антивирусе " +
+            "и в брандмауэре Windows, затем повторите попытку."
     const val memorySize = "Объем памяти"
     const val javaParams = "Параметры java"
     const val prefix = "Prefix"

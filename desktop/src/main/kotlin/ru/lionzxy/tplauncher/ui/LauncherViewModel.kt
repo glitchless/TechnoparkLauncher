@@ -15,7 +15,6 @@ import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
 import ru.lionzxy.tplauncher.minecraft.connectivity.ConnectivityBlockClassifier
 import ru.lionzxy.tplauncher.minecraft.connectivity.ConnectivityRepair
 import ru.lionzxy.tplauncher.minecraft.connectivity.ConnectivityRepairOrchestrator
-import ru.lionzxy.tplauncher.minecraft.connectivity.RepairOutcome
 import ru.lionzxy.tplauncher.prepare.ComposePrepare
 import ru.lionzxy.tplauncher.ui.state.LauncherState
 import ru.lionzxy.tplauncher.ui.state.ProgressUiState
@@ -73,13 +72,6 @@ class LauncherViewModel(private val scope: CoroutineScope) {
             }
             scope.launch(Dispatchers.IO) {
                 onGameStart(loggedEmail)
-            }
-            return
-        }
-
-        if (current is LauncherState.ConnectivityBlocked) {
-            scope.launch(Dispatchers.IO) {
-                onConnectivityRepair(current.email, current.canFirewallFix)
             }
             return
         }
@@ -158,21 +150,30 @@ class LauncherViewModel(private val scope: CoroutineScope) {
     }
 
     /**
-     * Action from the [LauncherState.ConnectivityBlocked] screen. For a fixable case (Defender) it
-     * attempts the elevated firewall fix and, if that restores connectivity, retries the launch. For
-     * a third-party AV it simply retries the launch (the user is expected to have added an exception).
-     * Either way the retry benefits from the offline fallback: an already-installed pack launches even
-     * if the network is still blocked.
+     * "Разрешить доступ" on the [LauncherState.ConnectivityBlocked] panel: attempt the elevated
+     * Windows Firewall fix (a single UAC prompt), then retry the launch. If the fix restored
+     * connectivity the launch proceeds online; otherwise the retry still launches an already-installed
+     * pack via the offline fallback, or re-enters ConnectivityBlocked.
      */
-    private suspend fun onConnectivityRepair(email: String, canFirewallFix: Boolean) {
-        _state.value = LauncherState.GameLoading(email)
-        if (canFirewallFix && repairOrchestrator().tryFirewallFix() == RepairOutcome.Repaired) {
-            onGameStart(email)
-            return
+    fun onConnectivityFix() {
+        val blocked = _state.value as? LauncherState.ConnectivityBlocked ?: return
+        scope.launch(Dispatchers.IO) {
+            _state.value = LauncherState.GameLoading(blocked.email)
+            repairOrchestrator().tryFirewallFix()
+            onGameStart(blocked.email)
         }
-        // Not fixable, cancelled, or still blocked: retry the launch anyway — an already-installed
-        // pack launches via the offline fallback; otherwise onGameStart re-enters ConnectivityBlocked.
-        onGameStart(email)
+    }
+
+    /**
+     * "Повторить" on the [LauncherState.ConnectivityBlocked] panel: retry the launch without touching
+     * the firewall (e.g. after the user added an exception in their antivirus). An already-installed
+     * pack launches via the offline fallback even if the network is still blocked.
+     */
+    fun onConnectivityRetry() {
+        val blocked = _state.value as? LauncherState.ConnectivityBlocked ?: return
+        scope.launch(Dispatchers.IO) {
+            onGameStart(blocked.email)
+        }
     }
 
     fun onChangeModpack(pack: MinecraftModpack) {

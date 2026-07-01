@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import ru.lionzxy.tplauncher.ui.Strings
 import ru.lionzxy.tplauncher.ui.components.AvatarContent
 import ru.lionzxy.tplauncher.ui.components.CloseX
+import ru.lionzxy.tplauncher.ui.components.ConnectivityRepairPanel
 import ru.lionzxy.tplauncher.ui.components.GearRow
 import ru.lionzxy.tplauncher.ui.components.ProgressPanel
 import ru.lionzxy.tplauncher.ui.components.RegisterLink
@@ -50,6 +51,9 @@ data class MainCallbacks(
     val onRegisterClick: () -> Unit = {},
     val onSettingsClick: () -> Unit = {},
     val onCloseClick: () -> Unit = {},
+    // ConnectivityBlocked repair panel actions
+    val onConnectivityFix: () -> Unit = {},
+    val onConnectivityRetry: () -> Unit = {},
 )
 
 /**
@@ -94,6 +98,16 @@ fun MainWindowContent(
                 color = flags.titleColor,
                 modifier = Modifier.padding(top = TpDimens.titleTop, start = TpDimens.gutter),
             )
+
+            // ── Connectivity-repair panel (firewall/AV block) instead of the normal form ──
+            if (state is LauncherState.ConnectivityBlocked) {
+                ConnectivityRepairPanel(
+                    message = state.message,
+                    canFirewallFix = state.canFirewallFix,
+                    onFix = callbacks.onConnectivityFix,
+                    onRetry = callbacks.onConnectivityRetry,
+                )
+            } else {
 
             // ── Form region ────────────────────────────────────────────────────
             // top=16dp, right=16dp, left=23dp
@@ -212,6 +226,7 @@ fun MainWindowContent(
                 value = progress.value,
                 enabled = !flags.disableProgressBar,
             )
+            } // end: normal form vs ConnectivityBlocked panel
 
             // ── Log view (optional; gated on Settings.enableLogView, injected by Main) ──
             logView()

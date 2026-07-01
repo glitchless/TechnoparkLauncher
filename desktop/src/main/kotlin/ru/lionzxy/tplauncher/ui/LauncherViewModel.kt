@@ -13,12 +13,16 @@ import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
 import ru.lionzxy.tplauncher.minecraft.connectivity.ConnectivityBlockClassifier
+import ru.lionzxy.tplauncher.minecraft.connectivity.ConnectivityRepair
+import ru.lionzxy.tplauncher.minecraft.connectivity.ConnectivityRepairOrchestrator
+import ru.lionzxy.tplauncher.minecraft.connectivity.RepairOutcome
 import ru.lionzxy.tplauncher.prepare.ComposePrepare
 import ru.lionzxy.tplauncher.ui.state.LauncherState
 import ru.lionzxy.tplauncher.ui.state.ProgressUiState
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.LogoUtils
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
+import java.io.File
 import java.io.IOException
 
 class LauncherViewModel(private val scope: CoroutineScope) {
@@ -36,6 +40,15 @@ class LauncherViewModel(private val scope: CoroutineScope) {
 
     private val _state = MutableStateFlow<LauncherState>(LauncherState.Initial)
     val state: StateFlow<LauncherState> = _state.asStateFlow()
+
+    private var cachedRepair: ConnectivityRepairOrchestrator? = null
+
+    /** Lazily-built connectivity-repair orchestrator for the current modpack (reset on modpack change). */
+    private fun repairOrchestrator(): ConnectivityRepairOrchestrator =
+        cachedRepair ?: ConnectivityRepair.forModpack(
+            javaCode = context.modpack.javaCode,
+            scriptDir = File(System.getProperty("java.io.tmpdir")),
+        ).also { cachedRepair = it }
 
     fun onInitView() {
         if (context.minecraftAccountManager.isLogged) {
@@ -60,6 +73,13 @@ class LauncherViewModel(private val scope: CoroutineScope) {
             }
             scope.launch(Dispatchers.IO) {
                 onGameStart(loggedEmail)
+            }
+            return
+        }
+
+        if (current is LauncherState.ConnectivityBlocked) {
+            scope.launch(Dispatchers.IO) {
+                onConnectivityRepair(current.email, current.canFirewallFix)
             }
             return
         }
@@ -113,6 +133,15 @@ class LauncherViewModel(private val scope: CoroutineScope) {
             context.launch()
         } catch (e: Exception) {
             Logger.e("Launcher", "Failed to prepare/launch Minecraft", e)
+            if (ConnectivityBlockClassifier.isPermissionDeniedSocket(e)) {
+                val assessment = repairOrchestrator().assess()
+                _state.value = LauncherState.ConnectivityBlocked(
+                    email = email,
+                    message = connectivityBlockedMessage(assessment.products, assessment.avClass),
+                    canFirewallFix = assessment.firewallFixFirst,
+                )
+                return
+            }
             val mapping = mapLaunchError(email, e)
             if (mapping.reportToSentry) Sentry.captureException(e)
             _state.value = mapping.state
@@ -128,8 +157,27 @@ class LauncherViewModel(private val scope: CoroutineScope) {
         }
     }
 
+    /**
+     * Action from the [LauncherState.ConnectivityBlocked] screen. For a fixable case (Defender) it
+     * attempts the elevated firewall fix and, if that restores connectivity, retries the launch. For
+     * a third-party AV it simply retries the launch (the user is expected to have added an exception).
+     * Either way the retry benefits from the offline fallback: an already-installed pack launches even
+     * if the network is still blocked.
+     */
+    private suspend fun onConnectivityRepair(email: String, canFirewallFix: Boolean) {
+        _state.value = LauncherState.GameLoading(email)
+        if (canFirewallFix && repairOrchestrator().tryFirewallFix() == RepairOutcome.Repaired) {
+            onGameStart(email)
+            return
+        }
+        // Not fixable, cancelled, or still blocked: retry the launch anyway — an already-installed
+        // pack launches via the offline fallback; otherwise onGameStart re-enters ConnectivityBlocked.
+        onGameStart(email)
+    }
+
     fun onChangeModpack(pack: MinecraftModpack) {
         context = MinecraftContext(progressMonitorBridge, pack, MinecraftAccountManager(pack))
+        cachedRepair = null
         ConfigHelper.writeToConfig {
             currentModpack = pack
         }

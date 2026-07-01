@@ -17,6 +17,17 @@ sealed class LauncherState {
     data class MinecraftRunning(val email: String) : LauncherState()
     data class MinecraftLaunched(val email: String) : LauncherState()
     data class LaunchError(val email: String, val error: String) : LauncherState()
+
+    /**
+     * A WSAEACCES firewall/AV block (e.g. Dr.Web) stopped the launch. [message] is the guidance to
+     * show; [canFirewallFix] is true only when the Windows Firewall auto-fix is worth attempting
+     * (Defender / none detected), driving the primary button ("allow access" vs "retry").
+     */
+    data class ConnectivityBlocked(
+        val email: String,
+        val message: String,
+        val canFirewallFix: Boolean,
+    ) : LauncherState()
 }
 
 /**
@@ -118,6 +129,18 @@ val LauncherState.flags: StateFlags
             progressTextColor = TpColors.error,
             progressTextContent = error,
             buttonDisable = false,
+            successLoginText = email,
+        )
+
+        is LauncherState.ConnectivityBlocked -> StateFlags(
+            titleColor = TpColors.error,
+            loginPasswordVisible = false,
+            successLoginVisible = true,
+            disableProgressBar = true,
+            progressTextColor = TpColors.error,
+            progressTextContent = message,
+            buttonDisable = false,
+            buttonText = if (canFirewallFix) Strings.allowAccess else Strings.retry,
             successLoginText = email,
         )
     }

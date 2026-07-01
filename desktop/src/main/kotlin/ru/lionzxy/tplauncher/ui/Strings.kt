@@ -39,6 +39,17 @@ object Strings {
     const val deleteGameAndReset = "Удалить игру и сбросить настройки лаунчера"
     const val back = "Вернуться"
     const val apply = "Применить"
+    const val allowAccess = "Разрешить доступ"
+    const val retry = "Повторить"
+    const val drwebFirewallGuidance =
+        "Dr.Web блокирует подключение лаунчера к сети. Откройте Dr.Web → нажмите значок замка " +
+            "(режим администратора) → Брандмауэр → «Параметры работы приложений» → найдите java.exe и " +
+            "javaw.exe лаунчера и установите «Разрешать всё», затем нажмите «Повторить». " +
+            "(Добавления только в «Исключения» может быть недостаточно.)"
+
+    fun thirdPartyAvGuidance(products: String) =
+        "$products блокирует подключение лаунчера к сети. Разрешите java.exe и javaw.exe лаунчера " +
+            "в брандмауэре/контроле приложений вашего антивируса, затем нажмите «Повторить»."
 
     fun authByEmail(email: String) = "Авторизация по email $email..."
     fun clearBackup(size: String) = "Очистить папку с бекапом ($size)"

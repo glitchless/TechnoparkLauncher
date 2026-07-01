@@ -40,4 +40,6 @@ object SettingsDefault {
     fun getDefaultCommandPrefix() =
         if (OperatingSystem.getOperatingSystem().isUnix) "/usr/bin/nohup" else ""
 
+    fun getDefaultParallelDownloads(): Int =
+        Runtime.getRuntime().availableProcessors().coerceIn(1, 32)
 }

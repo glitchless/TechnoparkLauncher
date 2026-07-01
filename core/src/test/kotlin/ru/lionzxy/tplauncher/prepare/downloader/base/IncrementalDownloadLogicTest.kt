@@ -1,10 +1,15 @@
 package ru.lionzxy.tplauncher.prepare.downloader.base
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ru.lionzxy.tplauncher.utils.sha256Hex
+import java.io.File
 import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicInteger
 
 class IncrementalDownloadLogicTest {
 
@@ -127,6 +132,128 @@ class IncrementalDownloadLogicTest {
         assertEquals(
             "https://h/incremental/as/mods/a.jar",
             joinUrl("https://h/incremental/as/", "/mods/a.jar"),
+        )
+    }
+
+    // ---- mapWithBoundedConcurrency: a REAL in-flight cap for suspending I/O ----
+
+    @Test
+    fun mapWithBoundedConcurrencyNeverExceedsTheLimitAcrossSuspension() = runBlocking {
+        // Reproduces the modpack-download bug: a dispatcher's limitedParallelism caps THREADS, not
+        // in-flight suspending operations, so suspending work (network I/O) sails past it and every
+        // request hits the server at once. The semaphore-based helper must hold the true concurrent
+        // count at or below the limit even though each unit suspends.
+        val inFlight = AtomicInteger(0)
+        val maxInFlight = AtomicInteger(0)
+        val failures = mapWithBoundedConcurrency((1..500).toList(), parallelism = 8) {
+            val now = inFlight.incrementAndGet()
+            maxInFlight.accumulateAndGet(now) { a, b -> maxOf(a, b) }
+            delay(5) // suspends, freeing the thread — exactly where limitedParallelism fails to bound
+            inFlight.decrementAndGet()
+            Unit
+        }
+        assertTrue(failures.isEmpty())
+        assertTrue("max in-flight ${maxInFlight.get()} exceeded the limit of 8", maxInFlight.get() <= 8)
+    }
+
+    @Test
+    fun mapWithBoundedConcurrencyCollectsFailuresAndStillRunsTheRest() = runBlocking {
+        val completed = AtomicInteger(0)
+        val failures = mapWithBoundedConcurrency((1..20).toList(), parallelism = 4) { n ->
+            if (n % 5 == 0) throw RuntimeException("boom $n") else completed.incrementAndGet()
+            Unit
+        }
+        // Every non-failing item ran — a single failure must not cancel its siblings…
+        assertEquals(16, completed.get())
+        // …and exactly the failing items are reported, each carrying its own error.
+        assertEquals(setOf(5, 10, 15, 20), failures.map { it.first }.toSet())
+        assertTrue(failures.all { it.second is RuntimeException })
+    }
+
+    // ---- changelog "sha256" optional map ----
+
+    @Test
+    fun parseChangeLogReadsOptionalSha256Map() {
+        val json = """
+            {"100": {"a.txt": "1", "old.txt": "0"},
+             "sha256": {"a.txt": "deadbeef"}}
+        """.trimIndent()
+        val parsed = parseChangeLog(json, lastUpdate = 0)
+        assertEquals(100L, parsed.lastTimestamp)
+        assertEquals(Action.ADD, parsed.changes["a.txt"])
+        assertEquals(Action.REMOVE, parsed.changes["old.txt"])
+        assertEquals("deadbeef", parsed.hashes["a.txt"])
+        // the "sha256" key is NOT treated as a timestamp bucket
+        assertNull(parsed.changes["sha256"])
+    }
+
+    @Test
+    fun parseChangeLogWithNoSha256MapYieldsEmptyHashes() {
+        val parsed = parseChangeLog("""{"100": {"a.txt": "1"}}""", lastUpdate = 0)
+        assertEquals(Action.ADD, parsed.changes["a.txt"])
+        assertTrue(parsed.hashes.isEmpty())
+    }
+
+    @Test
+    fun parseChangeLogToleratesIntActionValues() {
+        val parsed = parseChangeLog("""{"100": {"a.txt": 1, "b.txt": 0}}""", lastUpdate = 0)
+        assertEquals(Action.ADD, parsed.changes["a.txt"])
+        assertEquals(Action.REMOVE, parsed.changes["b.txt"])
+    }
+
+    // ---- downloadWithRetries: bounded concurrency + retry the failed subset ----
+
+    @Test
+    fun downloadWithRetries_recoversTransientFailureWithinAttempts() = runBlocking {
+        val attemptsByItem = HashMap<Int, Int>()
+        val failures = downloadWithRetries(
+            items = (1..5).toList(), parallelism = 2, maxAttempts = 3,
+        ) { n ->
+            val a = (attemptsByItem[n] ?: 0) + 1
+            attemptsByItem[n] = a
+            if (n == 3 && a < 2) throw RuntimeException("transient $n") // succeeds on 2nd pass
+        }
+        assertTrue("transient item should recover", failures.isEmpty())
+        assertEquals(2, attemptsByItem[3])
+    }
+
+    @Test
+    fun downloadWithRetries_reportsPersistentFailureAfterAllAttempts() = runBlocking {
+        var calls = 0
+        val failures = downloadWithRetries(
+            items = listOf(7), parallelism = 1, maxAttempts = 3,
+        ) { calls++; throw RuntimeException("always") }
+        assertEquals(3, calls)                       // tried maxAttempts times
+        assertEquals(listOf(7), failures.map { it.first })
+    }
+
+    // ---- filterUpToDate: hash-skip ----
+
+    private fun writeFile(dir: File, name: String, content: String): File {
+        val f = File(dir, name); f.parentFile.mkdirs(); f.writeText(content); return f
+    }
+
+    @Test
+    fun filterUpToDateSkipsMatching_keepsMismatchedMissingAndUnhashed() = runBlocking {
+        val dir = tempBase()
+        val match = writeFile(dir, "match.txt", "same")
+        val mism = writeFile(dir, "mismatch.txt", "local-different")
+        val expected = mapOf(
+            "match.txt" to match.sha256Hex(),          // present + matches  -> skip
+            "mismatch.txt" to "0000",                  // present + differs  -> keep
+            "missing.txt" to "abcd",                   // absent             -> keep
+            // "nohash.txt" has no expected hash        // unhashed           -> keep
+        )
+        val toDownload = listOf(
+            "match.txt" to File(dir, "match.txt"),
+            "mismatch.txt" to File(dir, "mismatch.txt"),
+            "missing.txt" to File(dir, "missing.txt"),
+            "nohash.txt" to File(dir, "nohash.txt"),
+        )
+        val remaining = filterUpToDate(toDownload, expected, parallelism = 4)
+        assertEquals(
+            setOf("mismatch.txt", "missing.txt", "nohash.txt"),
+            remaining.map { it.first }.toSet(),
         )
     }
 }

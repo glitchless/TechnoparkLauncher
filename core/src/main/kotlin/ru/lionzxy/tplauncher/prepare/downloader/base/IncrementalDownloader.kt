@@ -2,9 +2,6 @@ package ru.lionzxy.tplauncher.prepare.downloader.base
 
 import com.google.gson.annotations.SerializedName
 import io.sentry.Sentry
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -15,6 +12,7 @@ import ru.lionzxy.tplauncher.prepare.downloader.IDownloader
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.HttpDownloader
 import ru.lionzxy.tplauncher.utils.UriEncodeUtils
+import ru.lionzxy.tplauncher.utils.sha256Hex
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
@@ -23,6 +21,7 @@ private const val LOG_TAG = "Downloader"
 
 abstract class IncrementalDownloader : IDownloader {
     private var changes: Map<String, Action> = emptyMap()
+    private var changeHashes: Map<String, String> = emptyMap()
     private var lastChangeTimestamp = 0L
     private val progressMutex = Mutex()
 
@@ -38,14 +37,25 @@ abstract class IncrementalDownloader : IDownloader {
             Logger.i(LOG_TAG, "No update URL for '${info.key}', skipping update list")
             return
         }
-        val lastUpdate = ConfigHelper.config.modpackDownloadedInfo[info.key]?.lastUpdateFromChangeLog ?: 0
+        val info0 = ConfigHelper.config.modpackDownloadedInfo[info.key]
+        val lastUpdate = info0?.lastUpdateFromChangeLog ?: 0
+        val cacheFile = File(ConfigHelper.getCacheDirectory(), "${info.key}_changelog.json")
         minecraft.progressMonitor.setStatus("Получение списка обновлений с сервера...")
         Logger.i(LOG_TAG, "Fetching update list for '${info.key}' from $url")
         try {
-            val json = runBlocking { HttpDownloader.instance.getString(url) }
-            val parsed = parseChangeLog(json, lastUpdate)
+            val resp = runBlocking { HttpDownloader.instance.getStringConditional(url, info0?.changelogEtag) }
+            val body = if (resp.notModified && cacheFile.isFile) {
+                cacheFile.readText()
+            } else {
+                val fresh = resp.body ?: runBlocking { HttpDownloader.instance.getString(url) }
+                runCatching { cacheFile.writeText(fresh) }
+                if (resp.etag != null) persistChangelogEtag(info, resp.etag)
+                fresh
+            }
+            val parsed = parseChangeLog(body, lastUpdate)
             changes = parsed.changes
             lastChangeTimestamp = parsed.lastTimestamp
+            changeHashes = parsed.hashes
             Logger.i(LOG_TAG, "Update list parsed: ${changes.size} changed file(s) since timestamp $lastUpdate")
             minecraft.progressMonitor.setStatus("Данные обновления получены, применяем их...")
         } catch (e: Exception) {
@@ -94,31 +104,51 @@ abstract class IncrementalDownloader : IDownloader {
             return
         }
 
-        Logger.i(LOG_TAG, "Downloading ${toDownload.size} file(s) for '${info.key}'")
+        val parallelism = ConfigHelper.config.settings.parallelDownloads
+
+        // Resume: drop files already correct on disk (verified by the server's SHA-256). Files with
+        // no expected hash are kept and downloaded as before (base files are validated at install).
+        minecraft.progressMonitor.setStatus("Проверка файлов...")
+        val pending = runBlocking { filterUpToDate(toDownload, changeHashes, parallelism) }
+        val skipped = toDownload.size - pending.size
+        if (skipped > 0) {
+            Logger.i(LOG_TAG, "Skipped $skipped already-current file(s) for '${info.key}'")
+        }
+        if (pending.isEmpty()) {
+            persistTimestamp(info)
+            return
+        }
+
+        Logger.i(LOG_TAG, "Downloading ${pending.size} file(s) for '${info.key}'")
         minecraft.progressMonitor.setStatus("Загружаем модпак...")
-        minecraft.progressMonitor.setMax(toDownload.size)
+        minecraft.progressMonitor.setMax(pending.size)
         minecraft.progressMonitor.setProgress(0)
 
         val downloadedFiles = AtomicInteger(0)
         val failures = runBlocking {
-            val dispatcher = Dispatchers.IO.limitedParallelism(DOWNLOAD_PARALLELISM)
-            toDownload.map { (key, file) ->
-                async(dispatcher) {
-                    runCatching {
-                        Logger.d(LOG_TAG, "Downloading $key")
-                        val url = UriEncodeUtils.encodePath(joinUrl(host, key), Charsets.UTF_8)
-                        HttpDownloader.instance.downloadToFile(url, file)
-                        val done = downloadedFiles.incrementAndGet()
-                        progressMutex.withLock {
-                            minecraft.progressMonitor.setStatus("Загружено $done/${toDownload.size}")
-                            minecraft.progressMonitor.setProgress(done)
-                        }
-                    }.exceptionOrNull()?.let { key to it }
+            downloadWithRetries(
+                items = pending,
+                parallelism = parallelism,
+                maxAttempts = DOWNLOAD_ATTEMPTS,
+            ) { (k, file) ->
+                Logger.d(LOG_TAG, "Downloading $k")
+                val url = UriEncodeUtils.encodePath(joinUrl(host, k), Charsets.UTF_8)
+                HttpDownloader.instance.downloadToFile(url, file)
+                changeHashes[k]?.let { expected ->
+                    val actual = file.sha256Hex()
+                    if (!actual.equals(expected, ignoreCase = true)) {
+                        throw IOException("hash mismatch for $k: expected $expected got $actual")
+                    }
                 }
-            }.awaitAll().filterNotNull()
+                val done = downloadedFiles.incrementAndGet()
+                progressMutex.withLock {
+                    minecraft.progressMonitor.setStatus("Загружено $done/${pending.size}")
+                    minecraft.progressMonitor.setProgress(done)
+                }
+            }.map { (item, error) -> item.first to error }
         }
 
-        Logger.i(LOG_TAG, "Downloaded ${downloadedFiles.get()}/${toDownload.size} file(s) for '${info.key}'")
+        Logger.i(LOG_TAG, "Downloaded ${downloadedFiles.get()}/${pending.size} file(s) for '${info.key}'")
 
         if (failures.isNotEmpty()) {
             Logger.e(LOG_TAG, "${failures.size} file(s) failed to download for '${info.key}'")
@@ -127,7 +157,7 @@ abstract class IncrementalDownloader : IDownloader {
             }
             val primary = failures.first().second
             val aggregated = IOException(
-                "Failed to download ${failures.size}/${toDownload.size} file(s): " +
+                "Failed to download ${failures.size}/${pending.size} file(s): " +
                     failures.joinToString(", ") { it.first },
                 primary,
             )
@@ -151,13 +181,19 @@ abstract class IncrementalDownloader : IDownloader {
         }
     }
 
+    private fun persistChangelogEtag(info: IncrementalDownloaderInfo, etag: String) {
+        ConfigHelper.writeToConfig {
+            val di = modpackDownloadedInfo[info.key] ?: DownloadedInfo()
+            di.changelogEtag = etag
+            modpackDownloadedInfo[info.key] = di
+        }
+    }
+
     abstract fun getDownloaderInfo(minecraft: MinecraftContext): IncrementalDownloaderInfo
 
     private companion object {
-        // Keep concurrent connections modest: a burst of dozens of simultaneous TLS handshakes to
-        // the Cloudflare-fronted host caused widespread connect timeouts. With HTTP keep-alive the
-        // client reuses this small pool of connections across all files, so throughput stays high.
-        const val DOWNLOAD_PARALLELISM = 8
+        // 1 initial pass + 2 retries of the still-failing subset (hash-skip keeps retries cheap).
+        const val DOWNLOAD_ATTEMPTS = 3
     }
 }
 

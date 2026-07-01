@@ -39,6 +39,10 @@ fun File.hashSHA1(): String {
     return DigestUtils.sha1Hex(FileInputStream(this) as InputStream)
 }
 
+fun File.sha256Hex(): String {
+    return inputStream().use { DigestUtils.sha256Hex(it) }
+}
+
 fun File.folderSize(): Long {
     if (isFile) {
         return length()

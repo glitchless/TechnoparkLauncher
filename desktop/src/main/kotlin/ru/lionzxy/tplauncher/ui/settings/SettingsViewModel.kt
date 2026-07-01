@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import ru.lionzxy.tplauncher.config.Settings
+import ru.lionzxy.tplauncher.config.SettingsDefault
 import ru.lionzxy.tplauncher.exceptions.HeapSizeInvalidException
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.deleteDirectoryRecursionJava6
@@ -61,6 +62,9 @@ class SettingsViewModel(
     var enableLogView by mutableStateOf(settings.enableLogView)
         private set
 
+    var parallelDownloads by mutableStateOf(settings.parallelDownloads.toString())
+        private set
+
     // ---- Heap error indicator -----------------------------------------------
 
     private val _heapError = MutableStateFlow<String?>(null)
@@ -83,6 +87,7 @@ class SettingsViewModel(
     fun onDebugChange(v: Boolean)   { debug = v }
     fun onAutoJoinChange(v: Boolean) { autoJoin = v }
     fun onEnableLogViewChange(v: Boolean) { enableLogView = v }
+    fun onParallelDownloadsChange(s: String) { parallelDownloads = s.filter(Char::isDigit) }
 
     // ---- Primary actions ----------------------------------------------------
 
@@ -105,6 +110,8 @@ class SettingsViewModel(
         settings.isDebug = debug
         settings.isAutoLoginMinecraft = autoJoin
         settings.enableLogView = enableLogView
+        settings.parallelDownloads =
+            parallelDownloads.toIntOrNull() ?: SettingsDefault.getDefaultParallelDownloads()
 
         persist(settings)
         onClose()

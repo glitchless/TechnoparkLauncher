@@ -7,20 +7,30 @@ import io.ktor.client.plugins.HttpRedirect
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.UserAgent
+import io.ktor.client.plugins.compression.ContentEncoding
+import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.readRawBytes
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentLength
+import io.ktor.http.isSuccess
 import io.ktor.utils.io.readAvailable
 import java.io.File
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.atomic.AtomicLong
 
 /** Progress callback for streamed downloads: (bytesReadSoFar, totalBytesOrNullIfUnknown). */
 typealias DownloadProgress = (read: Long, total: Long?) -> Unit
+
+/** Result of a conditional GET: [notModified] true on 304 (use the cache); else [body]+[etag]. */
+data class ConditionalResponse(val notModified: Boolean, val etag: String?, val body: String?)
 
 private val tempFileCounter = AtomicLong()
 
@@ -41,6 +51,29 @@ class HttpDownloader(val client: HttpClient) {
     suspend fun getString(url: String): String = client.get(url).bodyAsText()
 
     suspend fun getBytes(url: String): ByteArray = client.get(url).readRawBytes()
+
+    /**
+     * Conditional GET: sends `If-None-Match: <etag>` when [etag] is non-null. Returns
+     * notModified=true on 304 (caller should use its cached copy), otherwise the body + new ETag.
+     */
+    suspend fun getStringConditional(url: String, etag: String?): ConditionalResponse {
+        val response = client.get(url) {
+            if (!etag.isNullOrEmpty()) header(HttpHeaders.IfNoneMatch, etag)
+            // 304 must not be treated as an error by expectSuccess.
+            expectSuccess = false
+        }
+        if (response.status == HttpStatusCode.NotModified) {
+            return ConditionalResponse(notModified = true, etag = etag, body = null)
+        }
+        if (!response.status.isSuccess()) {
+            throw IOException("GET $url failed: ${response.status}")
+        }
+        return ConditionalResponse(
+            notModified = false,
+            etag = response.headers[HttpHeaders.ETag],
+            body = response.bodyAsText(),
+        )
+    }
 
     /**
      * Streams [url] into [dest] safely: writes to a sibling `.part` temp file, rejects an empty
@@ -113,12 +146,17 @@ internal fun HttpClientConfig<*>.applyDefaults() {
         // Ktor does not read the `http.agent` system property, so the UA must be set on the client.
         agent = HTTP_USER_AGENT
     }
+    install(ContentEncoding) {
+        gzip()
+        deflate()
+    }
     install(HttpTimeout) {
-        // Generous connect window: many small files are fetched concurrently against a
-        // Cloudflare-fronted host, so a TLS handshake can take a while under load.
-        connectTimeoutMillis = 30_000
-        // Kills a stalled connection instead of hanging a download forever (the old fork bug).
-        socketTimeoutMillis = 30_000
+        // Generous 5-minute connect window: many files are fetched concurrently against a
+        // Cloudflare-fronted host on slow/throttled links, so a TLS handshake can take a while.
+        connectTimeoutMillis = 300_000
+        // 5-minute inactivity cap: kills a stalled connection instead of hanging forever, while
+        // tolerating long pauses on a poor connection before giving up.
+        socketTimeoutMillis = 300_000
         // requestTimeoutMillis is intentionally left unset (no overall cap): large modpack files
         // may legitimately take minutes; socket timeout already guards against a stalled stream.
     }

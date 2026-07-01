@@ -7,6 +7,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.lionzxy.tplauncher.config.Settings
+import ru.lionzxy.tplauncher.config.SettingsDefault
 
 /**
  * Hermetic unit tests for [SettingsViewModel].
@@ -132,6 +133,34 @@ class SettingsViewModelTest {
 
         vm.apply()
         assertTrue("apply must persist enableLogView", captured.first().enableLogView)
+    }
+
+    // -------------------------------------------------------------------------
+    // parallelDownloads round-trips through the VM and is persisted by apply()
+    // -------------------------------------------------------------------------
+    @Test
+    fun parallelDownloads_editAndApply_persistsClampedInt() {
+        val settings = Settings().apply { parallelDownloads = 4 }
+        var saved: Settings? = null
+        val vm = SettingsViewModel(
+            settings = settings,
+            persist = { saved = it },
+            onClose = {},
+            backupSizeProvider = { "x" },
+        )
+        vm.onParallelDownloadsChange("12")
+        vm.apply()
+        assertEquals(12, saved!!.parallelDownloads)
+    }
+
+    @Test
+    fun parallelDownloads_nonNumericFallsBackToDefault() {
+        val settings = Settings()
+        var saved: Settings? = null
+        val vm = SettingsViewModel(settings, { saved = it }, {}, {}, { "x" })
+        vm.onParallelDownloadsChange("")   // cleared field
+        vm.apply()
+        assertEquals(SettingsDefault.getDefaultParallelDownloads(), saved!!.parallelDownloads)
     }
 
     // -------------------------------------------------------------------------

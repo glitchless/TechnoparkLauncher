@@ -15,6 +15,7 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -168,5 +169,35 @@ class HttpDownloaderTest {
         assertNotEquals(a.path, b.path)
         // Must stay in the destination's directory so the final move is an atomic same-filesystem rename.
         assertEquals(dir.canonicalPath, a.parentFile.canonicalPath)
+    }
+
+    @Test
+    fun getStringConditional_returns200BodyAndEtag() = runBlocking {
+        val engine = MockEngine {
+            respond(
+                content = "BODY",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ETag, "\"abc\""),
+            )
+        }
+        val dl = HttpDownloader(HttpClient(engine) { applyDefaults() })
+        val r = dl.getStringConditional("http://x/changelog.json", etag = null)
+        assertFalse(r.notModified)
+        assertEquals("BODY", r.body)
+        assertEquals("\"abc\"", r.etag)
+    }
+
+    @Test
+    fun getStringConditional_sends304WhenEtagMatches() = runBlocking {
+        var sentIfNoneMatch: String? = null
+        val engine = MockEngine { req ->
+            sentIfNoneMatch = req.headers[HttpHeaders.IfNoneMatch]
+            respond(content = "", status = HttpStatusCode.NotModified)
+        }
+        val dl = HttpDownloader(HttpClient(engine) { applyDefaults() })
+        val r = dl.getStringConditional("http://x/changelog.json", etag = "\"abc\"")
+        assertTrue(r.notModified)
+        assertNull(r.body)
+        assertEquals("\"abc\"", sentIfNoneMatch)
     }
 }

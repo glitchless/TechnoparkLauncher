@@ -1,7 +1,13 @@
 package ru.lionzxy.tplauncher.prepare.downloader.base
 
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.google.gson.JsonParser
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import ru.lionzxy.tplauncher.utils.sha256Hex
 import java.io.File
 
 /** Result of interpreting a server changelog against the locally-applied timestamp. */
@@ -10,10 +16,15 @@ internal data class ParsedChangeLog(
     val changes: Map<String, Action>,
     /** Highest changelog timestamp seen (0 when nothing newer than [lastUpdate] exists). */
     val lastTimestamp: Long,
+    /** Optional server-provided SHA-256 (relpath -> lowercase hex) for changed files; empty if absent. */
+    val hashes: Map<String, String> = emptyMap(),
 )
 
-private val changeLogGson = Gson()
-private val changeLogType = object : TypeToken<Map<String, Map<String, Action>>>() {}.type
+private fun parseAction(code: String): Action? = when (code) {
+    "0" -> Action.REMOVE
+    "1" -> Action.ADD
+    else -> null
+}
 
 /**
  * Resolves [key] (a server-supplied relative path) against [base] and guarantees the result stays
@@ -31,25 +42,124 @@ internal fun resolveContained(base: File, key: String): File {
 }
 
 /**
- * Parses the changelog (a map of `timestamp -> (path -> action)`), keeps only buckets newer than
- * [lastUpdate], merges them in ascending timestamp order (later buckets win per path), and reports
- * the highest timestamp seen so it can be persisted even when a bucket carries no file operations.
- * A non-numeric timestamp key is skipped rather than aborting the whole changelog.
+ * Parses the changelog. Numeric top-level keys are timestamp buckets (`path -> "0"|"1"`); the
+ * optional non-numeric `"sha256"` key is a flat `path -> hex` map of hashes for changed files.
+ * Only buckets newer than [lastUpdate] are kept and merged in ascending order (later wins per path).
+ * Unknown/non-numeric keys other than `"sha256"`, and unparseable values, are skipped (not fatal).
  */
 internal fun parseChangeLog(json: String, lastUpdate: Long): ParsedChangeLog {
-    val raw: Map<String, Map<String, Action>> = changeLogGson.fromJson(json, changeLogType) ?: emptyMap()
-    val buckets = raw.entries
-        .mapNotNull { entry -> entry.key.toLongOrNull()?.let { ts -> ts to entry.value } }
-        .filter { (timestamp, _) -> timestamp > lastUpdate }
-        .sortedBy { (timestamp, _) -> timestamp }
+    val root = runCatching { JsonParser.parseString(json).asJsonObject }.getOrNull()
+        ?: return ParsedChangeLog(emptyMap(), 0L)
+
+    val hashes = LinkedHashMap<String, String>()
+    root.get("sha256")?.takeIf { it.isJsonObject }?.asJsonObject?.entrySet()?.forEach { (path, v) ->
+        if (v.isJsonPrimitive) hashes[path] = v.asString
+    }
+
+    val buckets = root.entrySet()
+        .mapNotNull { (key, value) ->
+            val ts = key.toLongOrNull() ?: return@mapNotNull null
+            if (!value.isJsonObject) return@mapNotNull null
+            ts to value.asJsonObject
+        }
+        .filter { (ts, _) -> ts > lastUpdate }
+        .sortedBy { (ts, _) -> ts }
+
     val merged = LinkedHashMap<String, Action>()
-    buckets.forEach { (_, ops) -> merged.putAll(ops) }
-    return ParsedChangeLog(changes = merged, lastTimestamp = buckets.lastOrNull()?.first ?: 0L)
+    buckets.forEach { (_, ops) ->
+        ops.entrySet().forEach { (path, code) ->
+            if (code.isJsonPrimitive) parseAction(code.asString)?.let { merged[path] = it }
+        }
+    }
+    return ParsedChangeLog(
+        changes = merged,
+        lastTimestamp = buckets.lastOrNull()?.first ?: 0L,
+        hashes = hashes,
+    )
 }
 
 /** Joins a host base URL and a relative key with exactly one `/`, regardless of stray slashes. */
 internal fun joinUrl(host: String, key: String): String =
     host.removeSuffix("/") + "/" + key.removePrefix("/")
+
+/**
+ * Runs [block] over every item in [items] with at most [parallelism] operations IN FLIGHT at once,
+ * returning the `(item, error)` pairs that threw (in input order); a failing item never cancels its
+ * siblings, and this function itself never throws.
+ *
+ * The coroutine [Semaphore] is load-bearing: bounding concurrency with a limited dispatcher
+ * (`Dispatchers.IO.limitedParallelism(n)`) does NOT cap suspending I/O, because a coroutine awaiting
+ * the network releases its dispatcher thread, letting the next of the thousands of already-launched
+ * coroutines start. That let an entire modpack's worth of downloads hit the server simultaneously
+ * and drown the HTTP connection pool in concurrent TLS handshakes -> widespread ConnectTimeout. The
+ * semaphore caps the genuinely-concurrent requests so HTTP keep-alive reuses a small connection pool.
+ */
+internal suspend fun <T> mapWithBoundedConcurrency(
+    items: List<T>,
+    parallelism: Int,
+    block: suspend (T) -> Unit,
+): List<Pair<T, Throwable>> {
+    require(parallelism >= 1) { "parallelism must be >= 1, was $parallelism" }
+    val semaphore = Semaphore(parallelism)
+    return coroutineScope {
+        items.map { item ->
+            async(Dispatchers.IO) {
+                semaphore.withPermit {
+                    runCatching { block(item) }.exceptionOrNull()?.let { item to it }
+                }
+            }
+        }.awaitAll().filterNotNull()
+    }
+}
+
+/**
+ * Drops entries from [toDownload] that are already correct on disk: an entry is removed only when
+ * [expectedHashes] has its key, the local file exists, and its SHA-256 matches. Entries with no
+ * expected hash (base files validated by the initial install, or old-format packs) are KEPT and
+ * never hashed. Hashing runs with at most [parallelism] in flight; [onChecked] fires once per item.
+ */
+internal suspend fun filterUpToDate(
+    toDownload: List<Pair<String, File>>,
+    expectedHashes: Map<String, String>,
+    parallelism: Int,
+    onChecked: () -> Unit = {},
+): List<Pair<String, File>> {
+    val keep = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    mapWithBoundedConcurrency(toDownload, parallelism) { (key, file) ->
+        val expected = expectedHashes[key]
+        // A read error while hashing means "couldn't verify" -> keep (re-download).
+        val upToDate = expected != null && file.isFile &&
+            runCatching { file.sha256Hex().equals(expected, ignoreCase = true) }.getOrDefault(false)
+        if (!upToDate) keep.add(key)
+        onChecked()
+    }
+    // Preserve input order; keep only the not-up-to-date entries.
+    return toDownload.filter { it.first in keep }
+}
+
+/**
+ * Runs [block] over [items] with at most [parallelism] in flight; after each pass, the items that
+ * threw are retried, up to [maxAttempts] total passes. Returns the items still failing after the
+ * last pass paired with their most recent error. A successful item is never retried (so callers can
+ * rely on hash-skip to avoid redundant work).
+ */
+internal suspend fun <T> downloadWithRetries(
+    items: List<T>,
+    parallelism: Int,
+    maxAttempts: Int,
+    block: suspend (T) -> Unit,
+): List<Pair<T, Throwable>> {
+    require(maxAttempts >= 1) { "maxAttempts must be >= 1, was $maxAttempts" }
+    var pending = items
+    var lastFailures: List<Pair<T, Throwable>> = emptyList()
+    var attempt = 0
+    while (attempt < maxAttempts && pending.isNotEmpty()) {
+        attempt++
+        lastFailures = mapWithBoundedConcurrency(pending, parallelism) { block(it) }
+        pending = lastFailures.map { it.first }
+    }
+    return lastFailures
+}
 
 /** A validated set of file operations to apply against the modpack directory. */
 internal data class DownloadPlan(

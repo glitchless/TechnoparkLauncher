@@ -31,6 +31,11 @@ class Settings() {
     /** Show the in-window log view on the main screen. Off by default; serialized as `enableLogView`. */
     var enableLogView: Boolean = false
 
+    // 0 = "unset" sentinel: missing/old configs and invalid values fall back to the
+    // CPU-core default via the getter, mirroring heapSize's lazy default.
+    @SerializedName("parallelDownloads")
+    private var parallelDownloadsField: Int = 0
+
     /** Copy constructor — mirrors the legacy `Settings(Settings)` (copies raw fields). */
     constructor(other: Settings) : this() {
         heapSizeField = other.heapSizeField
@@ -39,6 +44,7 @@ class Settings() {
         isDebug = other.isDebug
         autoLoginMinecraft = other.autoLoginMinecraft
         enableLogView = other.enableLogView
+        parallelDownloadsField = other.parallelDownloadsField
     }
 
     var heapSize: String
@@ -51,6 +57,17 @@ class Settings() {
                 throw HeapSizeInvalidException(value)
             }
             heapSizeField = value
+        }
+
+    var parallelDownloads: Int
+        get() {
+            if (parallelDownloadsField <= 0) {
+                parallelDownloadsField = SettingsDefault.getDefaultParallelDownloads()
+            }
+            return parallelDownloadsField
+        }
+        set(value) {
+            parallelDownloadsField = value.coerceIn(1, 32)
         }
 
     var customJavaParameter: String

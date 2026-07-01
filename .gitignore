@@ -17,6 +17,8 @@ desktop/build/
 
 # Log file
 *.log
+# Launcher session logs use a .txt extension
+technopark-launcher-log-*.txt
 
 # BlueJ files
 *.ctxt

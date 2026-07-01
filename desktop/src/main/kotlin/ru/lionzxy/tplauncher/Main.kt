@@ -152,6 +152,8 @@ fun main() {
                                 },
                                 onSettingsClick = { showSettings = true },
                                 onCloseClick = ::exitApplication,
+                                onConnectivityFix = { vm.onConnectivityFix() },
+                                onConnectivityRetry = { vm.onConnectivityRetry() },
                             ),
                             avatar = { Avatar() },
                             logView = { if (showLogView) LogPanel(window) },

@@ -3,6 +3,7 @@ package ru.lionzxy.tplauncher.snapshot
 import androidx.compose.runtime.Composable
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ru.lionzxy.tplauncher.ui.Strings
 import ru.lionzxy.tplauncher.ui.components.AvatarContent
 import ru.lionzxy.tplauncher.ui.state.LauncherState
 import ru.lionzxy.tplauncher.ui.state.ProgressUiState
@@ -54,5 +55,33 @@ class MainWindowSnapshotTest {
     fun screen4_error() {
         val f = snap("error", 540, LauncherState.InitialError("Введите валидную почту"))
         assertTrue("error snapshot must be non-empty", f.length() > 0)
+    }
+
+    @Test
+    fun screen5_connectivityBlocked_drweb() {
+        val f = snap(
+            "connectivityBlocked_drweb",
+            760,
+            LauncherState.ConnectivityBlocked(
+                email = "st3althtech@mail.ru",
+                message = Strings.drwebFirewallGuidance,
+                canFirewallFix = false,
+            ),
+        )
+        assertTrue("drweb connectivity-blocked snapshot must be non-empty", f.length() > 0)
+    }
+
+    @Test
+    fun screen6_connectivityBlocked_firewall() {
+        val f = snap(
+            "connectivityBlocked_firewall",
+            700,
+            LauncherState.ConnectivityBlocked(
+                email = "st3althtech@mail.ru",
+                message = Strings.connectionBlocked,
+                canFirewallFix = true,
+            ),
+        )
+        assertTrue("firewall connectivity-blocked snapshot must be non-empty", f.length() > 0)
     }
 }

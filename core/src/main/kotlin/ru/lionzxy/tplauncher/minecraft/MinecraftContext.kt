@@ -59,12 +59,25 @@ class MinecraftContext(
     val modpack: MinecraftModpack,
     val minecraftAccountManager: MinecraftAccountManager
 ) {
+    // One launcher per context so the resolved version is cached across prepare
+    // (MinecraftDownloader.init) and launch() — otherwise the online manifest fetch runs twice
+    // per launch, and twice as slowly when the network is blocked/black-holed.
+    val minecraftLauncher: MinecraftLauncher by lazy { MinecraftLauncher(this) }
+
+    /**
+     * When true (set for an explicit retry from the ConnectivityBlocked screen), a firewall/AV
+     * WSAEACCES block during install of an already-installed pack is tolerated and the launch
+     * proceeds offline, instead of re-raising the repair screen.
+     */
+    @Volatile
+    var tolerateConnectivityBlock: Boolean = false
+
     fun getDirectory(): File {
         return ConfigHelper.getMinecraftDirectory(modpack)
     }
 
     fun launch() {
-        MinecraftLauncher(this).launch(minecraftAccountManager.session!!)
+        minecraftLauncher.launch(minecraftAccountManager.session!!)
     }
 
     fun getMinecraftInstance(): MinecraftInstance {

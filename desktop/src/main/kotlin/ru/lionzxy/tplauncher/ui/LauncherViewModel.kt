@@ -85,7 +85,10 @@ class LauncherViewModel(private val scope: CoroutineScope) {
             try {
                 context.minecraftAccountManager.login(email, password)
             } catch (exp: YDServiceAuthenticationException) {
-                Logger.e("Login", "Authentication failed", exp)
+                // The real cause (HTTP status / server error body) is in thrown/reason, NOT the JVM
+                // cause chain, so it must be logged explicitly — otherwise only the misleading generic
+                // "Failed to authenticate..." message is visible (as in the GUI login-failure log).
+                Logger.e("Login", "Authentication failed (serverReason=${exp.reason?.error}, httpCause=${exp.thrown})", exp)
                 _state.value = LauncherState.InitialError(
                     exp.reason?.error ?: exp.localizedMessage ?: Strings.checkInternetConnection
                 )

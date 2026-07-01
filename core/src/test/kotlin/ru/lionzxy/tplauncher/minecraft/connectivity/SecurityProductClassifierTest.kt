@@ -34,4 +34,13 @@ class SecurityProductClassifierTest {
     @Test
     fun preservesTrimmedProductNames() =
         assertEquals(listOf("Dr.Web"), SecurityProductClassifier.classify(listOf(" Dr.Web ")).products)
+
+    @Test
+    fun isDrWebSharedMatcherAgreesWithClassification() {
+        // The UI picks Dr.Web-specific guidance through this same matcher, so detection and
+        // messaging can't drift apart.
+        org.junit.Assert.assertTrue(SecurityProductClassifier.isDrWeb(listOf("Dr.Web Security Space")))
+        org.junit.Assert.assertTrue(SecurityProductClassifier.isDrWeb(listOf("DrWeb")))
+        org.junit.Assert.assertFalse(SecurityProductClassifier.isDrWeb(listOf("Kaspersky", "Windows Defender")))
+    }
 }

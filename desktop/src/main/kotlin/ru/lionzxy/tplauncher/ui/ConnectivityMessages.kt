@@ -1,6 +1,7 @@
 package ru.lionzxy.tplauncher.ui
 
 import ru.lionzxy.tplauncher.minecraft.connectivity.AvClass
+import ru.lionzxy.tplauncher.minecraft.connectivity.SecurityProductClassifier
 
 /**
  * Picks the user-facing guidance for a connectivity block from the detected security product:
@@ -8,7 +9,7 @@ import ru.lionzxy.tplauncher.minecraft.connectivity.AvClass
  * third-party AVs, and the generic firewall/AV message otherwise.
  */
 fun connectivityBlockedMessage(products: List<String>, avClass: AvClass): String = when {
-    products.any { it.contains("Dr.Web", ignoreCase = true) || it.contains("drweb", ignoreCase = true) } ->
+    SecurityProductClassifier.isDrWeb(products) ->
         Strings.drwebFirewallGuidance
 
     avClass == AvClass.THIRD_PARTY_NETWORK && products.isNotEmpty() ->

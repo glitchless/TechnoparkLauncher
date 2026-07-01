@@ -99,16 +99,6 @@ fun MainWindowContent(
                 modifier = Modifier.padding(top = TpDimens.titleTop, start = TpDimens.gutter),
             )
 
-            // ── Connectivity-repair panel (firewall/AV block) instead of the normal form ──
-            if (state is LauncherState.ConnectivityBlocked) {
-                ConnectivityRepairPanel(
-                    message = state.message,
-                    canFirewallFix = state.canFirewallFix,
-                    onFix = callbacks.onConnectivityFix,
-                    onRetry = callbacks.onConnectivityRetry,
-                )
-            } else {
-
             // ── Form region ────────────────────────────────────────────────────
             // top=16dp, right=16dp, left=23dp
             Row(
@@ -188,6 +178,18 @@ fun MainWindowContent(
                 }
             }
 
+            // ── Repair panel (firewall/AV block) replaces the button/progress region ──
+            // The form above stays: the user keeps the modpack combo and settings gear even
+            // while blocked (switching packs / tweaking settings may be their way out).
+            if (state is LauncherState.ConnectivityBlocked) {
+                ConnectivityRepairPanel(
+                    message = state.message,
+                    canFirewallFix = state.canFirewallFix,
+                    onFix = callbacks.onConnectivityFix,
+                    onRetry = callbacks.onConnectivityRetry,
+                )
+            } else {
+
             // ── Register link (conditional) ────────────────────────────────────
             // right=16dp, bottom=16dp, left=23dp
             if (flags.registerFieldIsVisible) {
@@ -220,13 +222,20 @@ fun MainWindowContent(
             )
 
             // ── Progress panel ─────────────────────────────────────────────────
+            // While the bar is live, the streaming download status leads; in static/error states
+            // the state's own text must win — otherwise a stale "Installing …" status masks the
+            // error message the state carries.
             ProgressPanel(
-                text = progress.status ?: flags.progressTextContent ?: "",
+                text = if (flags.disableProgressBar) {
+                    flags.progressTextContent ?: progress.status ?: ""
+                } else {
+                    progress.status ?: flags.progressTextContent ?: ""
+                },
                 textColor = flags.progressTextColor,
                 value = progress.value,
                 enabled = !flags.disableProgressBar,
             )
-            } // end: normal form vs ConnectivityBlocked panel
+            } // end: button/progress region vs ConnectivityBlocked repair panel
 
             // ── Log view (optional; gated on Settings.enableLogView, injected by Main) ──
             logView()

@@ -23,7 +23,9 @@ private interface Kernel32Ext : StdCallLibrary {
     fun GetModuleFileNameW(hModule: Pointer?, lpFilename: CharArray, nSize: Int): Int
     fun WaitForSingleObject(hHandle: Pointer, dwMilliseconds: Int): Int
     fun CloseHandle(hObject: Pointer): Boolean
-    fun GetLastError(): Int
+    // NOTE: GetLastError must NOT be mapped as a JNA function — by the time a second JNA dispatch
+    // runs, the thread's last-error may already be clobbered. Use Native.getLastError(), which JNA
+    // captures immediately after each native call.
 }
 
 private val kernel32: Kernel32Ext? by lazy {
@@ -49,15 +51,20 @@ internal fun currentProcessImage(): File? {
     }
 }
 
-/** Resolves the launcher's own runtime binaries plus the modpack's bundled JRE binaries. */
-class WindowsBinaryResolver(private val bundledJreBinDir: File?) : BinaryResolver {
+/**
+ * Resolves the launcher's own runtime binaries plus the modpack's bundled JRE binaries.
+ * [bundledJreBinDir] is a provider, resolved fresh on every [resolve]: the bundled JRE may not
+ * exist yet when the orchestrator is constructed (first launch blocked before the JRE download)
+ * but be installed by the time the user actually runs the firewall fix.
+ */
+class WindowsBinaryResolver(private val bundledJreBinDir: () -> File?) : BinaryResolver {
     override fun resolve(): List<File> {
         if (!isWindows) return emptyList()
         val javaHome = System.getProperty("java.home")?.let(::File)
         return assembleBinaryCandidates(
             processImage = currentProcessImage(),
             javaHome = javaHome,
-            bundledJreBinDir = bundledJreBinDir,
+            bundledJreBinDir = bundledJreBinDir(),
             exists = File::exists,
         )
     }
@@ -101,16 +108,21 @@ private val shell32: Shell32? by lazy {
 
 /**
  * Elevates a script via `ShellExecuteExW(verb="runas")` (a single UAC prompt) and waits for it to
- * finish. Returns [ElevationResult.Success] once the elevated process exits (success meaning "it ran",
- * not "connectivity fixed" — the probe decides that). A UAC decline is best-effort detected via
- * `GetLastError()==ERROR_CANCELLED`; if that read is unreliable it safely degrades to [ElevationResult.Failed].
+ * finish. Returns [ElevationResult.Success] only when the elevated process observably exited
+ * (success meaning "it ran", not "connectivity fixed" — the probe decides that); a wait timeout or
+ * wait failure degrades to [ElevationResult.Failed] so the caller doesn't probe a half-applied fix
+ * as if it were complete. A UAC decline is detected via [Native.getLastError] == `ERROR_CANCELLED`
+ * (captured by JNA right after the call) with the struct's `hInstApp == SE_ERR_ACCESSDENIED` as a
+ * fallback; if both are unreliable it safely degrades to [ElevationResult.Failed].
  */
 class WindowsShellElevatedRunner : ElevatedRunner {
     private companion object {
         const val SEE_MASK_NOCLOSEPROCESS = 0x00000040
         const val SW_HIDE = 0
         const val ERROR_CANCELLED = 1223
+        const val SE_ERR_ACCESSDENIED = 5L
         const val WAIT_TIMEOUT_MS = 120_000
+        const val WAIT_OBJECT_0 = 0
     }
 
     override fun runElevated(scriptFile: File): ElevationResult {
@@ -132,21 +144,25 @@ class WindowsShellElevatedRunner : ElevatedRunner {
             return ElevationResult.Failed(t.message ?: "ShellExecuteExW error")
         }
         if (!ok) {
-            val err = try {
-                k.GetLastError()
-            } catch (t: Throwable) {
-                0
+            // Native.getLastError() is captured by JNA immediately after the ShellExecuteExW
+            // dispatch, before anything can clobber the thread's last-error.
+            val err = Native.getLastError()
+            val hInst = Pointer.nativeValue(info.hInstApp)
+            return if (err == ERROR_CANCELLED || hInst == SE_ERR_ACCESSDENIED) {
+                ElevationResult.UserCancelled
+            } else {
+                ElevationResult.Failed("ShellExecuteExW failed (code $err, hInstApp $hInst)")
             }
-            return if (err == ERROR_CANCELLED) ElevationResult.UserCancelled
-            else ElevationResult.Failed("ShellExecuteExW failed (code $err)")
         }
         val handle = info.hProcess ?: return ElevationResult.Success
         return try {
-            k.WaitForSingleObject(handle, WAIT_TIMEOUT_MS)
-            ElevationResult.Success
+            when (val wait = k.WaitForSingleObject(handle, WAIT_TIMEOUT_MS)) {
+                WAIT_OBJECT_0 -> ElevationResult.Success
+                else -> ElevationResult.Failed("elevated script did not finish (wait result $wait)")
+            }
         } catch (t: Throwable) {
             Logger.w("Connectivity", "WaitForSingleObject failed", t)
-            ElevationResult.Success
+            ElevationResult.Failed("could not wait for the elevated script")
         } finally {
             try {
                 k.CloseHandle(handle)
@@ -159,6 +175,10 @@ class WindowsShellElevatedRunner : ElevatedRunner {
 
 /** Reads installed AV product display names from WMI (`root/SecurityCenter2`) via PowerShell. Unprivileged. */
 class WindowsWmiSecurityProductDetector : SecurityProductDetector {
+    private companion object {
+        const val DETECT_TIMEOUT_SECONDS = 10L
+    }
+
     override fun detect(): DetectedSecurity {
         if (!isWindows) return DetectedSecurity(emptyList(), AvClass.NONE_DETECTED)
         val names = try {
@@ -167,9 +187,17 @@ class WindowsWmiSecurityProductDetector : SecurityProductDetector {
                 "Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntiVirusProduct | " +
                     "Select-Object -ExpandProperty displayName",
             ).redirectErrorStream(true).start()
-            val out = proc.inputStream.bufferedReader().readText()
-            proc.waitFor()
-            out.lines().map { it.trim() }.filter { it.isNotEmpty() }
+            // Bounded wait: a security product may suspend the spawned powershell.exe — exactly on
+            // the machines this detector targets — and an unbounded readText() would hang the
+            // caller forever. The query's output is far below the pipe buffer, so waiting before
+            // reading cannot deadlock.
+            if (!proc.waitFor(DETECT_TIMEOUT_SECONDS, java.util.concurrent.TimeUnit.SECONDS)) {
+                proc.destroyForcibly()
+                Logger.w("Connectivity", "AV detection timed out after ${DETECT_TIMEOUT_SECONDS}s")
+                return SecurityProductClassifier.classify(emptyList())
+            }
+            proc.inputStream.bufferedReader().readText()
+                .lines().map { it.trim() }.filter { it.isNotEmpty() }
         } catch (t: Throwable) {
             Logger.w("Connectivity", "AV detection failed", t)
             emptyList()

@@ -43,4 +43,36 @@ class ConnectivityBlockClassifierTest {
         b.initCause(a) // a <-> b cycle must not loop forever
         assertFalse(ConnectivityBlockClassifier.isPermissionDeniedSocket(a))
     }
+
+    @Test
+    fun digitsResemblingWsaCodeInsideAnAddressAreNotABlock() {
+        // "10013" as a bare digit sequence appears in ports/hosts/byte counts; matching it would
+        // send a plain reachability failure into the firewall-repair flow.
+        assertFalse(
+            ConnectivityBlockClassifier.isPermissionDeniedSocket(
+                java.net.ConnectException("Connect to proxy 10.0.0.1:10013 timed out"),
+            ),
+        )
+    }
+
+    @Test
+    fun environmentalFailuresAreClassifiedAsSuch() {
+        assertTrue(ConnectivityBlockClassifier.isEnvironmentalNetworkFailure(UnknownHostException("host")))
+        assertTrue(ConnectivityBlockClassifier.isEnvironmentalNetworkFailure(java.net.ConnectException("Connection refused: connect")))
+        assertTrue(ConnectivityBlockClassifier.isEnvironmentalNetworkFailure(java.net.SocketTimeoutException("connect timed out")))
+        assertTrue(ConnectivityBlockClassifier.isEnvironmentalNetworkFailure(javax.net.ssl.SSLException("handshake refused")))
+        assertTrue(
+            "wrapped causes must be found",
+            ConnectivityBlockClassifier.isEnvironmentalNetworkFailure(
+                RuntimeException("prepare", IOException("io", SocketException("Permission denied: connect"))),
+            ),
+        )
+    }
+
+    @Test
+    fun genuineErrorsAreNotEnvironmental() {
+        assertFalse(ConnectivityBlockClassifier.isEnvironmentalNetworkFailure(IOException("Server returned HTTP response code: 500")))
+        assertFalse(ConnectivityBlockClassifier.isEnvironmentalNetworkFailure(IllegalStateException("boom")))
+        assertFalse(ConnectivityBlockClassifier.isEnvironmentalNetworkFailure(null))
+    }
 }

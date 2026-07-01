@@ -17,25 +17,37 @@ import java.io.File
 object ConnectivityRepair {
     private const val PROBE_TIMEOUT_MS = 8_000L
 
+    /**
+     * One application-lifetime probe client (the same create-once-and-reuse pattern as
+     * [ru.lionzxy.tplauncher.utils.HttpDownloader.instance]): orchestrators are rebuilt per modpack,
+     * and a per-orchestrator CIO client would leak its engine threads — nothing ever closes it.
+     * Deliberately NOT [ru.lionzxy.tplauncher.utils.applyDefaults]: the probe wants a short timeout,
+     * no retries, and expectSuccess=false (any HTTP status = the socket opened = reachable), so it
+     * can't inherit the downloader's 5-minute window.
+     */
+    private val probeClient: HttpClient by lazy {
+        HttpClient(CIO) {
+            expectSuccess = false
+            install(UserAgent) { agent = HTTP_USER_AGENT }
+            install(HttpTimeout) {
+                connectTimeoutMillis = PROBE_TIMEOUT_MS
+                requestTimeoutMillis = PROBE_TIMEOUT_MS
+                socketTimeoutMillis = PROBE_TIMEOUT_MS
+            }
+        }
+    }
+
     fun forModpack(javaCode: String, scriptDir: File, probeUrl: String = JRES_JSON_LINK): ConnectivityRepairOrchestrator {
-        val jreBinDir = runCatching { JreManager.instance.resolveJavaBinary(javaCode)?.parentFile }.getOrNull()
         return ConnectivityRepairOrchestrator(
-            binaries = WindowsBinaryResolver(jreBinDir),
+            // The bundled JRE is resolved lazily per fix attempt: at construction time (first launch
+            // blocked before the JRE download) it may not exist yet.
+            binaries = WindowsBinaryResolver {
+                runCatching { JreManager.instance.resolveJavaBinary(javaCode)?.parentFile }.getOrNull()
+            },
             runner = WindowsShellElevatedRunner(),
-            probe = KtorConnectivityProbe(createProbeClient(), probeUrl),
+            probe = KtorConnectivityProbe(probeClient, probeUrl),
             detector = WindowsWmiSecurityProductDetector(),
             scriptDir = scriptDir,
         )
-    }
-
-    /** A short-timeout client so a probe can't inherit the downloader's 5-minute window. */
-    private fun createProbeClient(): HttpClient = HttpClient(CIO) {
-        expectSuccess = false // any HTTP status = the socket opened = reachable
-        install(UserAgent) { agent = HTTP_USER_AGENT }
-        install(HttpTimeout) {
-            connectTimeoutMillis = PROBE_TIMEOUT_MS
-            requestTimeoutMillis = PROBE_TIMEOUT_MS
-            socketTimeoutMillis = PROBE_TIMEOUT_MS
-        }
     }
 }

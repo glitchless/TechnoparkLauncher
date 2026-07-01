@@ -18,9 +18,14 @@ interface SecurityProductDetector {
 
 /** Pure display-name → [AvClass] mapping, unit-tested independently of the OS/WMI query. */
 object SecurityProductClassifier {
-    private val THIRD_PARTY = listOf(
-        "dr.web", "drweb", "kaspersky", "eset", "nod32", "avast", "avg", "norton", "comodo",
+    private val DRWEB = listOf("dr.web", "drweb")
+    private val THIRD_PARTY = DRWEB + listOf(
+        "kaspersky", "eset", "nod32", "avast", "avg", "norton", "comodo",
     )
+
+    /** Single owner of Dr.Web name matching, shared with the UI's guidance selection. */
+    fun isDrWeb(displayNames: List<String>): Boolean =
+        displayNames.any { name -> DRWEB.any { it in name.lowercase() } }
 
     fun classify(displayNames: List<String>): DetectedSecurity {
         val products = displayNames.map { it.trim() }.filter { it.isNotEmpty() }

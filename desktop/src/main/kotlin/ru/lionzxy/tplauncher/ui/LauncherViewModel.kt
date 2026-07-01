@@ -12,16 +12,17 @@ import ru.lionzxy.tplauncher.log.Logger
 import ru.lionzxy.tplauncher.minecraft.MinecraftAccountManager
 import ru.lionzxy.tplauncher.minecraft.MinecraftContext
 import ru.lionzxy.tplauncher.minecraft.MinecraftModpack
+import ru.lionzxy.tplauncher.minecraft.connectivity.AvClass
 import ru.lionzxy.tplauncher.minecraft.connectivity.ConnectivityBlockClassifier
 import ru.lionzxy.tplauncher.minecraft.connectivity.ConnectivityRepair
 import ru.lionzxy.tplauncher.minecraft.connectivity.ConnectivityRepairOrchestrator
+import ru.lionzxy.tplauncher.minecraft.connectivity.RepairOutcome
 import ru.lionzxy.tplauncher.prepare.ComposePrepare
 import ru.lionzxy.tplauncher.ui.state.LauncherState
 import ru.lionzxy.tplauncher.ui.state.ProgressUiState
 import ru.lionzxy.tplauncher.utils.ConfigHelper
 import ru.lionzxy.tplauncher.utils.LogoUtils
 import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
-import java.io.File
 import java.io.IOException
 
 class LauncherViewModel(private val scope: CoroutineScope) {
@@ -46,7 +47,9 @@ class LauncherViewModel(private val scope: CoroutineScope) {
     private fun repairOrchestrator(): ConnectivityRepairOrchestrator =
         cachedRepair ?: ConnectivityRepair.forModpack(
             javaCode = context.modpack.javaCode,
-            scriptDir = File(System.getProperty("java.io.tmpdir")),
+            // The launcher's own temp dir: ConfigHelper wipes it on every startup, so the
+            // admin-executed repair script never accumulates in a user-writable location.
+            scriptDir = ConfigHelper.getTemporaryDirectory(),
         ).also { cachedRepair = it }
 
     fun onInitView() {
@@ -73,6 +76,13 @@ class LauncherViewModel(private val scope: CoroutineScope) {
             scope.launch(Dispatchers.IO) {
                 onGameStart(loggedEmail)
             }
+            return
+        }
+
+        // Defensive: the repair panel has its own buttons, but if the flags-driven main button is
+        // ever rendered for this state, route it to the action its label promises.
+        if (current is LauncherState.ConnectivityBlocked) {
+            if (current.canFirewallFix) onConnectivityFix() else onConnectivityRetry()
             return
         }
     }
@@ -115,9 +125,12 @@ class LauncherViewModel(private val scope: CoroutineScope) {
         }
     }
 
-    private fun onGameStart(email: String) {
+    private fun onGameStart(email: String, tolerateConnectivityBlock: Boolean = false) {
         _state.value = LauncherState.GameLoading(email)
         progressMonitorBridge.setProgress(-1)
+        // Only an explicit retry from the ConnectivityBlocked screen launches an installed pack
+        // offline through a WSAEACCES block; a normal start surfaces the repair assistant instead.
+        context.tolerateConnectivityBlock = tolerateConnectivityBlock
 
         try {
             ComposePrepare().prepareMinecraft(context)
@@ -151,28 +164,43 @@ class LauncherViewModel(private val scope: CoroutineScope) {
 
     /**
      * "Разрешить доступ" on the [LauncherState.ConnectivityBlocked] panel: attempt the elevated
-     * Windows Firewall fix (a single UAC prompt), then retry the launch. If the fix restored
-     * connectivity the launch proceeds online; otherwise the retry still launches an already-installed
-     * pack via the offline fallback, or re-enters ConnectivityBlocked.
+     * Windows Firewall fix (a single UAC prompt) and react to the verified outcome —
+     * [RepairOutcome.Repaired] retries the launch (now online), [RepairOutcome.Cancelled] (declined
+     * UAC) returns to the panel with a clear message, and [RepairOutcome.Guidance] (rules applied
+     * but still blocked) returns to the panel with AV-specific guidance and no firewall button.
      */
     fun onConnectivityFix() {
         val blocked = _state.value as? LauncherState.ConnectivityBlocked ?: return
         scope.launch(Dispatchers.IO) {
             _state.value = LauncherState.GameLoading(blocked.email)
-            repairOrchestrator().tryFirewallFix()
-            onGameStart(blocked.email)
+            when (val outcome = repairOrchestrator().tryFirewallFix()) {
+                is RepairOutcome.Repaired -> onGameStart(blocked.email)
+
+                is RepairOutcome.Cancelled -> _state.value = blocked.copy(message = Strings.uacDeclined)
+
+                is RepairOutcome.Guidance -> _state.value = blocked.copy(
+                    message = if (outcome.products.isEmpty()) {
+                        Strings.firewallFixDidNotHelp
+                    } else {
+                        // The firewall rule didn't help → the third-party product owns the block.
+                        connectivityBlockedMessage(outcome.products, AvClass.THIRD_PARTY_NETWORK)
+                    },
+                    canFirewallFix = false,
+                )
+            }
         }
     }
 
     /**
      * "Повторить" on the [LauncherState.ConnectivityBlocked] panel: retry the launch without touching
      * the firewall (e.g. after the user added an exception in their antivirus). An already-installed
-     * pack launches via the offline fallback even if the network is still blocked.
+     * pack launches via the offline fallback even if the network is still blocked
+     * (tolerateConnectivityBlock lets the install step degrade to on-disk files).
      */
     fun onConnectivityRetry() {
         val blocked = _state.value as? LauncherState.ConnectivityBlocked ?: return
         scope.launch(Dispatchers.IO) {
-            onGameStart(blocked.email)
+            onGameStart(blocked.email, tolerateConnectivityBlock = true)
         }
     }
 

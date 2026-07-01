@@ -8,7 +8,11 @@ import org.junit.Test
 import java.io.File
 
 private class FakeDetector(val d: DetectedSecurity) : SecurityProductDetector {
-    override fun detect() = d
+    var calls = 0
+    override fun detect(): DetectedSecurity {
+        calls++
+        return d
+    }
 }
 
 private class FakeRunner(val r: ElevationResult) : ElevatedRunner {
@@ -28,14 +32,18 @@ private class FakeBins(val list: List<File>) : BinaryResolver {
 }
 
 class ConnectivityRepairOrchestratorTest {
-    private fun orch(det: DetectedSecurity, runner: FakeRunner, probe: ProbeResult) =
+    private fun orch(det: SecurityProductDetector, runner: FakeRunner, probe: ProbeResult) =
         ConnectivityRepairOrchestrator(
             FakeBins(listOf(File("/a/javaw.exe"))),
             runner,
             FakeProbe(probe),
-            FakeDetector(det),
+            det,
             File(System.getProperty("java.io.tmpdir")),
+            markerWaitMs = 0, // fakes never write the marker; don't stall unit tests
         )
+
+    private fun orch(det: DetectedSecurity, runner: FakeRunner, probe: ProbeResult) =
+        orch(FakeDetector(det), runner, probe)
 
     @Test
     fun thirdPartyAvDoesNotLeadWithFirewall() {
@@ -58,6 +66,18 @@ class ConnectivityRepairOrchestratorTest {
     }
 
     @Test
+    fun assessCachesDetectionAcrossRetries() {
+        // Every retry from the blocked screen re-enters assess(); the AV set can't change
+        // mid-session, so the (PowerShell-spawning) detector must run only once.
+        val det = FakeDetector(DetectedSecurity(listOf("Dr.Web"), AvClass.THIRD_PARTY_NETWORK))
+        val o = orch(det, FakeRunner(ElevationResult.Success), ProbeResult.BLOCKED)
+        o.assess()
+        o.assess()
+        o.assess()
+        assertEquals(1, det.calls)
+    }
+
+    @Test
     fun firewallFixReachableIsRepaired() = runBlocking {
         val r = FakeRunner(ElevationResult.Success)
         val out = orch(DetectedSecurity(emptyList(), AvClass.NONE_DETECTED), r, ProbeResult.REACHABLE).tryFirewallFix()
@@ -77,6 +97,22 @@ class ConnectivityRepairOrchestratorTest {
         o.assess() // populate detected products (as the UI does on entering the screen)
         val out = o.tryFirewallFix()
         assertTrue(out is RepairOutcome.Guidance)
+        assertEquals(listOf("Dr.Web"), (out as RepairOutcome.Guidance).products)
+    }
+
+    @Test
+    fun elevationFailureStillProbesAndCanRepair() = runBlocking {
+        // A wait timeout reports Failed, but the rules may have been applied moments later —
+        // the probe stays the authority on the outcome.
+        val out = orch(DetectedSecurity(emptyList(), AvClass.NONE_DETECTED), FakeRunner(ElevationResult.Failed("timeout")), ProbeResult.REACHABLE).tryFirewallFix()
+        assertEquals(RepairOutcome.Repaired, out)
+    }
+
+    @Test
+    fun guidanceWorksEvenWithoutPriorAssess() = runBlocking {
+        // tryFirewallFix invoked directly (no assess() first) must still report detected products.
+        val o = orch(DetectedSecurity(listOf("Dr.Web"), AvClass.THIRD_PARTY_NETWORK), FakeRunner(ElevationResult.Success), ProbeResult.BLOCKED)
+        val out = o.tryFirewallFix()
         assertEquals(listOf("Dr.Web"), (out as RepairOutcome.Guidance).products)
     }
 }

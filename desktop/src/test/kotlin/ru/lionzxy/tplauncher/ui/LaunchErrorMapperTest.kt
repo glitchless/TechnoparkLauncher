@@ -37,4 +37,24 @@ class LaunchErrorMapperTest {
         assertEquals(LauncherState.LaunchError("a@b.c", Strings.connectionBlocked), m.state)
         assertFalse(m.reportToSentry)
     }
+
+    @Test
+    fun plainOfflineFailuresAreEnvironmentalNotInternal() {
+        // A refused/timed-out connection is the user's network, not a launcher bug: actionable
+        // message, no Sentry report.
+        val m = mapLaunchError("a@b.c", java.net.ConnectException("Connection refused: connect"))
+        assertEquals(LauncherState.LaunchError("a@b.c", Strings.checkInternetConnection), m.state)
+        assertFalse(m.reportToSentry)
+    }
+
+    @Test
+    fun notInstalledOfflineGetsItsOwnMessageNoSentry() {
+        val e = ru.lionzxy.tplauncher.minecraft.connectivity.VersionNotInstalledOfflineException(
+            "1.7.10",
+            java.net.ConnectException("Connection refused: connect"),
+        )
+        val m = mapLaunchError("a@b.c", e)
+        assertEquals(LauncherState.LaunchError("a@b.c", Strings.notInstalledOffline), m.state)
+        assertFalse(m.reportToSentry)
+    }
 }

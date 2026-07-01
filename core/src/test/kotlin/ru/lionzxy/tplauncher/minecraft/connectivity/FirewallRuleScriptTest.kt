@@ -1,5 +1,6 @@
 package ru.lionzxy.tplauncher.minecraft.connectivity
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -27,6 +28,18 @@ class FirewallRuleScriptTest {
     }
 
     @Test
+    fun switchesConsoleToUtf8BeforeAnyPath() {
+        // cmd.exe parses batch files in the OEM codepage; without chcp 65001 a Cyrillic path
+        // written as UTF-8 is mojibaked and the rules point at nonexistent files.
+        val s = FirewallRuleScript.build(listOf(File("C:\\Пользователи\\Конст Games\\javaw.exe")), marker)
+        val chcp = s.indexOf("chcp 65001")
+        val firstNetsh = s.indexOf("netsh")
+        assertTrue("chcp 65001 must precede all netsh lines", chcp in 0 until firstNetsh)
+        // Everything before chcp must be plain ASCII (still parsed in the OEM codepage).
+        assertTrue(s.substring(0, chcp).all { it.code < 128 })
+    }
+
+    @Test
     fun quotesCyrillicAndSpacedPaths() {
         val bin = File("C:\\Пользователи\\Конст Games\\javaw.exe")
         val s = FirewallRuleScript.build(listOf(bin), marker)
@@ -43,9 +56,12 @@ class FirewallRuleScriptTest {
     }
 
     @Test
-    fun oneRulePerBinaryDistinctNames() {
+    fun allRulesShareOneNameSoOneDeleteCleansStaleRules() {
+        // A single shared rule name means the one delete line removes ALL rules from any previous
+        // run — including a run that had MORE binaries (a positional "name N" scheme leaks those).
         val s = FirewallRuleScript.build(listOf(File("C:\\a\\java.exe"), File("C:\\a\\javaw.exe")), marker)
-        assertTrue(s.contains("TechnoparkLauncher 1"))
-        assertTrue(s.contains("TechnoparkLauncher 2"))
+        assertEquals(1, Regex("delete rule").findAll(s).count())
+        assertEquals(2, Regex("add rule name=\"TechnoparkLauncher\"").findAll(s).count())
+        assertTrue(s.contains("delete rule name=\"TechnoparkLauncher\""))
     }
 }

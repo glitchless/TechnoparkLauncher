@@ -5,6 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.lionzxy.tplauncher.ui.Strings
 import ru.lionzxy.tplauncher.ui.components.AvatarContent
+import ru.lionzxy.tplauncher.ui.state.ConnectivityBlockOrigin
 import ru.lionzxy.tplauncher.ui.state.LauncherState
 import ru.lionzxy.tplauncher.ui.state.ProgressUiState
 import ru.lionzxy.tplauncher.ui.theme.TpTheme
@@ -83,5 +84,22 @@ class MainWindowSnapshotTest {
             ),
         )
         assertTrue("firewall connectivity-blocked snapshot must be non-empty", f.length() > 0)
+    }
+
+    @Test
+    fun screen7_connectivityBlocked_login() {
+        // A login-origin block keeps the login/password fields visible (no session/avatar yet) with the
+        // repair guidance below — distinct from the launch-origin avatar layout above.
+        val f = snap(
+            "connectivityBlocked_login",
+            760,
+            LauncherState.ConnectivityBlocked(
+                email = "st3althtech@mail.ru",
+                message = Strings.drwebFirewallGuidance,
+                canFirewallFix = false,
+                origin = ConnectivityBlockOrigin.LOGIN,
+            ),
+        )
+        assertTrue("login connectivity-blocked snapshot must be non-empty", f.length() > 0)
     }
 }

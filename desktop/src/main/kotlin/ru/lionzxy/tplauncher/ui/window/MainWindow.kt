@@ -51,9 +51,10 @@ data class MainCallbacks(
     val onRegisterClick: () -> Unit = {},
     val onSettingsClick: () -> Unit = {},
     val onCloseClick: () -> Unit = {},
-    // ConnectivityBlocked repair panel actions
-    val onConnectivityFix: () -> Unit = {},
-    val onConnectivityRetry: () -> Unit = {},
+    // ConnectivityBlocked repair panel actions. The (email, password) are the current login-field
+    // values, needed to re-authenticate a login-origin block (ignored for a launch-origin one).
+    val onConnectivityFix: (email: String, password: String) -> Unit = { _, _ -> },
+    val onConnectivityRetry: (email: String, password: String) -> Unit = { _, _ -> },
 )
 
 /**
@@ -185,8 +186,8 @@ fun MainWindowContent(
                 ConnectivityRepairPanel(
                     message = state.message,
                     canFirewallFix = state.canFirewallFix,
-                    onFix = callbacks.onConnectivityFix,
-                    onRetry = callbacks.onConnectivityRetry,
+                    onFix = { callbacks.onConnectivityFix(email, password) },
+                    onRetry = { callbacks.onConnectivityRetry(email, password) },
                 )
             } else {
 

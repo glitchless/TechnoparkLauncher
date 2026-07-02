@@ -18,6 +18,7 @@ import ru.lionzxy.tplauncher.minecraft.connectivity.ConnectivityRepair
 import ru.lionzxy.tplauncher.minecraft.connectivity.ConnectivityRepairOrchestrator
 import ru.lionzxy.tplauncher.minecraft.connectivity.RepairOutcome
 import ru.lionzxy.tplauncher.prepare.ComposePrepare
+import ru.lionzxy.tplauncher.ui.state.ConnectivityBlockOrigin
 import ru.lionzxy.tplauncher.ui.state.LauncherState
 import ru.lionzxy.tplauncher.ui.state.ProgressUiState
 import ru.lionzxy.tplauncher.utils.ConfigHelper
@@ -52,6 +53,22 @@ class LauncherViewModel(private val scope: CoroutineScope) {
             scriptDir = ConfigHelper.getTemporaryDirectory(),
         ).also { cachedRepair = it }
 
+    /**
+     * Builds the [LauncherState.ConnectivityBlocked] for a detected WSAEACCES block. Runs the cheap,
+     * unprivileged AV assessment (cached) to pick product-specific guidance (Dr.Web steps, …) and to
+     * decide whether the Windows Firewall auto-fix is worth leading with. [origin] carries whether the
+     * block struck before login or during launch so the panel's retry/fix routes correctly.
+     */
+    private fun connectivityBlockedState(email: String, origin: ConnectivityBlockOrigin): LauncherState.ConnectivityBlocked {
+        val assessment = repairOrchestrator().assess()
+        return LauncherState.ConnectivityBlocked(
+            email = email,
+            message = connectivityBlockedMessage(assessment.products, assessment.avClass),
+            canFirewallFix = assessment.firewallFixFirst,
+            origin = origin,
+        )
+    }
+
     fun onInitView() {
         if (context.minecraftAccountManager.isLogged) {
             _state.value = LauncherState.Logged(context.minecraftAccountManager.getEmail())
@@ -82,7 +99,7 @@ class LauncherViewModel(private val scope: CoroutineScope) {
         // Defensive: the repair panel has its own buttons, but if the flags-driven main button is
         // ever rendered for this state, route it to the action its label promises.
         if (current is LauncherState.ConnectivityBlocked) {
-            if (current.canFirewallFix) onConnectivityFix() else onConnectivityRetry()
+            if (current.canFirewallFix) onConnectivityFix(email, password) else onConnectivityRetry(email, password)
             return
         }
     }
@@ -107,6 +124,16 @@ class LauncherViewModel(private val scope: CoroutineScope) {
             try {
                 context.minecraftAccountManager.login(email, password)
             } catch (exp: YDServiceAuthenticationException) {
+                // A firewall/AV block (WSAEACCES, e.g. Dr.Web) surfaces here wrapped in
+                // YDServiceAuthenticationException's non-standard `thrown` field, NOT the JVM cause
+                // chain. isPermissionDeniedSocket now descends into that field, so detect the block
+                // FIRST and show the repair assistant (login-origin: its retry re-authenticates)
+                // instead of the misleading generic "Failed to authenticate..." message.
+                if (ConnectivityBlockClassifier.isPermissionDeniedSocket(exp)) {
+                    Logger.e("Login", "Login blocked by firewall/AV (WSAEACCES): ${exp.thrown}", exp)
+                    _state.value = connectivityBlockedState(email, ConnectivityBlockOrigin.LOGIN)
+                    return@launch
+                }
                 // The real cause (HTTP status / server error body) is in thrown/reason, NOT the JVM
                 // cause chain, so it must be logged explicitly — otherwise only the misleading generic
                 // "Failed to authenticate..." message is visible (as in the GUI login-failure log).
@@ -118,7 +145,7 @@ class LauncherViewModel(private val scope: CoroutineScope) {
             } catch (ioExp: IOException) {
                 Logger.e("Login", "Network error during login", ioExp)
                 _state.value = if (ConnectivityBlockClassifier.isPermissionDeniedSocket(ioExp)) {
-                    LauncherState.InitialError(Strings.connectionBlocked)
+                    connectivityBlockedState(email, ConnectivityBlockOrigin.LOGIN)
                 } else {
                     LauncherState.InitialError(Strings.checkInternetConnection)
                 }
@@ -142,12 +169,7 @@ class LauncherViewModel(private val scope: CoroutineScope) {
         } catch (e: Exception) {
             Logger.e("Launcher", "Failed to prepare/launch Minecraft", e)
             if (ConnectivityBlockClassifier.isPermissionDeniedSocket(e)) {
-                val assessment = repairOrchestrator().assess()
-                _state.value = LauncherState.ConnectivityBlocked(
-                    email = email,
-                    message = connectivityBlockedMessage(assessment.products, assessment.avClass),
-                    canFirewallFix = assessment.firewallFixFirst,
-                )
+                _state.value = connectivityBlockedState(email, ConnectivityBlockOrigin.LAUNCH)
                 return
             }
             val mapping = mapLaunchError(email, e)
@@ -168,16 +190,18 @@ class LauncherViewModel(private val scope: CoroutineScope) {
     /**
      * "Разрешить доступ" on the [LauncherState.ConnectivityBlocked] panel: attempt the elevated
      * Windows Firewall fix (a single UAC prompt) and react to the verified outcome —
-     * [RepairOutcome.Repaired] retries the launch (now online), [RepairOutcome.Cancelled] (declined
-     * UAC) returns to the panel with a clear message, and [RepairOutcome.Guidance] (rules applied
-     * but still blocked) returns to the panel with AV-specific guidance and no firewall button.
+     * [RepairOutcome.Repaired] retries the blocked step (re-authenticates for a login-origin block,
+     * re-launches for a launch-origin one), [RepairOutcome.Cancelled] (declined UAC) returns to the
+     * panel with a clear message, and [RepairOutcome.Guidance] (rules applied but still blocked)
+     * returns to the panel with AV-specific guidance and no firewall button. [email]/[password] are
+     * the current login-field values, used only when re-authenticating a login-origin block.
      */
-    fun onConnectivityFix() {
+    fun onConnectivityFix(email: String, password: String) {
         val blocked = _state.value as? LauncherState.ConnectivityBlocked ?: return
         scope.launch(Dispatchers.IO) {
-            _state.value = LauncherState.GameLoading(blocked.email)
+            _state.value = loadingStateFor(blocked)
             when (val outcome = repairOrchestrator().tryFirewallFix()) {
-                is RepairOutcome.Repaired -> onGameStart(blocked.email)
+                is RepairOutcome.Repaired -> retryBlockedStep(blocked, email, password)
 
                 is RepairOutcome.Cancelled -> _state.value = blocked.copy(message = Strings.uacDeclined)
 
@@ -195,17 +219,36 @@ class LauncherViewModel(private val scope: CoroutineScope) {
     }
 
     /**
-     * "Повторить" on the [LauncherState.ConnectivityBlocked] panel: retry the launch without touching
-     * the firewall (e.g. after the user added an exception in their antivirus). An already-installed
-     * pack launches via the offline fallback even if the network is still blocked
-     * (tolerateConnectivityBlock lets the install step degrade to on-disk files).
+     * "Повторить" on the [LauncherState.ConnectivityBlocked] panel: retry the blocked step without
+     * touching the firewall (e.g. after the user added an exception in their antivirus). A login-origin
+     * block re-runs authentication with the current [email]/[password]; a launch-origin block re-launches
+     * the already-installed pack via the offline fallback even if the network is still blocked
+     * (tolerateConnectivityBlock lets the install step degrade to on-disk files). Routing a login-origin
+     * block into the launch path would dereference the still-null session.
      */
-    fun onConnectivityRetry() {
+    fun onConnectivityRetry(email: String, password: String) {
         val blocked = _state.value as? LauncherState.ConnectivityBlocked ?: return
-        scope.launch(Dispatchers.IO) {
-            onGameStart(blocked.email, tolerateConnectivityBlock = true)
+        retryBlockedStep(blocked, email, password)
+    }
+
+    /** Re-drives whichever step the block interrupted: re-auth for [ConnectivityBlockOrigin.LOGIN], an
+     *  offline-tolerant re-launch for [ConnectivityBlockOrigin.LAUNCH]. */
+    private fun retryBlockedStep(blocked: LauncherState.ConnectivityBlocked, email: String, password: String) {
+        when (blocked.origin) {
+            // onLogin manages its own IO dispatch (and re-validates the fields).
+            ConnectivityBlockOrigin.LOGIN -> onLogin(email, password)
+            ConnectivityBlockOrigin.LAUNCH -> scope.launch(Dispatchers.IO) {
+                onGameStart(blocked.email, tolerateConnectivityBlock = true)
+            }
         }
     }
+
+    /** Transient progress state shown while a firewall fix runs, matching the block's origin. */
+    private fun loadingStateFor(blocked: LauncherState.ConnectivityBlocked): LauncherState =
+        when (blocked.origin) {
+            ConnectivityBlockOrigin.LOGIN -> LauncherState.LoginProgress
+            ConnectivityBlockOrigin.LAUNCH -> LauncherState.GameLoading(blocked.email)
+        }
 
     fun onChangeModpack(pack: MinecraftModpack) {
         context = MinecraftContext(progressMonitorBridge, pack, MinecraftAccountManager(pack))

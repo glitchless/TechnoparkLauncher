@@ -1,8 +1,10 @@
 package ru.lionzxy.tplauncher.minecraft.connectivity
 
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
 import java.io.IOException
 import java.net.SocketException
 import java.net.UnknownHostException
@@ -23,6 +25,34 @@ class ConnectivityBlockClassifierTest {
                 RuntimeException("prepare failed", IOException("io", SocketException("Permission denied: connect"))),
             ),
         )
+
+    @Test
+    fun detectsBlockHiddenInYdAuthExceptionThrownField() {
+        // mclauncher-api's YDLoginService wraps a login-time SocketException into
+        // YDServiceAuthenticationException, whose constructor calls super(msg) ONLY — the real cause
+        // is parked in its non-standard `thrown` field, so getCause() is null. The classifier must
+        // still recognise the WSAEACCES block through that field, otherwise a login-time Dr.Web block
+        // is misreported as a generic "Failed to authenticate" error.
+        val block = YDServiceAuthenticationException(
+            "Failed to authenticate using Mojang authentication service.",
+            SocketException("Permission denied: getsockopt"),
+        )
+        assertNull("precondition: YDServiceAuthenticationException hides its cause, so getCause() is null", block.cause)
+        assertTrue(ConnectivityBlockClassifier.isPermissionDeniedSocket(block))
+        assertTrue(ConnectivityBlockClassifier.isEnvironmentalNetworkFailure(block))
+    }
+
+    @Test
+    fun ydAuthExceptionWrappingA403IsNotABlock() {
+        // A rejected login (HTTP 401/403) wraps a plain IOException, not a SocketException, so it must
+        // NOT be misread as a firewall/AV block even though it flows through the same `thrown` field.
+        val rejected = YDServiceAuthenticationException(
+            "Failed to authenticate using Mojang authentication service.",
+            IOException("Server returned HTTP response code: 403 for URL: https://games.glitchless.ru"),
+        )
+        assertFalse(ConnectivityBlockClassifier.isPermissionDeniedSocket(rejected))
+        assertFalse(ConnectivityBlockClassifier.isEnvironmentalNetworkFailure(rejected))
+    }
 
     @Test
     fun ignoresUnknownHost() =

@@ -1,5 +1,6 @@
 package ru.lionzxy.tplauncher.minecraft.connectivity
 
+import sk.tomsik68.mclauncher.impl.login.yggdrasil.YDServiceAuthenticationException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -24,7 +25,7 @@ object ConnectivityBlockClassifier {
                 val m = e.message?.lowercase().orEmpty()
                 if ("permission denied" in m || "wsaeacces" in m) return true
             }
-            e = e.cause
+            e = nextCause(e)
         }
         return false
     }
@@ -45,8 +46,21 @@ object ConnectivityBlockClassifier {
                 is UnknownHostException, is SocketException, is SocketTimeoutException, is SSLException ->
                     return true
             }
-            e = e.cause
+            e = nextCause(e)
         }
         return false
     }
+
+    /**
+     * The next node to descend to while walking the cause chain — normally [Throwable.cause], but
+     * mclauncher-api's [YDServiceAuthenticationException] breaks the standard chain: every one of its
+     * constructors calls `super(msg)` only (so [Throwable.getCause] is always null) and parks the real
+     * wrapped exception — the login-time [SocketException] / [java.io.IOException] from
+     * `YDLoginService.doLoginPost` — in its own `thrown` field. Following that field is what lets a
+     * WSAEACCES block buried by the login service still be recognised (both by this classifier and, in
+     * turn, by every consumer: the login/launch view-model branches, the launch-error mapper, and the
+     * offline-degradation gates).
+     */
+    private fun nextCause(e: Throwable): Throwable? =
+        (e as? YDServiceAuthenticationException)?.thrown ?: e.cause
 }

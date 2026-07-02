@@ -19,16 +19,28 @@ sealed class LauncherState {
     data class LaunchError(val email: String, val error: String) : LauncherState()
 
     /**
-     * A WSAEACCES firewall/AV block (e.g. Dr.Web) stopped the launch. [message] is the guidance to
-     * show; [canFirewallFix] is true only when the Windows Firewall auto-fix is worth attempting
-     * (Defender / none detected), driving the primary button ("allow access" vs "retry").
+     * A WSAEACCES firewall/AV block (e.g. Dr.Web) stopped either login or launch. [message] is the
+     * guidance to show; [canFirewallFix] is true only when the Windows Firewall auto-fix is worth
+     * attempting (Defender / none detected), driving the primary button ("allow access" vs "retry").
+     * [origin] says whether the block happened before login ([ConnectivityBlockOrigin.LOGIN], so the
+     * retry must re-run authentication and the login/password fields stay visible) or during launch
+     * ([ConnectivityBlockOrigin.LAUNCH], the logged-in avatar shows and retry re-launches the pack).
      */
     data class ConnectivityBlocked(
         val email: String,
         val message: String,
         val canFirewallFix: Boolean,
+        val origin: ConnectivityBlockOrigin = ConnectivityBlockOrigin.LAUNCH,
     ) : LauncherState()
 }
+
+/**
+ * Where a [LauncherState.ConnectivityBlocked] was raised. Drives both the form layout (login fields vs
+ * logged-in avatar) and, critically, where the panel's retry/fix routes back to: re-authentication for
+ * [LOGIN] (there is no session yet), or an offline-tolerant re-launch for [LAUNCH]. Routing a pre-login
+ * block into the launch path would dereference the still-null session.
+ */
+enum class ConnectivityBlockOrigin { LOGIN, LAUNCH }
 
 /**
  * 15-flag model derived from the current [LauncherState].
@@ -134,8 +146,11 @@ val LauncherState.flags: StateFlags
 
         is LauncherState.ConnectivityBlocked -> StateFlags(
             titleColor = TpColors.error,
-            loginPasswordVisible = false,
-            successLoginVisible = true,
+            // Pre-login block: keep the login/password fields visible (there is no session/avatar yet)
+            // so the user can adjust credentials and re-authenticate. Launch-time block: show the
+            // logged-in avatar, as before.
+            loginPasswordVisible = origin == ConnectivityBlockOrigin.LOGIN,
+            successLoginVisible = origin == ConnectivityBlockOrigin.LAUNCH,
             disableProgressBar = true,
             progressTextColor = TpColors.error,
             progressTextContent = message,

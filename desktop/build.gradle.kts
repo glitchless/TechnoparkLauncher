@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.compose)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.buildconfig)
     alias(libs.plugins.roborazzi)
 }
 
@@ -22,13 +21,6 @@ dependencies {
 tasks.test {
     systemProperty("java.awt.headless", "true")
     systemProperty("skiko.renderApi", "SOFTWARE")
-}
-
-buildConfig {
-    packageName("ru.lionzxy.tplauncher")
-    buildConfigField("String", "NAME", "\"TechnoparkLauncher\"")
-    buildConfigField("String", "VERSION", "\"${project.version}\"")
-    buildConfigField("String", "SENTRY_DSN", "\"https://cd312e191fbd44b49c6cc526bb91817c@sentry.team.glitchless.ru/18\"")
 }
 
 compose.desktop {

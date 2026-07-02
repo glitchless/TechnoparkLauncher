@@ -50,6 +50,7 @@ private fun dumpChain(t: Throwable?, depth: Int) {
 }
 
 fun main(args: Array<String>) {
+    AppInfo.logStartup()
     configureHttpUserAgent()
 
     val positional = args.filterNot { it.startsWith("--") }

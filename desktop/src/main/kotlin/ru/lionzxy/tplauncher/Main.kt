@@ -48,7 +48,8 @@ fun main() {
     // 1. UA first — must be before any HTTP connection
     configureHttpUserAgent()
 
-    // 2. Sentry init
+    // 2. Sentry init — before the first log line, so that if opening the session log
+    //    fails (e.g. an unwritable or full logs dir) the crash is still reported.
     Sentry.init { options ->
         options.dsn = BuildConfig.SENTRY_DSN
         options.serverName = BuildConfig.NAME
@@ -56,7 +57,12 @@ fun main() {
         options.setTag("version", BuildConfig.VERSION)
     }
 
-    // 3. Prepare logo on disk (no-op if already exists)
+    // 3. Version banner — the first record in the session log. As the first Logger call
+    //    it lazily creates the logs dir and opens the per-launch log file, so it is kept
+    //    after Sentry.init (above) rather than first.
+    AppInfo.logStartup()
+
+    // 4. Prepare logo on disk (no-op if already exists)
     LogoUtils.prepareLogo()
 
     // 4. Launch Compose application
